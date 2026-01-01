@@ -1,11 +1,13 @@
-// Firestore Database Operations Module - Traditional Chinese
+// Firestore Database Operations Module - With Offline Caching
 import { collection, addDoc, onSnapshot, doc, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { db, appId } from './firebase-config.js';
 import { showAlert } from '../components/modal.js';
+import { cacheUsers, cacheEvents, getCachedUsers, getCachedEvents, isOnline, registerNetworkHandlers } from './cache-manager.js';
+import { getSession, saveSession } from './crypto.js';
 
 let _globalUsers = [];
 let _globalEvents = [];
-let _appCurrentUser = JSON.parse(sessionStorage.getItem('app_current_user')) || null;
+let _appCurrentUser = getSession(); // Use session management
 let _firestoreUser = null;
 let _currentSelectedTargets = [];
 let _checkLoadingComplete = () => { };
@@ -22,9 +24,7 @@ export function getCurrentSelectedTargets() { return _currentSelectedTargets; }
 export function setAppCurrentUser(user) {
     _appCurrentUser = user;
     if (user) {
-        sessionStorage.setItem('app_current_user', JSON.stringify(user));
-    } else {
-        sessionStorage.removeItem('app_current_user');
+        saveSession(user); // Use session with expiry
     }
 }
 
@@ -42,19 +42,36 @@ export function toggleTarget(uid) {
 
 export function startDataListeners(user) {
     _firestoreUser = user;
-    if (!_firestoreUser || !db) return;
+
+    // Load cached data first for faster initial render
+    if (!isOnline()) {
+        console.log('[Firestore] Offline - loading from cache');
+        _globalUsers = getCachedUsers();
+        _globalEvents = getCachedEvents();
+        _checkLoadingComplete();
+        return;
+    }
+
+    if (!_firestoreUser || !db) {
+        // Fallback to cache
+        _globalUsers = getCachedUsers();
+        _globalEvents = getCachedEvents();
+        _checkLoadingComplete();
+        return;
+    }
 
     const usersRef = collection(db, 'artifacts', appId, 'public', 'data', 'school_users');
     const eventsRef = collection(db, 'artifacts', appId, 'public', 'data', 'school_events');
 
     onSnapshot(usersRef, (snapshot) => {
         _globalUsers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        cacheUsers(_globalUsers); // Cache for offline
 
         if (_appCurrentUser) {
             const me = _globalUsers.find(u => u.username === _appCurrentUser.username);
             if (me) {
                 _appCurrentUser = { ..._appCurrentUser, ...me };
-                sessionStorage.setItem('app_current_user', JSON.stringify(_appCurrentUser));
+                saveSession(_appCurrentUser);
                 if (window.updateSidebar) window.updateSidebar();
             }
 
@@ -64,10 +81,15 @@ export function startDataListeners(user) {
             }
         }
         _checkLoadingComplete();
-    }, () => _checkLoadingComplete());
+    }, () => {
+        // On error, load from cache
+        _globalUsers = getCachedUsers();
+        _checkLoadingComplete();
+    });
 
     onSnapshot(eventsRef, (snapshot) => {
         _globalEvents = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        cacheEvents(_globalEvents); // Cache for offline
 
         if (_appCurrentUser) {
             if (window.renderDashboard) window.renderDashboard();
@@ -75,11 +97,34 @@ export function startDataListeners(user) {
             if (window.updateNotificationBadge) window.updateNotificationBadge();
         }
         _checkLoadingComplete();
-    }, () => _checkLoadingComplete());
+    }, () => {
+        // On error, load from cache
+        _globalEvents = getCachedEvents();
+        _checkLoadingComplete();
+    });
+
+    // Register network handlers for sync
+    registerNetworkHandlers(
+        () => {
+            // Back online - refresh data
+            console.log('[Firestore] Syncing after coming online');
+            if (window.renderDashboard) window.renderDashboard();
+        },
+        () => {
+            // Gone offline
+            showAlert('您已離線，部分功能可能受限');
+        }
+    );
 }
 
 export async function handleFirebaseAddEvent(e) {
     e.preventDefault();
+
+    if (!isOnline()) {
+        showAlert('離線中無法新增行程，請稍後再試');
+        return;
+    }
+
     if (!_appCurrentUser || !db) return;
 
     const title = document.getElementById('evt-title').value;
@@ -120,6 +165,11 @@ export async function handleFirebaseAddEvent(e) {
 }
 
 export async function handleMarkAsDone(eventId) {
+    if (!isOnline()) {
+        showAlert('離線中無法操作');
+        return;
+    }
+
     window.showConfirm('標記為已完成？', async () => {
         try {
             const eventRef = doc(db, 'artifacts', appId, 'public', 'data', 'school_events', eventId);
@@ -132,6 +182,12 @@ export async function handleMarkAsDone(eventId) {
 
 export async function handleUpdateProfile(e) {
     e.preventDefault();
+
+    if (!isOnline()) {
+        showAlert('離線中無法更新資料');
+        return;
+    }
+
     if (!_appCurrentUser || !db) return;
 
     const newJob = document.getElementById('edit-jobTitle').value;
@@ -141,7 +197,13 @@ export async function handleUpdateProfile(e) {
     try {
         const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'school_users', _appCurrentUser.id);
         const updateData = { jobTitle: newJob, name: newName };
-        if (newPass) updateData.password = newPass;
+
+        if (newPass) {
+            // Import hash function and hash new password
+            const { hashPassword } = await import('./crypto.js');
+            updateData.password = await hashPassword(newPass);
+        }
+
         await updateDoc(userRef, updateData);
         showAlert('資料已更新！');
     } catch (err) {

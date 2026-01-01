@@ -1,8 +1,9 @@
-// Authentication Module - Traditional Chinese
+// Authentication Module - With Security Enhancements
 import { signInAnonymously, onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-import { collection, addDoc, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { collection, addDoc, query, where, getDocs, doc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { auth, db, appId } from './firebase-config.js';
 import { showAlert } from '../components/modal.js';
+import { hashPassword, verifyPassword, isHashed, saveSession, getSession, clearSession } from './crypto.js';
 
 let _globalUsers = () => [];
 let _setAppCurrentUser = () => { };
@@ -20,11 +21,20 @@ export function setAuthDeps(deps) {
 
 export async function initAuth() {
     if (!auth) return;
+
+    // Check existing session first
+    const existingSession = getSession();
+    if (existingSession) {
+        console.log('Valid session found, restoring user');
+        _setAppCurrentUser(existingSession);
+    }
+
     try {
         await signInAnonymously(auth);
     } catch (err) {
         console.error("Auth error:", err);
     }
+
     onAuthStateChanged(auth, (user) => {
         if (user) {
             _startDataListeners(user);
@@ -51,7 +61,7 @@ export function checkLoadingComplete() {
     }
 }
 
-export function handleAppLogin(e) {
+export async function handleAppLogin(e) {
     e.preventDefault();
     const btn = document.getElementById('btn-login');
     btn.disabled = true;
@@ -60,7 +70,7 @@ export function handleAppLogin(e) {
     const username = document.getElementById('login-username').value;
     const password = document.getElementById('login-password').value;
 
-    setTimeout(() => {
+    try {
         const users = _globalUsers();
         if (users.length === 0 && !db) {
             showAlert("無法連線");
@@ -69,16 +79,52 @@ export function handleAppLogin(e) {
             return;
         }
 
-        const user = users.find(u => u.username === username && u.password === password);
-        if (user) {
+        // Find user by username
+        const user = users.find(u => u.username === username);
+
+        if (!user) {
+            showAlert('帳號或密碼錯誤');
+            btn.disabled = false;
+            btn.innerText = "開始";
+            return;
+        }
+
+        // Check password - support both hashed and plain text
+        let passwordMatch = false;
+
+        if (isHashed(user.password)) {
+            // Password is hashed, verify it
+            passwordMatch = await verifyPassword(password, user.password);
+        } else {
+            // Legacy plain text password - migrate to hash
+            passwordMatch = (user.password === password);
+
+            if (passwordMatch && db) {
+                // Migrate to hashed password
+                try {
+                    const hashedPwd = await hashPassword(password);
+                    const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'school_users', user.id);
+                    await updateDoc(userRef, { password: hashedPwd });
+                    console.log('Password migrated to hash');
+                } catch (e) {
+                    console.warn('Could not migrate password:', e);
+                }
+            }
+        }
+
+        if (passwordMatch) {
             _setAppCurrentUser(user);
+            saveSession(user); // Save session with expiry
             _initAppUI();
         } else {
             showAlert('帳號或密碼錯誤');
         }
+    } catch (err) {
+        showAlert('登入失敗：' + err.message);
+    } finally {
         btn.disabled = false;
         btn.innerText = "開始";
-    }, 500);
+    }
 }
 
 export async function handleAppRegister(e) {
@@ -96,17 +142,25 @@ export async function handleAppRegister(e) {
         const username = document.getElementById('reg-username').value;
         const password = document.getElementById('reg-password').value;
 
+        // Validate password strength
+        if (password.length < 6) {
+            throw new Error('密碼至少需要 6 個字元');
+        }
+
         const users = _globalUsers();
         if (users && users.find(u => u.username === username)) {
             throw new Error('帳號已被使用！');
         }
+
+        // Hash password before storing
+        const hashedPassword = await hashPassword(password);
 
         const usersRef = collection(db, 'artifacts', appId, 'public', 'data', 'school_users');
         await addDoc(usersRef, {
             jobTitle: job,
             name,
             username,
-            password,
+            password: hashedPassword, // Store hashed password
             createdAt: new Date().toISOString()
         });
 
@@ -162,6 +216,7 @@ export async function handleGoogleLogin() {
         }
 
         _setAppCurrentUser(userData);
+        saveSession(userData); // Save session with expiry
         _initAppUI();
     } catch (err) {
         if (err.code === 'auth/popup-closed-by-user') {
@@ -179,7 +234,7 @@ export async function handleGoogleLogin() {
 
 export function appLogout() {
     window.showConfirm('確定要登出？', () => {
-        sessionStorage.removeItem('app_current_user');
+        clearSession(); // Clear session
         _setAppCurrentUser(null);
         document.getElementById('main-app').classList.add('hidden-section');
         document.getElementById('auth-container').classList.remove('hidden-section');
