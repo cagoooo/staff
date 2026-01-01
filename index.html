@@ -34,7 +34,7 @@
 
     <div id="auth-container" class="hidden-section">
         <div id="login-card" class="pixel-card">
-            <div class="login-icon" style="animation: bounce 2s infinite;">G</div>
+            <div class="login-icon" style="animation: bounce 2s infinite;">🎮</div>
             <h2 class="login-title">行政業務協調系統</h2>
             <p class="login-subtitle">歡迎回來，請登入</p>
 
@@ -49,13 +49,13 @@
                     <input type="password" id="login-password" required class="pixel-input" placeholder=">>> 輸入您的密碼"
                         autocomplete="current-password">
                 </div>
-                <button type="submit" id="btn-login" class="pixel-btn w-full mb-4">開始</button>
+                <button type="submit" id="btn-login" class="pixel-btn w-full mb-4">▶ 開始</button>
             </form>
 
             <div class="text-center mb-4">
                 <button type="button" onclick="toggleAuthMode('register')"
                     style="font-family: 'VT323', monospace; font-size: 20px; color: #fd79a8; background: none; border: none; cursor: pointer;">
-                    新用戶？點此註冊
+                    🆕 新用戶？點此註冊
                 </button>
             </div>
 
@@ -77,12 +77,12 @@
                     <path fill="#EA4335"
                         d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
                 </svg>
-                使用 Google 登入
+                🌐 使用 Google 登入
             </button>
         </div>
 
         <div id="register-card" class="pixel-card hidden-section">
-            <div class="login-icon">+</div>
+            <div class="login-icon">➕</div>
             <h2 class="login-title">建立帳號</h2>
             <p class="login-subtitle">請填寫您的資料</p>
 
@@ -115,13 +115,17 @@
     </div>
 
     <div id="main-app" class="hidden-section flex h-screen">
-        <aside class="w-64 flex flex-col">
+        <!-- Sidebar Overlay for Mobile -->
+        <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+
+        <aside id="sidebar" class="w-64 flex flex-col">
             <div class="p-4 border-b border-gray-700 flex items-center gap-3">
                 <div class="sidebar-avatar" id="sidebar-avatar">?</div>
-                <div>
-                    <h3 class="font-bold text-white text-sm" id="sidebar-name"
+                <div class="flex-1 min-w-0">
+                    <h3 class="font-bold text-white text-sm truncate" id="sidebar-name"
                         style="font-family: 'VT323', monospace; font-size: 18px;">載入中...</h3>
-                    <p class="text-gray-400 text-xs" id="sidebar-job" style="font-family: 'VT323', monospace;">...</p>
+                    <p class="text-gray-400 text-xs truncate" id="sidebar-job" style="font-family: 'VT323', monospace;">
+                        ...</p>
                 </div>
             </div>
 
@@ -148,30 +152,33 @@
 
         <main class="flex-1 overflow-hidden flex flex-col">
             <header class="p-4 flex justify-between items-center">
-                <h1 id="page-title">主頁面</h1>
+                <div class="flex items-center gap-3">
+                    <button class="hamburger-btn" id="hamburger-btn" onclick="toggleSidebar()">☰</button>
+                    <h1 id="page-title">主頁面</h1>
+                </div>
                 <div class="text-sm" id="current-date" style="font-family: 'VT323', monospace; font-size: 18px;"></div>
             </header>
 
             <div class="flex-1 overflow-y-auto p-6" id="content-area">
-                <div id="view-dashboard" class="h-full flex flex-col gap-6">
-                    <div class="content-card flex-1 p-4 overflow-hidden flex flex-col">
-                        <h2>最新公告</h2>
-                        <div id="announcement-list" class="flex-1 overflow-y-auto space-y-3">
+                <div id="view-dashboard">
+                    <div class="content-card p-4 mb-4">
+                        <h2>📢 最新公告</h2>
+                        <div id="announcement-list" class="mt-4 space-y-3">
                             <p class="text-gray-400 text-center py-4">載入中...</p>
                         </div>
                     </div>
-                    <div class="content-card flex-1 p-4 overflow-hidden flex flex-col">
-                        <h2>重要行事</h2>
-                        <div id="important-events-list" class="flex-1 overflow-y-auto space-y-2">
+                    <div class="content-card p-4">
+                        <h2>⭐ 重要行事</h2>
+                        <div id="important-events-list" class="mt-4 space-y-2">
                             <p class="text-gray-400 text-center py-4">載入中...</p>
                         </div>
                     </div>
                 </div>
 
-                <div id="view-account" class="hidden-section max-w-2xl mx-auto">
-                    <div class="content-card p-8">
-                        <h2>修改個人資料</h2>
-                        <form onsubmit="handleUpdateProfile(event)">
+                <div id="view-account" class="hidden-section">
+                    <div class="content-card p-6">
+                        <h2>⚙️ 修改個人資料</h2>
+                        <form onsubmit="handleUpdateProfile(event)" class="mt-4">
                             <div class="grid grid-cols-2 gap-4 mb-4">
                                 <div><label class="pixel-label">職稱</label><input type="text" id="edit-jobTitle"
                                         class="pixel-input"></div>
@@ -183,24 +190,24 @@
                             <div class="mb-6"><label class="pixel-label">新密碼</label><input type="password"
                                     id="edit-password" class="pixel-input" placeholder="不修改請留空"
                                     autocomplete="new-password"></div>
-                            <button type="submit" class="pixel-btn pixel-btn-success">儲存變更</button>
+                            <button type="submit" class="pixel-btn pixel-btn-success w-full">💾 儲存變更</button>
                         </form>
                     </div>
                 </div>
 
-                <div id="view-notifications" class="hidden-section max-w-4xl mx-auto">
-                    <div class="content-card p-6 mb-4">
-                        <h2>待辦事項與通知</h2>
-                        <p class="text-sm text-gray-500 mb-4 bg-gray-100 p-2" style="font-family: 'VT323', monospace;">
-                            提示：點擊「完成」可移除已完成的事項</p>
+                <div id="view-notifications" class="hidden-section">
+                    <div class="content-card p-6">
+                        <h2>📋 待辦事項與通知</h2>
+                        <p class="text-sm text-gray-500 my-4 bg-gray-100 p-3"
+                            style="font-family: 'VT323', monospace; font-size: 18px;">💡 提示：點擊「完成」可移除已完成的事項</p>
                         <div id="notification-list" class="space-y-4"></div>
                     </div>
                 </div>
 
-                <div id="view-editor" class="hidden-section max-w-3xl mx-auto">
-                    <div class="content-card p-8">
-                        <h2>新增行程</h2>
-                        <form onsubmit="handleFirebaseAddEvent(event)">
+                <div id="view-editor" class="hidden-section">
+                    <div class="content-card p-6">
+                        <h2>📅 新增行程</h2>
+                        <form onsubmit="handleFirebaseAddEvent(event)" class="mt-4">
                             <div class="mb-4"><label class="pixel-label">項目名稱</label><input type="text" id="evt-title"
                                     required class="pixel-input" placeholder="例如：期中考務會議"></div>
                             <div class="grid grid-cols-2 gap-4 mb-4">
@@ -212,19 +219,19 @@
                             <div class="mb-4">
                                 <label class="pixel-label">通知人員</label>
                                 <div id="selected-targets-container"
-                                    class="flex flex-wrap gap-2 mb-2 p-2 border-2 border-dashed min-h-[46px] bg-white items-center"
-                                    style="font-family: 'VT323', monospace;"><span
+                                    class="flex flex-wrap gap-2 mb-2 p-3 border-2 border-dashed min-h-[50px] bg-white items-center"
+                                    style="font-family: 'VT323', monospace; font-size: 18px;"><span
                                         class="text-gray-400">尚未選擇人員...</span></div>
                                 <div class="border-2 h-48 overflow-y-auto bg-gray-50 p-2 space-y-1"
                                     id="target-selection-list">
                                     <div class="text-gray-400 text-sm p-2">載入中...</div>
                                 </div>
                             </div>
-                            <div class="flex items-center gap-2 mb-6"
-                                style="font-family: 'VT323', monospace; font-size: 18px;"><input type="checkbox"
-                                    id="evt-is-public" class="w-5 h-5"><label for="evt-is-public">設為重要行事</label></div>
-                            <button type="submit" id="btn-add-event"
-                                class="pixel-btn pixel-btn-success w-full">新增行程</button>
+                            <div class="flex items-center gap-3 mb-6"
+                                style="font-family: 'VT323', monospace; font-size: 20px;"><input type="checkbox"
+                                    id="evt-is-public" class="w-6 h-6"><label for="evt-is-public">⭐ 設為重要行事</label></div>
+                            <button type="submit" id="btn-add-event" class="pixel-btn pixel-btn-success w-full">➕
+                                新增行程</button>
                         </form>
                     </div>
                 </div>
@@ -233,6 +240,34 @@
     </div>
 
     <script type="module" src="js/app.js"></script>
-    <script>if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('/sw.js').then(r=>console.log('[SW] Registered')).catch(e=>console.log('[SW] Failed',e));});}</script></body>
+    <script>
+        // Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(r => console.log('[SW] Registered'))
+                    .catch(e => console.log('[SW] Failed', e));
+            });
+        }
+
+        // Sidebar Toggle for Mobile RWD
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('open');
+            document.getElementById('sidebar-overlay').classList.toggle('active');
+        }
+
+        function closeSidebar() {
+            document.getElementById('sidebar').classList.remove('open');
+            document.getElementById('sidebar-overlay').classList.remove('active');
+        }
+
+        // Auto close sidebar on tab switch (mobile)
+        const originalSwitchTab = window.switchTab;
+        window.switchTab = function (tabName) {
+            closeSidebar();
+            if (originalSwitchTab) originalSwitchTab(tabName);
+        };
+    </script>
+</body>
 
 </html>
