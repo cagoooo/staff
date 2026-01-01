@@ -505,7 +505,7 @@ export function updateNotificationBadge() {
 export function switchTab(tabName) {
     const currentUser = getAppCurrentUser();
 
-    ['dashboard', 'calendar', 'account', 'notifications', 'editor'].forEach(v => {
+    ['dashboard', 'calendar', 'account', 'notifications', 'editor', 'stats'].forEach(v => {
         const el = document.getElementById('view-' + v);
         if (el) el.classList.add('hidden-section');
     });
@@ -513,7 +513,7 @@ export function switchTab(tabName) {
 
     document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
 
-    const indexMap = { 'dashboard': 0, 'calendar': 1, 'account': 2, 'notifications': 3, 'editor': 4 };
+    const indexMap = { 'dashboard': 0, 'calendar': 1, 'account': 2, 'notifications': 3, 'editor': 4, 'stats': 5 };
     const btns = document.querySelectorAll('aside .nav-btn');
     if (btns[indexMap[tabName]]) btns[indexMap[tabName]].classList.add('active');
 
@@ -522,12 +522,14 @@ export function switchTab(tabName) {
         'calendar': '共用日曆',
         'account': '帳號設定',
         'notifications': '待辦與通知',
-        'editor': '新增行程'
+        'editor': '新增行程',
+        'stats': '📊 統計儀表板'
     };
     document.getElementById('page-title').innerText = titles[tabName];
 
     if (tabName === 'dashboard') renderDashboard();
     if (tabName === 'calendar') renderCalendar();
+    if (tabName === 'stats' && window.renderStats) window.renderStats();
     if (tabName === 'account' && currentUser) {
         document.getElementById('edit-department').innerHTML = renderDepartmentOptions(currentUser.department || '');
         setTimeout(() => {

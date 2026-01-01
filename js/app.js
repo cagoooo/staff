@@ -5,6 +5,7 @@ import { globalUsers, getAppCurrentUser, setAppCurrentUser, startDataListeners, 
 import { initAppUI, updateSidebar, renderDashboard, renderNotifications, renderEditorOptions, updateNotificationBadge, switchTab } from './ui.js';
 import { initEventModal } from './event-modal.js';
 import { initSearch } from './search.js';
+import { initStats } from './stats.js';
 
 // Wire up dependencies (avoid circular imports)
 setAuthDeps({
@@ -27,6 +28,7 @@ async function init() {
     initModal();
     initEventModal();
     initSearch();
+    initStats();
 
     // Initialize authentication
     await initAuth();
