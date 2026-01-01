@@ -320,34 +320,75 @@ function renderSelectedChips() {
 // Dashboard
 // ============================================
 
+// Announcement type configurations
+const ANNOUNCEMENT_TYPES = {
+    normal: { label: '一般', icon: '📋', bg: 'bg-gray-50', border: '#636e72' },
+    important: { label: '重要', icon: '⚡', bg: 'bg-yellow-50', border: '#f39c12' },
+    urgent: { label: '緊急', icon: '🚨', bg: 'bg-red-50', border: '#e74c3c' }
+};
+
 export function renderDashboard() {
     const listAnnounce = document.getElementById('announcement-list');
     const listImportant = document.getElementById('important-events-list');
     const events = globalEvents();
     const users = globalUsers();
+    const currentUser = getAppCurrentUser();
 
     listAnnounce.innerHTML = '';
     listImportant.innerHTML = '';
 
-    const sortedEvents = [...events].sort((a, b) => new Date(a.date) - new Date(b.date));
+    // Sort events: pinned first, then by urgency, then by date
+    const sortedEvents = [...events].sort((a, b) => {
+        // Pinned events first
+        if (a.pinned && !b.pinned) return -1;
+        if (!a.pinned && b.pinned) return 1;
+
+        // Then by announcement type (urgent > important > normal)
+        const typeOrder = { urgent: 0, important: 1, normal: 2 };
+        const aType = typeOrder[a.announcementType] ?? 2;
+        const bType = typeOrder[b.announcementType] ?? 2;
+        if (aType !== bType) return aType - bType;
+
+        // Then by date
+        return new Date(a.date) - new Date(b.date);
+    });
 
     if (sortedEvents.length === 0) {
         listAnnounce.innerHTML = '<p class="text-gray-400 text-center py-4">暫無資料</p>';
     }
 
-    sortedEvents.slice(0, 10).forEach(evt => {
+    sortedEvents.slice(0, 15).forEach(evt => {
         const author = users.find(u => u.id === evt.authorId);
         const deptColor = getDepartmentColor(author?.department);
+        const typeConfig = ANNOUNCEMENT_TYPES[evt.announcementType] || ANNOUNCEMENT_TYPES.normal;
+        const isRead = evt.readBy?.includes(currentUser?.id);
+        const isPinned = evt.pinned;
 
         const div = document.createElement('div');
-        div.className = "p-3 border-l-4 bg-purple-50 hover:bg-purple-100 transition cursor-pointer";
+        div.className = `p-3 border-l-4 ${typeConfig.bg} hover:brightness-95 transition cursor-pointer ${!isRead ? 'font-bold' : ''}`;
         div.style.fontFamily = "'VT323', monospace";
-        div.style.borderColor = deptColor;
+        div.style.borderColor = evt.announcementType === 'urgent' ? typeConfig.border :
+            evt.announcementType === 'important' ? typeConfig.border : deptColor;
         div.dataset.eventId = evt.id;
-        div.onclick = () => window.openEventModal && window.openEventModal(evt.id);
-        div.innerHTML = '<div class="flex justify-between"><h4 class="font-bold text-lg">' + evt.title +
-            '</h4><span class="text-sm bg-purple-200 px-2 py-1">' + evt.date +
-            '</span></div><p class="text-sm text-gray-600 mt-1">發起人：' + evt.authorName + ' | 時間：' + evt.time + '</p>';
+        div.onclick = () => {
+            markAsRead(evt.id);
+            window.openEventModal && window.openEventModal(evt.id);
+        };
+
+        // Build announcement HTML
+        const pinnedBadge = isPinned ? '<span style="color: #e74c3c; margin-right: 4px;">📌</span>' : '';
+        const typeBadge = evt.announcementType && evt.announcementType !== 'normal'
+            ? `<span style="background: ${typeConfig.border}22; color: ${typeConfig.border}; padding: 2px 6px; font-size: 14px; margin-right: 4px;">${typeConfig.icon} ${typeConfig.label}</span>`
+            : '';
+        const unreadDot = !isRead ? '<span style="color: #e74c3c; margin-right: 4px;">●</span>' : '';
+
+        div.innerHTML = `
+            <div class="flex justify-between items-start">
+                <h4 class="text-lg flex items-center">${unreadDot}${pinnedBadge}${typeBadge}${evt.title}</h4>
+                <span class="text-sm bg-purple-200 px-2 py-1 shrink-0">${evt.date}</span>
+            </div>
+            <p class="text-sm text-gray-600 mt-1">發起人：${evt.authorName} | 時間：${evt.time || '--:--'}</p>
+        `;
         listAnnounce.appendChild(div);
     });
 
@@ -369,6 +410,16 @@ export function renderDashboard() {
             evt.date.split('-')[1] + '/' + evt.date.split('-')[2] + '</div><div class="text-lg">' + evt.title + '</div>';
         listImportant.appendChild(div);
     });
+}
+
+// Mark event as read
+async function markAsRead(eventId) {
+    if (!window.markEventAsRead) return;
+    try {
+        await window.markEventAsRead(eventId);
+    } catch (e) {
+        console.log('[UI] markAsRead failed:', e);
+    }
 }
 
 // ============================================

@@ -285,12 +285,46 @@ export function getEventById(eventId) {
     return _globalEvents.find(e => e.id === eventId);
 }
 
+// Mark event as read
+export async function markEventAsRead(eventId) {
+    if (!isOnline() || !_appCurrentUser || !db) return false;
+
+    try {
+        const eventRef = doc(db, 'artifacts', appId, 'public', 'data', 'school_events', eventId);
+        await updateDoc(eventRef, { readBy: arrayUnion(_appCurrentUser.id) });
+        return true;
+    } catch (err) {
+        console.log('[Firestore] Mark as read failed:', err);
+        return false;
+    }
+}
+
+// Toggle pin status
+export async function toggleEventPin(eventId) {
+    if (!isOnline() || !_appCurrentUser || !db) return false;
+
+    const event = _globalEvents.find(e => e.id === eventId);
+    if (!event) return false;
+
+    try {
+        const eventRef = doc(db, 'artifacts', appId, 'public', 'data', 'school_events', eventId);
+        await updateDoc(eventRef, { pinned: !event.pinned });
+        showAlert(event.pinned ? '已取消置頂' : '已置頂');
+        return true;
+    } catch (err) {
+        showAlert('操作失敗');
+        return false;
+    }
+}
+
 window.handleFirebaseAddEvent = handleFirebaseAddEvent;
 window.handleMarkAsDone = handleMarkAsDone;
 window.handleUpdateProfile = handleUpdateProfile;
 window.updateEvent = updateEvent;
 window.deleteEvent = deleteEvent;
 window.getEventById = getEventById;
+window.markEventAsRead = markEventAsRead;
+window.toggleEventPin = toggleEventPin;
 window.toggleTarget = (uid) => {
     toggleTarget(uid);
     if (window.renderEditorOptions) window.renderEditorOptions();

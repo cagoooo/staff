@@ -64,6 +64,18 @@ export function initEventModal() {
                         <input type="checkbox" id="edit-evt-is-public" class="w-5 h-5">
                         <label for="edit-evt-is-public">⭐ 設為重要行事</label>
                     </div>
+                    <div class="mb-3">
+                        <label class="pixel-label">公告類型</label>
+                        <select id="edit-evt-type" class="pixel-input">
+                            <option value="normal">📋 一般</option>
+                            <option value="important">⚡ 重要</option>
+                            <option value="urgent">🚨 緊急</option>
+                        </select>
+                    </div>
+                    <div class="flex items-center gap-3 mb-3" style="font-family: 'VT323', monospace; font-size: 20px;">
+                        <input type="checkbox" id="edit-evt-pinned" class="w-5 h-5">
+                        <label for="edit-evt-pinned">📌 置頂公告</label>
+                    </div>
                 </div>
             </div>
             <!-- Footer Buttons -->
@@ -154,6 +166,8 @@ export function toggleEventEditMode() {
     document.getElementById('edit-evt-date').value = event.date || '';
     document.getElementById('edit-evt-time').value = event.time || '';
     document.getElementById('edit-evt-is-public').checked = event.isPublic || false;
+    document.getElementById('edit-evt-type').value = event.announcementType || 'normal';
+    document.getElementById('edit-evt-pinned').checked = event.pinned || false;
 
     // Switch UI
     document.getElementById('event-view-mode').classList.add('hidden-section');
@@ -188,7 +202,9 @@ export async function saveEventEdit() {
         title: document.getElementById('edit-evt-title').value,
         date: document.getElementById('edit-evt-date').value,
         time: document.getElementById('edit-evt-time').value,
-        isPublic: document.getElementById('edit-evt-is-public').checked
+        isPublic: document.getElementById('edit-evt-is-public').checked,
+        announcementType: document.getElementById('edit-evt-type').value,
+        pinned: document.getElementById('edit-evt-pinned').checked
     };
 
     const success = await updateEvent(currentEditingEventId, data);
