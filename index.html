@@ -1,151 +1,73 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-TW">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🎮 行政協調通知系統</title>
-    <!-- Tailwind CSS -->
+    <title>行政業務協調系統</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-
-    <style>
-        body {
-            font-family: 'Noto Sans TC', sans-serif;
-            background-color: #f3f4f6;
-        }
-
-        .hidden-section {
-            display: none !important;
-        }
-
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: #f1f1f1;
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: #888;
-            border-radius: 4px;
-        }
-
-        ::-webkit-scrollbar-thumb:hover {
-            background: #555;
-        }
-
-        /* 載入動畫 */
-        .loader {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #3498db;
-            border-radius: 50%;
-            width: 30px;
-            height: 30px;
-            animation: spin 2s linear infinite;
-        }
-
-        @keyframes spin {
-            0% {
-                transform: rotate(0deg);
-            }
-
-            100% {
-                transform: rotate(360deg);
-            }
-        }
-
-        /* 自定義 Modal 動畫 */
-        .modal-enter {
-            opacity: 0;
-            transform: scale(0.95);
-        }
-
-        .modal-enter-active {
-            opacity: 1;
-            transform: scale(1);
-            transition: opacity 0.2s, transform 0.2s;
-        }
-    </style>
+    <link rel="stylesheet" href="css/pixel-style.css">
 </head>
 
-<body class="h-screen overflow-hidden text-gray-800 relative">
+<body class="h-screen overflow-hidden relative">
 
-    <!-- 全局載入遮罩 -->
-    <div id="global-loader" class="absolute inset-0 z-50 bg-white flex flex-col items-center justify-center">
+    <div id="global-loader" class="absolute inset-0 z-50 flex flex-col items-center justify-center">
         <div class="loader mb-4"></div>
-        <p class="text-gray-500">正在連線至您的 Firebase 資料庫...</p>
+        <p>連線中...</p>
     </div>
 
-    <!-- 自定義系統提示框 (Modal) -->
     <div id="sys-modal"
-        class="fixed inset-0 z-[60] bg-black bg-opacity-50 hidden-section flex items-center justify-center">
-        <div class="bg-white rounded-lg shadow-xl w-96 p-6 transform transition-all">
-            <h3 id="modal-title" class="text-xl font-bold mb-4 text-gray-800">提示</h3>
-            <p id="modal-message" class="text-gray-600 mb-6 leading-relaxed">內容...</p>
-            <div class="flex justify-end gap-3">
-                <button id="modal-btn-cancel"
-                    class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded transition hidden-section">
-                    取消
-                </button>
-                <button id="modal-btn-confirm"
-                    class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition shadow">
-                    確定
-                </button>
+        class="fixed inset-0 z-[60] bg-black bg-opacity-60 hidden-section flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-sm p-6">
+            <div class="text-center mb-4"><span class="text-4xl">!</span></div>
+            <h3 id="modal-title" class="text-center text-xl font-bold mb-4"
+                style="font-family: 'Press Start 2P', cursive; font-size: 12px;">提示</h3>
+            <p id="modal-message" class="text-center mb-6" style="font-family: 'VT323', monospace; font-size: 20px;">
+                訊息內容...</p>
+            <div class="flex gap-3 justify-center">
+                <button id="modal-btn-cancel" class="pixel-btn pixel-btn-secondary hidden-section">取消</button>
+                <button id="modal-btn-confirm" class="pixel-btn">確定</button>
             </div>
         </div>
     </div>
 
-    <!-- 1. 登入與註冊頁面容器 -->
-    <div id="auth-container" class="hidden-section flex items-center justify-center h-full w-full bg-blue-900">
-        <!-- 登入卡片 -->
-        <div id="login-card" class="bg-white p-8 rounded-lg shadow-2xl w-96">
-            <div class="text-center mb-6">
-                <i class="fas fa-cloud text-4xl text-blue-600 mb-2"></i>
-                <h2 class="text-2xl font-bold text-gray-700">行政協調通知系統</h2>
-                <p class="text-sm text-gray-500">請登入您的帳號</p>
-            </div>
+    <div id="auth-container" class="hidden-section">
+        <div id="login-card" class="pixel-card">
+            <div class="login-icon" style="animation: bounce 2s infinite;">G</div>
+            <h2 class="login-title">行政業務協調系統</h2>
+            <p class="login-subtitle">歡迎回來，請登入</p>
+
             <form id="login-form" onsubmit="handleAppLogin(event)">
                 <div class="mb-4">
-                    <label class="block text-gray-700 text-sm font-bold mb-2">帳號</label>
-                    <input type="text" id="login-username" required
-                        class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                        placeholder="輸入帳號">
+                    <label class="pixel-label">帳號</label>
+                    <input type="text" id="login-username" required class="pixel-input" placeholder=">>> 輸入您的帳號"
+                        autocomplete="username">
                 </div>
                 <div class="mb-6">
-                    <label class="block text-gray-700 text-sm font-bold mb-2">密碼</label>
-                    <input type="password" id="login-password" required
-                        class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                        placeholder="輸入密碼">
+                    <label class="pixel-label">密碼</label>
+                    <input type="password" id="login-password" required class="pixel-input" placeholder=">>> 輸入您的密碼"
+                        autocomplete="current-password">
                 </div>
-                <div class="flex items-center justify-between">
-                    <button type="submit" id="btn-login"
-                        class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline w-full transition disabled:opacity-50">
-                        登入
-                    </button>
-                </div>
+                <button type="submit" id="btn-login" class="pixel-btn w-full mb-4">開始</button>
             </form>
-            <div class="mt-4 text-center">
+
+            <div class="text-center mb-4">
                 <button type="button" onclick="toggleAuthMode('register')"
-                    class="text-blue-500 hover:text-blue-800 text-sm hover:underline bg-transparent border-none cursor-pointer">
-                    初次登入？點此註冊資料
+                    style="font-family: 'VT323', monospace; font-size: 20px; color: #fd79a8; background: none; border: none; cursor: pointer;">
+                    新用戶？點此註冊
                 </button>
             </div>
 
-            <!-- Google 登入分隔線 -->
             <div class="flex items-center my-4">
-                <div class="flex-1 border-t border-gray-300"></div>
-                <span class="px-3 text-sm text-gray-500">OR</span>
-                <div class="flex-1 border-t border-gray-300"></div>
+                <div class="flex-1 border-t-4" style="border-color: #dfe6e9; border-style: dotted;"></div>
+                <span class="px-4 text-gray-500" style="font-family: 'VT323', monospace; font-size: 20px;">或</span>
+                <div class="flex-1 border-t-4" style="border-color: #dfe6e9; border-style: dotted;"></div>
             </div>
 
-            <!-- Google 登入按鈕 -->
             <button type="button" onclick="handleGoogleLogin()" id="btn-google-login"
-                class="w-full py-3 px-4 flex items-center justify-center gap-3 border border-gray-300 rounded hover:bg-gray-50 transition"
-                style="background: white;">
-                <svg width="20" height="20" viewBox="0 0 24 24">
+                class="pixel-btn pixel-btn-google w-full">
+                <svg width="24" height="24" viewBox="0 0 24 24">
                     <path fill="#4285F4"
                         d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
                     <path fill="#34A853"
@@ -155,892 +77,162 @@
                     <path fill="#EA4335"
                         d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
                 </svg>
-                <span class="text-gray-700 font-medium">使用 Google 登入</span>
+                使用 Google 登入
             </button>
         </div>
 
-        <!-- 註冊卡片 (預設隱藏) -->
-        <div id="register-card" class="bg-white p-8 rounded-lg shadow-2xl w-96 hidden-section">
-            <div class="text-center mb-6">
-                <i class="fas fa-user-plus text-4xl text-green-600 mb-2"></i>
-                <h2 class="text-2xl font-bold text-gray-700">建立雲端帳號</h2>
-                <p class="text-sm text-gray-500">資料將儲存於 smes-e1dc3</p>
-            </div>
+        <div id="register-card" class="pixel-card hidden-section">
+            <div class="login-icon">+</div>
+            <h2 class="login-title">建立帳號</h2>
+            <p class="login-subtitle">請填寫您的資料</p>
+
             <form id="register-form" onsubmit="handleAppRegister(event)">
                 <div class="mb-3">
-                    <label class="block text-gray-700 text-sm font-bold mb-1">職位名稱</label>
-                    <input type="text" id="reg-jobTitle" required
-                        class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight"
-                        placeholder="例如：教學組長">
+                    <label class="pixel-label">職稱</label>
+                    <input type="text" id="reg-jobTitle" required class="pixel-input" placeholder="例如：教導主任">
                 </div>
                 <div class="mb-3">
-                    <label class="block text-gray-700 text-sm font-bold mb-1">姓名</label>
-                    <input type="text" id="reg-name" required
-                        class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight"
-                        placeholder="例如：王小明">
+                    <label class="pixel-label">姓名</label>
+                    <input type="text" id="reg-name" required class="pixel-input" placeholder="您的姓名">
                 </div>
                 <div class="mb-3">
-                    <label class="block text-gray-700 text-sm font-bold mb-1">設定帳號</label>
-                    <input type="text" id="reg-username" required
-                        class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight"
-                        placeholder="用於登入">
+                    <label class="pixel-label">帳號</label>
+                    <input type="text" id="reg-username" required class="pixel-input" placeholder="用於登入"
+                        autocomplete="username">
                 </div>
                 <div class="mb-4">
-                    <label class="block text-gray-700 text-sm font-bold mb-1">設定密碼</label>
-                    <input type="password" id="reg-password" required
-                        class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight"
-                        placeholder="請設定密碼">
+                    <label class="pixel-label">密碼</label>
+                    <input type="password" id="reg-password" required class="pixel-input" placeholder="設定密碼"
+                        autocomplete="new-password">
                 </div>
-                <div class="flex items-center justify-between gap-2">
+                <div class="flex gap-3">
                     <button type="button" onclick="toggleAuthMode('login')"
-                        class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded w-1/2">
-                        返回
-                    </button>
-                    <button type="submit" id="btn-register"
-                        class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded w-1/2 disabled:opacity-50">
-                        註冊
-                    </button>
+                        class="pixel-btn pixel-btn-secondary flex-1">返回</button>
+                    <button type="submit" id="btn-register" class="pixel-btn pixel-btn-success flex-1">建立</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- 2. 主畫面系統容器 (登入後顯示) -->
     <div id="main-app" class="hidden-section flex h-screen">
-
-        <!-- 左側側邊欄 -->
-        <aside class="w-64 bg-slate-800 text-white flex flex-col shadow-lg">
-            <div class="p-4 border-b border-slate-700 flex items-center gap-3">
-                <div class="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-lg font-bold"
-                    id="sidebar-avatar">
-                    <!-- 動態載入首字 -->
-                </div>
+        <aside class="w-64 flex flex-col">
+            <div class="p-4 border-b border-gray-700 flex items-center gap-3">
+                <div class="sidebar-avatar" id="sidebar-avatar">?</div>
                 <div>
-                    <h3 class="font-bold text-sm" id="sidebar-name">載入中...</h3>
-                    <p class="text-xs text-gray-400" id="sidebar-job">...</p>
+                    <h3 class="font-bold text-white text-sm" id="sidebar-name"
+                        style="font-family: 'VT323', monospace; font-size: 18px;">載入中...</h3>
+                    <p class="text-gray-400 text-xs" id="sidebar-job" style="font-family: 'VT323', monospace;">...</p>
                 </div>
             </div>
 
-            <nav class="flex-1 p-4 space-y-2">
-                <button onclick="switchTab('dashboard')"
-                    class="nav-btn w-full text-left px-4 py-3 rounded hover:bg-slate-700 transition flex items-center gap-3 bg-slate-700 text-blue-300">
-                    <i class="fas fa-home"></i> 主頁面
-                </button>
-                <button onclick="switchTab('account')"
-                    class="nav-btn w-full text-left px-4 py-3 rounded hover:bg-slate-700 transition flex items-center gap-3">
-                    <i class="fas fa-user-cog"></i> 帳號頁面
-                </button>
-                <button onclick="switchTab('notifications')"
-                    class="nav-btn w-full text-left px-4 py-3 rounded hover:bg-slate-700 transition flex items-center gap-3 relative">
-                    <i class="fas fa-bell"></i> 通知
+            <nav class="flex-1 p-3 space-y-2">
+                <button onclick="switchTab('dashboard')" class="nav-btn w-full active"><i class="fas fa-gamepad"></i>
+                    主頁面</button>
+                <button onclick="switchTab('account')" class="nav-btn w-full"><i class="fas fa-user-cog"></i>
+                    帳號設定</button>
+                <button onclick="switchTab('notifications')" class="nav-btn w-full relative"><i class="fas fa-bell"></i>
+                    通知
                     <span id="notif-badge"
-                        class="hidden absolute right-4 top-3 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">0</span>
+                        class="hidden absolute right-2 top-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center"
+                        style="font-family: 'Press Start 2P', cursive; font-size: 8px;">0</span>
                 </button>
-                <button onclick="switchTab('editor')"
-                    class="nav-btn w-full text-left px-4 py-3 rounded hover:bg-slate-700 transition flex items-center gap-3">
-                    <i class="fas fa-calendar-plus"></i> 行程編輯
-                </button>
+                <button onclick="switchTab('editor')" class="nav-btn w-full"><i class="fas fa-calendar-plus"></i>
+                    新增行程</button>
             </nav>
 
-            <div class="p-4 border-t border-slate-700">
-                <button onclick="appLogout()"
-                    class="w-full text-left px-4 py-2 rounded text-red-300 hover:bg-slate-700 transition flex items-center gap-3">
-                    <i class="fas fa-sign-out-alt"></i> 登出
-                </button>
+            <div class="p-3 border-t border-gray-700">
+                <button onclick="appLogout()" class="nav-btn w-full text-red-400 hover:text-red-300"><i
+                        class="fas fa-sign-out-alt"></i> 登出</button>
             </div>
         </aside>
 
-        <!-- 右側內容區 -->
-        <main class="flex-1 overflow-hidden relative bg-gray-100 flex flex-col">
-
-            <!-- 頂部標題列 -->
-            <header class="bg-white shadow p-4 flex justify-between items-center z-10">
-                <h1 id="page-title" class="text-xl font-bold text-gray-800">學校行政看板</h1>
-                <div class="text-sm text-gray-500" id="current-date"></div>
+        <main class="flex-1 overflow-hidden flex flex-col">
+            <header class="p-4 flex justify-between items-center">
+                <h1 id="page-title">主頁面</h1>
+                <div class="text-sm" id="current-date" style="font-family: 'VT323', monospace; font-size: 18px;"></div>
             </header>
 
-            <!-- 內容滾動區 -->
             <div class="flex-1 overflow-y-auto p-6" id="content-area">
-
-                <!-- A. 主頁面 (Dashboard) -->
                 <div id="view-dashboard" class="h-full flex flex-col gap-6">
-                    <div class="flex-1 bg-white rounded-lg shadow p-4 overflow-hidden flex flex-col">
-                        <h2 class="text-lg font-bold text-blue-700 mb-3 border-b pb-2">
-                            <i class="fas fa-bullhorn mr-2"></i>最新公告
-                        </h2>
-                        <div id="announcement-list" class="flex-1 overflow-y-auto space-y-3 relative">
+                    <div class="content-card flex-1 p-4 overflow-hidden flex flex-col">
+                        <h2>最新公告</h2>
+                        <div id="announcement-list" class="flex-1 overflow-y-auto space-y-3">
                             <p class="text-gray-400 text-center py-4">載入中...</p>
                         </div>
                     </div>
-                    <div class="flex-1 bg-white rounded-lg shadow p-4 overflow-hidden flex flex-col">
-                        <h2 class="text-lg font-bold text-orange-700 mb-3 border-b pb-2">
-                            <i class="fas fa-calendar-alt mr-2"></i>本學期重要行事
-                        </h2>
-                        <div id="important-events-list" class="flex-1 overflow-y-auto space-y-2 relative">
+                    <div class="content-card flex-1 p-4 overflow-hidden flex flex-col">
+                        <h2>重要行事</h2>
+                        <div id="important-events-list" class="flex-1 overflow-y-auto space-y-2">
                             <p class="text-gray-400 text-center py-4">載入中...</p>
                         </div>
                     </div>
                 </div>
 
-                <!-- B. 帳號頁面 -->
-                <div id="view-account" class="hidden-section max-w-2xl mx-auto bg-white rounded-lg shadow p-8">
-                    <h2 class="text-2xl font-bold mb-6 text-gray-800">修改個人資料</h2>
-                    <form onsubmit="handleUpdateProfile(event)">
-                        <div class="grid grid-cols-2 gap-4 mb-4">
-                            <div>
-                                <label class="block text-gray-700 font-bold mb-2">職位名稱</label>
-                                <input type="text" id="edit-jobTitle" class="w-full border p-2 rounded bg-gray-50">
+                <div id="view-account" class="hidden-section max-w-2xl mx-auto">
+                    <div class="content-card p-8">
+                        <h2>修改個人資料</h2>
+                        <form onsubmit="handleUpdateProfile(event)">
+                            <div class="grid grid-cols-2 gap-4 mb-4">
+                                <div><label class="pixel-label">職稱</label><input type="text" id="edit-jobTitle"
+                                        class="pixel-input"></div>
+                                <div><label class="pixel-label">姓名</label><input type="text" id="edit-name"
+                                        class="pixel-input"></div>
                             </div>
-                            <div>
-                                <label class="block text-gray-700 font-bold mb-2">姓名</label>
-                                <input type="text" id="edit-name" class="w-full border p-2 rounded bg-gray-50">
-                            </div>
-                        </div>
-                        <div class="mb-4">
-                            <label class="block text-gray-700 font-bold mb-2">帳號 (不可修改)</label>
-                            <input type="text" id="edit-username" disabled
-                                class="w-full border p-2 rounded bg-gray-200 text-gray-500 cursor-not-allowed">
-                        </div>
-                        <div class="mb-6">
-                            <label class="block text-gray-700 font-bold mb-2">新密碼 (若不修改請留空)</label>
-                            <input type="password" id="edit-password" placeholder="輸入新密碼"
-                                class="w-full border p-2 rounded">
-                        </div>
-                        <button type="submit"
-                            class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">儲存變更</button>
-                    </form>
+                            <div class="mb-4"><label class="pixel-label">帳號（不可修改）</label><input type="text"
+                                    id="edit-username" disabled class="pixel-input opacity-50"></div>
+                            <div class="mb-6"><label class="pixel-label">新密碼</label><input type="password"
+                                    id="edit-password" class="pixel-input" placeholder="不修改請留空"
+                                    autocomplete="new-password"></div>
+                            <button type="submit" class="pixel-btn pixel-btn-success">儲存變更</button>
+                        </form>
+                    </div>
                 </div>
 
-                <!-- C. 通知頁面 -->
                 <div id="view-notifications" class="hidden-section max-w-4xl mx-auto">
-                    <div class="bg-white rounded-lg shadow p-6 mb-4">
-                        <h2 class="text-xl font-bold mb-4 text-gray-800">待辦事項與通知</h2>
-                        <p class="text-sm text-gray-500 mb-4 bg-gray-50 p-2 rounded">
-                            <i class="fas fa-info-circle mr-1"></i> 提示：完成的事項可點擊「已完成」按鈕，將會從此列表中移除。
-                        </p>
-                        <div id="notification-list" class="space-y-4">
-                            <!-- JS 生成通知 -->
-                        </div>
+                    <div class="content-card p-6 mb-4">
+                        <h2>待辦事項與通知</h2>
+                        <p class="text-sm text-gray-500 mb-4 bg-gray-100 p-2" style="font-family: 'VT323', monospace;">
+                            提示：點擊「完成」可移除已完成的事項</p>
+                        <div id="notification-list" class="space-y-4"></div>
                     </div>
                 </div>
 
-                <!-- D. 行程編輯 -->
-                <div id="view-editor" class="hidden-section max-w-3xl mx-auto bg-white rounded-lg shadow p-8">
-                    <h2 class="text-2xl font-bold mb-6 text-gray-800">新增/編輯 行事曆</h2>
-                    <form onsubmit="handleFirebaseAddEvent(event)">
-                        <div class="mb-4">
-                            <label class="block text-gray-700 font-bold mb-2">項目名稱</label>
-                            <input type="text" id="evt-title" required class="w-full border p-2 rounded"
-                                placeholder="例如：期中考務會議">
-                        </div>
-
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                            <div>
-                                <label class="block text-gray-700 font-bold mb-2">日期</label>
-                                <input type="date" id="evt-date" required class="w-full border p-2 rounded">
+                <div id="view-editor" class="hidden-section max-w-3xl mx-auto">
+                    <div class="content-card p-8">
+                        <h2>新增行程</h2>
+                        <form onsubmit="handleFirebaseAddEvent(event)">
+                            <div class="mb-4"><label class="pixel-label">項目名稱</label><input type="text" id="evt-title"
+                                    required class="pixel-input" placeholder="例如：期中考務會議"></div>
+                            <div class="grid grid-cols-2 gap-4 mb-4">
+                                <div><label class="pixel-label">日期</label><input type="date" id="evt-date" required
+                                        class="pixel-input"></div>
+                                <div><label class="pixel-label">時間</label><input type="time" id="evt-time" required
+                                        class="pixel-input"></div>
                             </div>
-                            <div>
-                                <label class="block text-gray-700 font-bold mb-2">通知時間 (提醒時間)</label>
-                                <input type="time" id="evt-time" required class="w-full border p-2 rounded">
+                            <div class="mb-4">
+                                <label class="pixel-label">通知人員</label>
+                                <div id="selected-targets-container"
+                                    class="flex flex-wrap gap-2 mb-2 p-2 border-2 border-dashed min-h-[46px] bg-white items-center"
+                                    style="font-family: 'VT323', monospace;"><span
+                                        class="text-gray-400">尚未選擇人員...</span></div>
+                                <div class="border-2 h-48 overflow-y-auto bg-gray-50 p-2 space-y-1"
+                                    id="target-selection-list">
+                                    <div class="text-gray-400 text-sm p-2">載入中...</div>
+                                </div>
                             </div>
-                        </div>
-
-                        <!-- 修正區域：通知人員標籤式選擇介面 -->
-                        <div class="mb-4">
-                            <label class="block text-gray-700 font-bold mb-2">通知人員</label>
-
-                            <!-- 1. 上方：已選擇人員的顯示區 (標籤 Tag) -->
-                            <div id="selected-targets-container"
-                                class="flex flex-wrap gap-2 mb-2 p-2 border rounded min-h-[46px] bg-white items-center">
-                                <span class="text-gray-400 text-sm">尚未選擇人員...</span>
-                            </div>
-
-                            <!-- 2. 下方：可選擇的人員列表 -->
-                            <div class="border rounded h-48 overflow-y-auto bg-gray-50 p-2 space-y-1"
-                                id="target-selection-list">
-                                <!-- JS 動態生成人員清單 -->
-                                <div class="text-gray-400 text-sm p-2">載入中...</div>
-                            </div>
-                            <p class="text-xs text-gray-500 mt-1">* 點擊下方列表中的姓名，即可加入或移除上方通知對象。</p>
-                        </div>
-
-                        <div class="flex items-center gap-2 mb-6">
-                            <input type="checkbox" id="evt-is-public" class="w-4 h-4 text-blue-600 rounded">
-                            <label for="evt-is-public" class="text-gray-700">設為重要行事 (顯示在主頁面下方)</label>
-                        </div>
-
-                        <button type="submit" id="btn-add-event"
-                            class="w-full bg-green-600 text-white font-bold py-3 rounded hover:bg-green-700 transition disabled:opacity-50">
-                            <i class="fas fa-plus-circle mr-2"></i>新增行程
-                        </button>
-                    </form>
+                            <div class="flex items-center gap-2 mb-6"
+                                style="font-family: 'VT323', monospace; font-size: 18px;"><input type="checkbox"
+                                    id="evt-is-public" class="w-5 h-5"><label for="evt-is-public">設為重要行事</label></div>
+                            <button type="submit" id="btn-add-event"
+                                class="pixel-btn pixel-btn-success w-full">新增行程</button>
+                        </form>
+                    </div>
                 </div>
             </div>
         </main>
     </div>
 
-    <!-- Firebase SDKs -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, query, where, getDocs, arrayUnion } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        // --- 0. 設定檔 ---
-        const firebaseConfig = {
-            apiKey: "AIzaSyDGGD24GfSUcPrXbgoi0OSHogXR_wfVrNA",
-            authDomain: "smes-e1dc3.firebaseapp.com",
-            projectId: "smes-e1dc3",
-            storageBucket: "smes-e1dc3.firebasestorage.app",
-            messagingSenderId: "626362737802",
-            appId: "1:626362737802:web:5437ee537f575edec97973"
-        };
-
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-
-        let app, auth, db;
-        let modalConfirmCallback = null;
-
-        try {
-            app = initializeApp(firebaseConfig);
-            auth = getAuth(app);
-            db = getFirestore(app);
-            console.log("Firebase 初始化成功");
-        } catch (e) {
-            console.error("Firebase 初始化失敗:", e);
-        }
-
-        // --- 1. 全域變數 ---
-        let globalUsers = [];
-        let globalEvents = [];
-        let firestoreUser = null;
-
-        // 關鍵：用來儲存當前已選的 User ID
-        let currentSelectedTargets = [];
-
-        let appCurrentUser = JSON.parse(sessionStorage.getItem('app_current_user')) || null;
-
-        // --- 2. 系統提示框 (Modal) 邏輯 ---
-        window.showAlert = (message) => {
-            const modal = document.getElementById('sys-modal');
-            const title = document.getElementById('modal-title');
-            const msg = document.getElementById('modal-message');
-            const btnConfirm = document.getElementById('modal-btn-confirm');
-            const btnCancel = document.getElementById('modal-btn-cancel');
-            title.innerText = "提示";
-            msg.innerText = message;
-            btnCancel.classList.add('hidden-section');
-            btnConfirm.innerText = "確定";
-            modalConfirmCallback = () => { closeModal(); };
-            modal.classList.remove('hidden-section');
-        };
-
-        window.showConfirm = (message, onConfirm) => {
-            const modal = document.getElementById('sys-modal');
-            const title = document.getElementById('modal-title');
-            const msg = document.getElementById('modal-message');
-            const btnConfirm = document.getElementById('modal-btn-confirm');
-            const btnCancel = document.getElementById('modal-btn-cancel');
-            title.innerText = "確認";
-            msg.innerText = message;
-            btnCancel.classList.remove('hidden-section');
-            btnConfirm.innerText = "確定";
-            modalConfirmCallback = () => {
-                closeModal();
-                if (onConfirm) onConfirm();
-            };
-            modal.classList.remove('hidden-section');
-        };
-
-        function closeModal() {
-            document.getElementById('sys-modal').classList.add('hidden-section');
-        }
-
-        document.getElementById('modal-btn-confirm').onclick = () => {
-            if (modalConfirmCallback) modalConfirmCallback();
-        };
-        document.getElementById('modal-btn-cancel').onclick = () => {
-            closeModal();
-        };
-
-        // --- 3. 安全機制 ---
-        setTimeout(() => {
-            const loader = document.getElementById('global-loader');
-            if (loader && loader.style.display !== 'none') {
-                console.warn("連線逾時，強制進入系統");
-                loader.style.display = 'none';
-                if (appCurrentUser) {
-                    initAppUI();
-                } else {
-                    document.getElementById('auth-container').classList.remove('hidden-section');
-                }
-            }
-        }, 8000);
-
-        // --- 4. 連線與認證流程 ---
-        if (auth) {
-            const initAuth = async () => {
-                try {
-                    await signInAnonymously(auth);
-                } catch (err) {
-                    console.error("Auth Error:", err);
-                    checkLoadingComplete();
-                }
-            };
-            initAuth();
-            onAuthStateChanged(auth, (user) => {
-                if (user) {
-                    firestoreUser = user;
-                    startDataListeners();
-                } else {
-                    checkLoadingComplete();
-                }
-            });
-        }
-
-        // --- 5. Firestore 監聽器 ---
-        function startDataListeners() {
-            if (!firestoreUser || !db) return;
-
-            const usersRef = collection(db, 'artifacts', appId, 'public', 'data', 'school_users');
-            const eventsRef = collection(db, 'artifacts', appId, 'public', 'data', 'school_events');
-
-            onSnapshot(usersRef, (snapshot) => {
-                globalUsers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                if (appCurrentUser) {
-                    // 如果當前在編輯頁面，即時更新選單
-                    const editorView = document.getElementById('view-editor');
-                    if (editorView && !editorView.classList.contains('hidden-section')) {
-                        renderEditorOptions();
-                    }
-
-                    const me = globalUsers.find(u => u.username === appCurrentUser.username);
-                    if (me) {
-                        appCurrentUser = { ...appCurrentUser, ...me };
-                        sessionStorage.setItem('app_current_user', JSON.stringify(appCurrentUser));
-                        updateSidebar();
-                    }
-                }
-                checkLoadingComplete();
-            }, (error) => {
-                console.error("Users listener error:", error);
-                checkLoadingComplete();
-            });
-
-            onSnapshot(eventsRef, (snapshot) => {
-                globalEvents = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                if (appCurrentUser) {
-                    renderDashboard();
-                    renderNotifications();
-                    updateNotificationBadge();
-                }
-                checkLoadingComplete();
-            }, (error) => {
-                console.error("Events listener error:", error);
-                checkLoadingComplete();
-            });
-        }
-
-        function checkLoadingComplete() {
-            const loader = document.getElementById('global-loader');
-            if (loader) {
-                loader.style.display = 'none';
-                const authVisible = !document.getElementById('auth-container').classList.contains('hidden-section');
-                const mainVisible = !document.getElementById('main-app').classList.contains('hidden-section');
-                if (!authVisible && !mainVisible) {
-                    if (appCurrentUser) {
-                        initAppUI();
-                    } else {
-                        document.getElementById('auth-container').classList.remove('hidden-section');
-                    }
-                }
-            }
-        }
-
-        // --- 6. 應用程式邏輯 ---
-
-        window.handleAppRegister = async (e) => {
-            e.preventDefault();
-            const btn = document.getElementById('btn-register');
-            btn.disabled = true;
-            const originalText = btn.innerText;
-            btn.innerText = "處理中...";
-
-            try {
-                if (!db) throw new Error("資料庫未連線");
-                if (!auth || !auth.currentUser) throw new Error("雲端權限驗證中，請稍後再試");
-
-                const job = document.getElementById('reg-jobTitle').value;
-                const name = document.getElementById('reg-name').value;
-                const username = document.getElementById('reg-username').value;
-                const password = document.getElementById('reg-password').value;
-
-                if (globalUsers && globalUsers.find(u => u.username === username)) {
-                    throw new Error('該帳號已被使用！');
-                }
-
-                const usersRef = collection(db, 'artifacts', appId, 'public', 'data', 'school_users');
-                await addDoc(usersRef, {
-                    jobTitle: job,
-                    name: name,
-                    username: username,
-                    password: password,
-                    createdAt: new Date().toISOString()
-                });
-
-                window.showAlert('註冊成功！請登入');
-                window.toggleAuthMode('login');
-                e.target.reset();
-
-            } catch (err) {
-                console.error("Register Error:", err);
-                window.showAlert('註冊失敗：' + err.message);
-            } finally {
-                btn.disabled = false;
-                btn.innerText = originalText;
-            }
-        };
-
-        window.handleAppLogin = (e) => {
-            e.preventDefault();
-            const btn = document.getElementById('btn-login');
-            btn.disabled = true;
-            btn.innerText = "驗證中...";
-
-            const username = document.getElementById('login-username').value;
-            const password = document.getElementById('login-password').value;
-
-            setTimeout(() => {
-                if (globalUsers.length === 0 && !db) {
-                    window.showAlert("目前無法連接雲端，無法驗證帳號。");
-                    btn.disabled = false;
-                    btn.innerText = "登入";
-                    return;
-                }
-
-                const user = globalUsers.find(u => u.username === username && u.password === password);
-
-                if (user) {
-                    appCurrentUser = user;
-                    sessionStorage.setItem('app_current_user', JSON.stringify(user));
-                    initAppUI();
-                } else {
-                    window.showAlert('帳號或密碼錯誤');
-                }
-                btn.disabled = false;
-                btn.innerText = "登入";
-            }, 500);
-        };
-
-        // --- 6b. Google 帳號登入 ---
-        window.handleGoogleLogin = async () => {
-            if (!auth || !db) {
-                window.showAlert('系統尚未準備完成，請稍候...');
-                return;
-            }
-
-            const googleBtn = document.getElementById('btn-google-login');
-            const originalHTML = googleBtn.innerHTML;
-            googleBtn.disabled = true;
-            googleBtn.innerHTML = '<span class="text-gray-500">🔄 登入中...</span>';
-
-            try {
-                const provider = new GoogleAuthProvider();
-                const result = await signInWithPopup(auth, provider);
-                const googleUser = result.user;
-
-                console.log("Google 登入成功:", googleUser.displayName, googleUser.email);
-
-                // 檢查用戶是否已存在於 Firestore
-                const usersRef = collection(db, 'artifacts', appId, 'public', 'data', 'school_users');
-                const q = query(usersRef, where('googleUid', '==', googleUser.uid));
-                const querySnapshot = await getDocs(q);
-
-                let userData;
-
-                if (querySnapshot.empty) {
-                    // 首次 Google 登入 - 建立新用戶
-                    console.log("首次 Google 登入，建立新用戶");
-                    const newUserData = {
-                        googleUid: googleUser.uid,
-                        email: googleUser.email,
-                        name: googleUser.displayName || googleUser.email.split('@')[0],
-                        jobTitle: '待設定',
-                        username: googleUser.email,
-                        photoURL: googleUser.photoURL || '',
-                        createdAt: new Date().toISOString(),
-                        authType: 'google'
-                    };
-                    const docRef = await addDoc(usersRef, newUserData);
-                    userData = { id: docRef.id, ...newUserData };
-                    window.showAlert('🎉 Google 帳號註冊成功！歡迎使用系統');
-                } else {
-                    // 已存在的 Google 用戶
-                    const existingDoc = querySnapshot.docs[0];
-                    userData = { id: existingDoc.id, ...existingDoc.data() };
-                    console.log("已存在的 Google 用戶:", userData.name);
-                }
-
-                // 設定登入狀態
-                appCurrentUser = userData;
-                sessionStorage.setItem('app_current_user', JSON.stringify(userData));
-                initAppUI();
-
-            } catch (err) {
-                console.error("Google 登入錯誤:", err);
-                if (err.code === 'auth/popup-closed-by-user') {
-                    window.showAlert('登入已取消');
-                } else if (err.code === 'auth/unauthorized-domain') {
-                    window.showAlert('⚠️ 網域未授權\n\n請在 Firebase Console 的 Authentication → Settings → Authorized domains 中新增此網域');
-                } else {
-                    window.showAlert('Google 登入失敗：' + err.message);
-                }
-            } finally {
-                googleBtn.disabled = false;
-                googleBtn.innerHTML = originalHTML;
-            }
-        };
-
-        window.appLogout = () => {
-            window.showConfirm('確定要登出系統嗎？', () => {
-                sessionStorage.removeItem('app_current_user');
-                appCurrentUser = null;
-                document.getElementById('main-app').classList.add('hidden-section');
-                document.getElementById('auth-container').classList.remove('hidden-section');
-                document.getElementById('login-form').reset();
-                if (document.getElementById('login-password')) {
-                    document.getElementById('login-password').value = '';
-                }
-                document.getElementById('sidebar-name').innerText = '載入中...';
-            });
-        };
-
-        window.toggleAuthMode = (mode) => {
-            if (mode === 'register') {
-                document.getElementById('login-card').classList.add('hidden-section');
-                document.getElementById('register-card').classList.remove('hidden-section');
-            } else {
-                document.getElementById('register-card').classList.add('hidden-section');
-                document.getElementById('login-card').classList.remove('hidden-section');
-            }
-        };
-
-        window.handleFirebaseAddEvent = async (e) => {
-            e.preventDefault();
-            if (!appCurrentUser) return;
-            if (!db) { window.showAlert("資料庫未連線"); return; }
-
-            const title = document.getElementById('evt-title').value;
-            const date = document.getElementById('evt-date').value;
-            const time = document.getElementById('evt-time').value;
-            const isPublic = document.getElementById('evt-is-public').checked;
-
-            // 修正：從全域變數獲取已選人員
-            const targets = [...currentSelectedTargets];
-
-            const btn = document.getElementById('btn-add-event');
-
-            btn.disabled = true;
-            btn.innerText = "傳送中...";
-
-            try {
-                const eventsRef = collection(db, 'artifacts', appId, 'public', 'data', 'school_events');
-                await addDoc(eventsRef, {
-                    authorId: appCurrentUser.id,
-                    authorName: appCurrentUser.name,
-                    title,
-                    date,
-                    time,
-                    targets,
-                    isPublic,
-                    completedBy: [],
-                    createdAt: new Date().toISOString()
-                });
-                window.showAlert('行程已同步至雲端！');
-                e.target.reset();
-
-                // 重置選擇
-                currentSelectedTargets = [];
-                renderEditorOptions();
-
-                window.switchTab('dashboard');
-            } catch (err) {
-                console.error(err);
-                window.showAlert('新增失敗：' + err.message);
-            } finally {
-                btn.disabled = false;
-                btn.innerText = "新增行程";
-            }
-        };
-
-        window.handleMarkAsDone = (eventId) => {
-            window.showConfirm('確定將此事項標記為已完成？(標記後將從您的通知列表移除)', async () => {
-                try {
-                    const eventRef = doc(db, 'artifacts', appId, 'public', 'data', 'school_events', eventId);
-                    await updateDoc(eventRef, {
-                        completedBy: arrayUnion(appCurrentUser.id)
-                    });
-                } catch (err) {
-                    console.error("Mark done error:", err);
-                    window.showAlert('操作失敗：' + err.message);
-                }
-            });
-        };
-
-        window.handleUpdateProfile = async (e) => {
-            e.preventDefault();
-            if (!appCurrentUser || !db) return;
-
-            const newJob = document.getElementById('edit-jobTitle').value;
-            const newName = document.getElementById('edit-name').value;
-            const newPass = document.getElementById('edit-password').value;
-
-            try {
-                const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'school_users', appCurrentUser.id);
-                const updateData = {
-                    jobTitle: newJob,
-                    name: newName
-                };
-                if (newPass) updateData.password = newPass;
-
-                await updateDoc(userRef, updateData);
-                window.showAlert('資料已更新！');
-            } catch (err) {
-                console.error(err);
-                window.showAlert('更新失敗');
-            }
-        }
-
-        // --- 7. UI 渲染邏輯 ---
-
-        function initAppUI() {
-            document.getElementById('auth-container').classList.add('hidden-section');
-            document.getElementById('main-app').classList.remove('hidden-section');
-            updateSidebar();
-            const now = new Date();
-            document.getElementById('current-date').innerText = `${now.getFullYear()}/${now.getMonth() + 1}/${now.getDate()}`;
-            window.switchTab('dashboard');
-        }
-
-        function updateSidebar() {
-            if (appCurrentUser) {
-                document.getElementById('sidebar-name').innerText = appCurrentUser.name;
-                document.getElementById('sidebar-job').innerText = appCurrentUser.jobTitle;
-                document.getElementById('sidebar-avatar').innerText = appCurrentUser.name.charAt(0);
-            }
-        }
-
-        // 核心修正：渲染編輯器選項 (選人介面)
-        function renderEditorOptions() {
-            const listContainer = document.getElementById('target-selection-list');
-            if (!listContainer) return; // 安全檢查
-
-            listContainer.innerHTML = '';
-
-            // 渲染下方選擇列表
-            globalUsers.forEach(u => {
-                const isSelected = currentSelectedTargets.includes(u.id);
-                const div = document.createElement('div');
-                div.className = `p-2 rounded cursor-pointer transition flex justify-between items-center select-none ${isSelected ? 'bg-blue-100 text-blue-800' : 'hover:bg-gray-200 text-gray-700'}`;
-
-                // 綁定點擊事件
-                div.onclick = () => window.toggleTarget(u.id);
-
-                div.innerHTML = `
-                    <span>${u.name} <span class="text-xs text-gray-500">(${u.jobTitle})</span></span>
-                    ${isSelected ? '<i class="fas fa-check text-blue-600"></i>' : '<i class="far fa-circle text-gray-300"></i>'}
-                `;
-                listContainer.appendChild(div);
-            });
-
-            // 渲染上方標籤區域
-            renderSelectedChips();
-        }
-
-        // 渲染上方標籤
-        function renderSelectedChips() {
-            const chipContainer = document.getElementById('selected-targets-container');
-            if (!chipContainer) return;
-
-            chipContainer.innerHTML = '';
-
-            if (currentSelectedTargets.length === 0) {
-                chipContainer.innerHTML = '<span class="text-gray-400 text-sm">尚未選擇人員...</span>';
-                return;
-            }
-
-            currentSelectedTargets.forEach(uid => {
-                const user = globalUsers.find(u => u.id === uid);
-                if (!user) return;
-
-                const chip = document.createElement('div');
-                chip.className = "bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-2 border border-blue-200 shadow-sm transition hover:bg-red-100 hover:text-red-800 hover:border-red-200 cursor-pointer";
-                chip.onclick = () => window.toggleTarget(uid); // 點擊標籤也可移除
-                chip.innerHTML = `
-                    <span>${user.name}</span>
-                    <i class="fas fa-times"></i>
-                `;
-                chipContainer.appendChild(chip);
-            });
-        }
-
-        // 切換選擇狀態 (Global Function)
-        window.toggleTarget = (uid) => {
-            if (currentSelectedTargets.includes(uid)) {
-                currentSelectedTargets = currentSelectedTargets.filter(id => id !== uid);
-            } else {
-                currentSelectedTargets.push(uid);
-            }
-            renderEditorOptions(); // 重新渲染以更新 UI
-        };
-
-        function renderDashboard() {
-            const listAnnounce = document.getElementById('announcement-list');
-            const listImportant = document.getElementById('important-events-list');
-            listAnnounce.innerHTML = '';
-            listImportant.innerHTML = '';
-
-            const sortedEvents = [...globalEvents].sort((a, b) => new Date(a.date) - new Date(b.date));
-
-            if (sortedEvents.length === 0) listAnnounce.innerHTML = '<p class="text-gray-400 text-center py-4">暫無資料</p>';
-
-            sortedEvents.forEach(evt => {
-                const div = document.createElement('div');
-                div.className = "p-3 border-l-4 border-blue-500 bg-blue-50 rounded shadow-sm hover:shadow-md transition";
-                div.innerHTML = `
-                    <div class="flex justify-between items-start">
-                        <h4 class="font-bold text-gray-800">${evt.title}</h4>
-                        <span class="text-xs bg-blue-200 text-blue-800 px-2 py-1 rounded">${evt.date}</span>
-                    </div>
-                    <p class="text-sm text-gray-600 mt-1">發布者：${evt.authorName} <span class="mx-1">|</span> 時間：${evt.time}</p>
-                `;
-                listAnnounce.appendChild(div);
-            });
-
-            const publicEvents = sortedEvents.filter(e => e.isPublic);
-            if (publicEvents.length === 0) listImportant.innerHTML = '<p class="text-gray-400 text-center text-sm">無重要行事</p>';
-
-            publicEvents.forEach(evt => {
-                const div = document.createElement('div');
-                div.className = "flex items-center gap-3 p-2 border-b border-gray-100";
-                div.innerHTML = `
-                    <div class="bg-orange-100 text-orange-600 font-bold px-2 py-1 rounded text-center min-w-[60px]">
-                        <div class="text-xs">${evt.date.split('-')[1]}/${evt.date.split('-')[2]}</div>
-                    </div>
-                    <div class="font-medium text-gray-700">${evt.title}</div>
-                `;
-                listImportant.appendChild(div);
-            });
-        }
-
-        function renderNotifications() {
-            const list = document.getElementById('notification-list');
-            list.innerHTML = '';
-
-            const todayStr = new Date().toISOString().split('T')[0];
-
-            const myNotifs = globalEvents.filter(evt => {
-                const isMine = evt.authorId === appCurrentUser.id;
-                const isForMe = evt.targets && evt.targets.includes(appCurrentUser.id);
-                const isDone = evt.completedBy && evt.completedBy.includes(appCurrentUser.id);
-                return (isMine || isForMe) && !isDone;
-            }).sort((a, b) => new Date(a.date) - new Date(b.date));
-
-            if (myNotifs.length === 0) {
-                list.innerHTML = '<div class="text-center text-gray-500 py-10">目前沒有待辦事項</div>';
-                return;
-            }
-
-            myNotifs.forEach(item => {
-                let statusClass = "border-l-4 border-gray-300 bg-white";
-                let statusText = "";
-
-                if (item.date < todayStr) {
-                    statusClass = "border-l-4 border-gray-400 bg-gray-50 opacity-70";
-                    statusText = "<span class='text-red-500 font-bold'>[已過期]</span>";
-                } else if (item.date === todayStr) {
-                    statusClass = "border-l-4 border-green-500 bg-green-50 shadow-md ring-1 ring-green-200";
-                    statusText = "<span class='text-green-600 font-bold'>[今日待辦]</span>";
-                } else {
-                    statusClass = "border-l-4 border-blue-400 bg-white";
-                    statusText = "<span class='text-blue-500 font-bold'>[即將到來]</span>";
-                }
-
-                const isAuthor = item.authorId === appCurrentUser.id;
-                const roleBadge = isAuthor
-                    ? `<span class="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded">您建立的</span>`
-                    : `<span class="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded">被指派給您</span>`;
-
-                const div = document.createElement('div');
-                div.className = `p-4 rounded shadow-sm ${statusClass} flex justify-between items-center gap-4`;
-                div.innerHTML = `
-                    <div class="flex-1">
-                        <div class="mb-1">${statusText} ${roleBadge}</div>
-                        <h3 class="text-lg font-bold text-gray-800">${item.title}</h3>
-                        <p class="text-sm text-gray-600">
-                            <i class="far fa-clock"></i> 時間：${item.date} ${item.time}
-                        </p>
-                        <p class="text-xs text-gray-400 mt-2">發起人：${item.authorName}</p>
-                    </div>
-                    <div>
-                        <button onclick="handleMarkAsDone('${item.id}')" class="bg-gray-100 hover:bg-green-100 hover:text-green-700 text-gray-600 px-4 py-2 rounded border border-gray-200 transition flex items-center gap-2">
-                            <i class="fas fa-check"></i> <span class="hidden sm:inline">已完成</span>
-                        </button>
-                    </div>
-                `;
-                list.appendChild(div);
-            });
-        }
-
-        function updateNotificationBadge() {
-            const todayStr = new Date().toISOString().split('T')[0];
-            const myNotifs = globalEvents.filter(evt => {
-                const isMine = evt.authorId === appCurrentUser.id;
-                const isForMe = evt.targets && evt.targets.includes(appCurrentUser.id);
-                const isDone = evt.completedBy && evt.completedBy.includes(appCurrentUser.id);
-                return (isMine || isForMe) && !isDone;
-            });
-            const count = myNotifs.filter(n => n.date >= todayStr).length;
-
-            const badge = document.getElementById('notif-badge');
-            if (count > 0) {
-                badge.innerText = count;
-                badge.classList.remove('hidden');
-            } else {
-                badge.classList.add('hidden');
-            }
-        }
-
-        window.switchTab = (tabName) => {
-            ['dashboard', 'account', 'notifications', 'editor'].forEach(v => {
-                document.getElementById(`view-${v}`).classList.add('hidden-section');
-            });
-            document.getElementById(`view-${tabName}`).classList.remove('hidden-section');
-
-            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('bg-slate-700', 'text-blue-300'));
-
-            const indexMap = { 'dashboard': 0, 'account': 1, 'notifications': 2, 'editor': 3 };
-            const btns = document.querySelectorAll('.nav-btn');
-            if (btns[indexMap[tabName]]) btns[indexMap[tabName]].classList.add('bg-slate-700', 'text-blue-300');
-
-            const titles = {
-                'dashboard': '學校行政看板',
-                'account': '帳號設定',
-                'notifications': '代辦與通知',
-                'editor': '新增行程'
-            };
-            document.getElementById('page-title').innerText = titles[tabName];
-
-            if (tabName === 'dashboard') renderDashboard();
-            if (tabName === 'account') {
-                document.getElementById('edit-jobTitle').value = appCurrentUser.jobTitle;
-                document.getElementById('edit-name').value = appCurrentUser.name;
-                document.getElementById('edit-username').value = appCurrentUser.username;
-            }
-            if (tabName === 'editor') renderEditorOptions();
-            if (tabName === 'notifications') renderNotifications();
-        };
-
-    </script>
+    <script type="module" src="js/app.js"></script>
 </body>
 
 </html>

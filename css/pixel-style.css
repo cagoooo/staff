@@ -1,0 +1,528 @@
+/* Pixel Art Game Style - Enhanced UI/UX */
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap');
+
+:root {
+    --pixel-primary: #6c5ce7;
+    --pixel-secondary: #fd79a8;
+    --pixel-accent: #00b894;
+    --pixel-warning: #fdcb6e;
+    --pixel-danger: #e17055;
+    --pixel-bg-dark: #2d3436;
+    --pixel-bg-light: #dfe6e9;
+    --pixel-bg-card: #ffffff;
+    --pixel-text-dark: #2d3436;
+    --pixel-text-light: #ffffff;
+    --pixel-text-muted: #636e72;
+    --pixel-border: 4px solid #2d3436;
+    --pixel-shadow: 4px 4px 0 #2d3436;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'VT323', monospace;
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+}
+
+.hidden-section {
+    display: none !important;
+}
+
+/* Animations */
+@keyframes bounce {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.05);
+    }
+}
+
+@keyframes glow {
+
+    0%,
+    100% {
+        box-shadow: var(--pixel-shadow), 0 0 10px rgba(108, 92, 231, 0.3);
+    }
+
+    50% {
+        box-shadow: var(--pixel-shadow), 0 0 20px rgba(108, 92, 231, 0.6);
+    }
+}
+
+@keyframes float {
+
+    0%,
+    100% {
+        transform: translateY(0) rotate(0deg);
+    }
+
+    25% {
+        transform: translateY(-5px) rotate(2deg);
+    }
+
+    75% {
+        transform: translateY(5px) rotate(-2deg);
+    }
+}
+
+/* Buttons */
+.pixel-btn {
+    font-family: 'VT323', monospace;
+    font-size: 22px;
+    padding: 16px 28px;
+    border: var(--pixel-border);
+    box-shadow: var(--pixel-shadow);
+    background: var(--pixel-primary);
+    color: var(--pixel-text-light);
+    cursor: pointer;
+    transition: all 0.1s;
+    position: relative;
+    overflow: hidden;
+}
+
+.pixel-btn::before {
+    content: '';
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    right: 50%;
+    bottom: 50%;
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.pixel-btn:hover {
+    transform: translate(2px, 2px);
+    box-shadow: 2px 2px 0 #2d3436;
+    animation: pulse 0.3s ease-in-out;
+}
+
+.pixel-btn:active {
+    transform: translate(4px, 4px);
+    box-shadow: none;
+}
+
+.pixel-btn-secondary {
+    background: var(--pixel-secondary);
+}
+
+.pixel-btn-success {
+    background: var(--pixel-accent);
+}
+
+.pixel-btn-google {
+    background: linear-gradient(180deg, #ffffff 0%, #f5f5f5 100%);
+    color: var(--pixel-text-dark);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    font-size: 22px;
+}
+
+.pixel-btn-google:hover {
+    background: linear-gradient(180deg, #f5f5f5 0%, #eeeeee 100%);
+}
+
+/* Inputs */
+.pixel-input {
+    font-family: 'VT323', monospace;
+    font-size: 22px;
+    padding: 14px 18px;
+    border: var(--pixel-border);
+    background: linear-gradient(180deg, #ffffff 0%, #f9f9f9 100%);
+    width: 100%;
+    outline: none;
+    transition: all 0.2s;
+}
+
+.pixel-input:focus {
+    box-shadow: 0 0 0 4px rgba(108, 92, 231, 0.4);
+    background: #fff;
+    animation: glow 1.5s infinite;
+}
+
+.pixel-input::placeholder {
+    color: #b2bec3;
+}
+
+.pixel-label {
+    font-family: 'VT323', monospace;
+    font-size: 24px;
+    display: block;
+    margin-bottom: 10px;
+    color: var(--pixel-text-dark);
+    font-weight: bold;
+}
+
+/* Cards */
+.pixel-card {
+    background: linear-gradient(180deg, #ffffff 0%, #f8f9fa 100%);
+    border: var(--pixel-border);
+    box-shadow: var(--pixel-shadow);
+    padding: 32px;
+    position: relative;
+    animation: float 4s ease-in-out infinite;
+}
+
+.pixel-card::before {
+    content: '';
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    right: 10px;
+    bottom: 10px;
+    border: 2px dashed rgba(108, 92, 231, 0.2);
+    pointer-events: none;
+}
+
+.pixel-card::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 6px;
+    background: linear-gradient(90deg, var(--pixel-primary), var(--pixel-secondary), var(--pixel-warning), var(--pixel-accent));
+}
+
+/* Auth Container */
+#auth-container {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    position: relative;
+    overflow: hidden;
+}
+
+#auth-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image:
+        radial-gradient(3px 3px at 20px 30px, #fff, transparent),
+        radial-gradient(2px 2px at 40px 70px, rgba(255, 255, 255, 0.8), transparent),
+        radial-gradient(3px 3px at 80px 50px, #fff, transparent),
+        radial-gradient(2px 2px at 120px 100px, rgba(255, 255, 255, 0.9), transparent),
+        radial-gradient(3px 3px at 160px 40px, #fff, transparent),
+        radial-gradient(2px 2px at 200px 80px, rgba(255, 255, 255, 0.7), transparent);
+    background-size: 250px 150px;
+    animation: twinkle 3s ease-in-out infinite;
+}
+
+@keyframes twinkle {
+
+    0%,
+    100% {
+        opacity: 0.5;
+    }
+
+    50% {
+        opacity: 1;
+    }
+}
+
+#login-card,
+#register-card {
+    max-width: 450px;
+    width: 100%;
+    z-index: 10;
+}
+
+.login-title {
+    font-family: 'Press Start 2P', cursive;
+    font-size: 20px;
+    text-align: center;
+    margin-bottom: 16px;
+    color: var(--pixel-primary);
+    line-height: 1.8;
+    text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.1);
+}
+
+.login-subtitle {
+    font-family: 'VT323', monospace;
+    font-size: 28px;
+    text-align: center;
+    color: var(--pixel-secondary);
+    margin-bottom: 28px;
+    animation: pulse 2s infinite;
+}
+
+.login-icon {
+    font-size: 72px;
+    text-align: center;
+    margin-bottom: 20px;
+    animation: bounce 2s infinite;
+}
+
+/* Divider */
+.pixel-divider {
+    display: flex;
+    align-items: center;
+    margin: 20px 0;
+}
+
+.pixel-divider::before,
+.pixel-divider::after {
+    content: '';
+    flex: 1;
+    height: 4px;
+    background: repeating-linear-gradient(90deg, #dfe6e9 0, #dfe6e9 8px, transparent 8px, transparent 16px);
+}
+
+.pixel-divider span {
+    padding: 0 16px;
+    font-family: 'VT323', monospace;
+    font-size: 22px;
+    color: #636e72;
+}
+
+/* Main App */
+#main-app {
+    min-height: 100vh;
+    background: linear-gradient(180deg, #a29bfe 0%, #6c5ce7 100%);
+}
+
+#main-app aside {
+    background: linear-gradient(180deg, #2d3436 0%, #1e272e 100%);
+    border-right: var(--pixel-border);
+}
+
+.sidebar-avatar {
+    width: 48px;
+    height: 48px;
+    background: var(--pixel-warning);
+    border: 3px solid #2d3436;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Press Start 2P', cursive;
+    font-size: 16px;
+    color: #2d3436;
+}
+
+.nav-btn {
+    font-family: 'VT323', monospace;
+    font-size: 22px;
+    padding: 14px 16px;
+    border: 2px solid transparent;
+    background: transparent;
+    color: #dfe6e9;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.nav-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--pixel-warning);
+    color: var(--pixel-warning);
+    transform: translateX(4px);
+}
+
+.nav-btn.active {
+    background: var(--pixel-primary);
+    border-color: var(--pixel-secondary);
+    color: #fff;
+}
+
+#main-app header {
+    background: rgba(255, 255, 255, 0.95);
+    border-bottom: var(--pixel-border);
+}
+
+#page-title {
+    font-family: 'Press Start 2P', cursive;
+    font-size: 14px;
+    color: var(--pixel-primary);
+}
+
+.content-card {
+    background: rgba(255, 255, 255, 0.95);
+    border: var(--pixel-border);
+    box-shadow: var(--pixel-shadow);
+}
+
+.content-card h2 {
+    font-family: 'Press Start 2P', cursive;
+    font-size: 12px;
+    padding-bottom: 12px;
+    border-bottom: 2px dashed rgba(0, 0, 0, 0.2);
+    margin-bottom: 16px;
+}
+
+#sys-modal>div {
+    border: var(--pixel-border);
+    box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.3);
+}
+
+#modal-title {
+    font-family: 'Press Start 2P', cursive;
+    font-size: 14px;
+}
+
+#global-loader {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+#global-loader .loader {
+    width: 48px;
+    height: 48px;
+    border: 6px solid rgba(255, 255, 255, 0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: pixelSpin 1s steps(8) infinite;
+}
+
+@keyframes pixelSpin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+#global-loader p {
+    font-family: 'VT323', monospace;
+    font-size: 28px;
+    color: #fff;
+    margin-top: 20px;
+}
+
+/* RWD - Tablet */
+@media (max-width: 1024px) {
+    #main-app {
+        flex-direction: column;
+    }
+
+    #main-app aside {
+        width: 100%;
+        flex-direction: row;
+        padding: 8px;
+    }
+
+    #main-app aside nav {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .nav-btn {
+        padding: 10px 14px;
+        font-size: 18px;
+    }
+}
+
+/* RWD - Mobile */
+@media (max-width: 640px) {
+    #auth-container {
+        padding: 10px;
+    }
+
+    #login-card,
+    #register-card {
+        max-width: 100%;
+        width: calc(100% - 8px);
+        animation: none;
+    }
+
+    .pixel-card {
+        padding: 20px;
+        box-shadow: 3px 3px 0 #2d3436;
+    }
+
+    .pixel-card::before {
+        top: 6px;
+        left: 6px;
+        right: 6px;
+        bottom: 6px;
+    }
+
+    .login-title {
+        font-size: 14px;
+        line-height: 2;
+    }
+
+    .login-subtitle {
+        font-size: 22px;
+        margin-bottom: 20px;
+    }
+
+    .login-icon {
+        font-size: 48px;
+        margin-bottom: 16px;
+    }
+
+    .pixel-btn {
+        font-size: 18px;
+        padding: 14px 16px;
+    }
+
+    .pixel-input {
+        font-size: 18px;
+        padding: 12px 14px;
+    }
+
+    .pixel-label {
+        font-size: 20px;
+        margin-bottom: 6px;
+    }
+
+    #page-title {
+        font-size: 11px;
+    }
+
+    .nav-btn {
+        padding: 8px 10px;
+        font-size: 14px;
+    }
+
+    .sidebar-avatar {
+        width: 32px;
+        height: 32px;
+        font-size: 10px;
+    }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+    width: 12px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--pixel-bg-light);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--pixel-primary);
+    border: 2px solid #2d3436;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--pixel-secondary);
+}
