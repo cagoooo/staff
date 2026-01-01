@@ -1,5 +1,26 @@
 # CHANGELOG
 
+## [v2.4.0] - 2026-01-01
+
+### Department Management
+- **Department Dropdown**: Register with department selection
+- **Position by Department**: Positions filtered by department
+- **4 Departments**: 教務處、學務處、總務處、輔導室
+- **24 Positions**: All official positions with color coding
+- **Sidebar Display**: Shows user's department with color
+
+### Shared Calendar View
+- **Monthly Calendar**: Navigate between months
+- **Event Dots**: Color-coded by department
+- **Department Filter**: Filter events by department
+- **Day Detail View**: Click date to see all events
+- **Cross-Department View**: See all school events
+
+### New Files
+- `js/departments.js` - Department configuration
+
+---
+
 ## [v2.3.0] - 2026-01-01
 
 ### Google Calendar Integration
@@ -23,13 +44,6 @@
 - **Scrollable Auth**: Login page scrollable on short screens
 - **Larger Title**: 36px login title with RWD breakpoints
 
-### RWD Breakpoints
-- Desktop: > 1024px (sidebar + 2-col grid)
-- Tablet: 768-1024px (sidebar + 1-col grid)
-- Mobile: < 768px (hamburger menu)
-- Small: < 480px (compact UI)
-- Short: < 600px height (compressed login)
-
 ---
 
 ## [v2.1.0] - 2026-01-01
@@ -45,12 +59,6 @@
 - **LocalStorage Caching**: Cache users/events data
 - **Offline Detection**: Network status handling
 - **Offline Messages**: User-friendly offline alerts
-
-### New Files
-- `js/crypto.js` - Password hashing & session management
-- `js/cache-manager.js` - LocalStorage cache wrapper
-- `sw.js` - Service Worker
-- `firestore.rules` - Firestore security rules
 
 ---
 
