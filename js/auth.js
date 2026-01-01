@@ -229,7 +229,7 @@ export async function handleGoogleLogin() {
             };
             const docRef = await addDoc(usersRef, newUserData);
             userData = { id: docRef.id, ...newUserData };
-            showAlert('Google 帳號註冊成功！已授權行事曆同步');
+            showAlert('Google 帳號註冊成功！請設定您的處室和職稱');
         } else {
             const existingDoc = querySnapshot.docs[0];
             userData = { id: existingDoc.id, ...existingDoc.data() };
@@ -238,6 +238,14 @@ export async function handleGoogleLogin() {
         _setAppCurrentUser(userData);
         saveSession(userData); // Save session with expiry
         _initAppUI();
+
+        // Check if user needs to set department
+        if (!userData.department || userData.jobTitle === '待設定') {
+            setTimeout(() => {
+                showAlert('請先完善您的處室和職稱資料');
+                if (window.switchTab) window.switchTab('account');
+            }, 500);
+        }
     } catch (err) {
         if (err.code === 'auth/popup-closed-by-user') {
             showAlert('登入已取消');
@@ -266,11 +274,62 @@ export function toggleAuthMode(mode) {
     if (mode === 'register') {
         document.getElementById('login-card').classList.add('hidden-section');
         document.getElementById('register-card').classList.remove('hidden-section');
+
+        // Populate department dropdown
+        populateRegisterDepartments();
     } else {
         document.getElementById('register-card').classList.add('hidden-section');
         document.getElementById('login-card').classList.remove('hidden-section');
     }
 }
+
+function populateRegisterDepartments() {
+    const { DEPARTMENTS, renderPositionOptions } = getDepartmentsModule();
+    const deptSelect = document.getElementById('reg-department');
+    const posSelect = document.getElementById('reg-jobTitle');
+
+    if (deptSelect) {
+        deptSelect.innerHTML = '<option value="">-- 請選擇處室 --</option>';
+        for (const [id, dept] of Object.entries(DEPARTMENTS)) {
+            deptSelect.innerHTML += `<option value="${id}">${dept.icon} ${dept.name}</option>`;
+        }
+    }
+
+    if (posSelect) {
+        posSelect.innerHTML = '<option value="">-- 請先選擇處室 --</option>';
+    }
+}
+
+function getDepartmentsModule() {
+    // Lazy load to avoid circular dependency
+    return {
+        DEPARTMENTS: {
+            academic: { id: 'academic', name: '教務處', icon: '📚', color: '#3498db', positions: ['教務主任', '教學組長', '設備組長', '註冊組長', '資訊組長', '閱推教師'] },
+            student: { id: 'student', name: '學務處', icon: '🎓', color: '#27ae60', positions: ['學務主任', '訓育組長', '生教組長', '體育組長', '衛生組長', '護理師', '午餐秘書', '營養師'] },
+            general: { id: 'general', name: '總務處', icon: '🏢', color: '#e67e22', positions: ['總務主任', '事務組長', '出納組長', '文書組長', '事務人員'] },
+            counseling: { id: 'counseling', name: '輔導室', icon: '💜', color: '#9b59b6', positions: ['輔導主任', '輔導組長', '特教組長', '專輔教師', '資源班教師'] }
+        },
+        renderPositionOptions: (deptId) => {
+            const dept = getDepartmentsModule().DEPARTMENTS[deptId];
+            if (!dept) return '<option value="">-- 請先選擇處室 --</option>';
+            let html = '<option value="">-- 請選擇職稱 --</option>';
+            dept.positions.forEach(pos => {
+                html += `<option value="${pos}">${pos}</option>`;
+            });
+            return html;
+        }
+    };
+}
+
+// Update position dropdown when department changes
+window.updatePositionOptions = function () {
+    const deptSelect = document.getElementById('reg-department');
+    const posSelect = document.getElementById('reg-jobTitle');
+    if (!deptSelect || !posSelect) return;
+
+    const { renderPositionOptions } = getDepartmentsModule();
+    posSelect.innerHTML = renderPositionOptions(deptSelect.value);
+};
 
 window.handleAppLogin = handleAppLogin;
 window.handleAppRegister = handleAppRegister;
