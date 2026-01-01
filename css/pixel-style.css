@@ -668,3 +668,34 @@ body {
         min-height: 48px;
     }
 }
+/* ========================================
+   RWD - Very Short Screens (height < 700px)
+   ======================================== */
+@media (max-height: 700px) {
+    #auth-container {
+        align-items: flex-start;
+        padding: 8px;
+    }
+    .pixel-card { padding: 12px; }
+    .pixel-card::before { display: none; }
+    .login-icon { font-size: 28px; margin-bottom: 4px; }
+    .login-title { font-size: 20px; margin-bottom: 2px; }
+    .login-subtitle { font-size: 14px; margin-bottom: 6px; }
+    .pixel-input { padding: 8px 10px; min-height: 40px; }
+    .pixel-btn { padding: 8px 12px; min-height: 40px; }
+    .pixel-label { font-size: 14px; margin-bottom: 2px; }
+    .mb-3, .mb-4 { margin-bottom: 6px !important; }
+    .mb-6 { margin-bottom: 10px !important; }
+}
+
+@media (max-height: 600px) {
+    #auth-container { padding: 4px; }
+    .pixel-card { padding: 8px; }
+    .login-icon { font-size: 24px; margin-bottom: 2px; }
+    .login-title { font-size: 18px; }
+    .login-subtitle { font-size: 12px; margin-bottom: 4px; }
+    .pixel-input { padding: 6px 8px; min-height: 36px; font-size: 14px; }
+    .pixel-btn { padding: 6px 10px; min-height: 36px; font-size: 14px; }
+    .pixel-label { font-size: 12px; }
+    .mb-3, .mb-4, .mb-6 { margin-bottom: 4px !important; }
+}
