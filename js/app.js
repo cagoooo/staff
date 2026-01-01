@@ -6,6 +6,8 @@ import { initAppUI, updateSidebar, renderDashboard, renderNotifications, renderE
 import { initEventModal } from './event-modal.js';
 import { initSearch } from './search.js';
 import { initStats } from './stats.js';
+import { initNotificationSystem } from './notification-system.js';
+import { initAdmin } from './admin.js';
 
 // Wire up dependencies (avoid circular imports)
 setAuthDeps({
@@ -29,6 +31,8 @@ async function init() {
     initEventModal();
     initSearch();
     initStats();
+    initNotificationSystem();
+    initAdmin();
 
     // Initialize authentication
     await initAuth();
