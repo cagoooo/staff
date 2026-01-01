@@ -215,13 +215,14 @@ export async function handleUpdateProfile(e) {
 
     if (!_appCurrentUser || !db) return;
 
+    const newDept = document.getElementById('edit-department').value;
     const newJob = document.getElementById('edit-jobTitle').value;
     const newName = document.getElementById('edit-name').value;
     const newPass = document.getElementById('edit-password').value;
 
     try {
         const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'school_users', _appCurrentUser.id);
-        const updateData = { jobTitle: newJob, name: newName };
+        const updateData = { department: newDept, jobTitle: newJob, name: newName };
 
         if (newPass) {
             // Import hash function and hash new password

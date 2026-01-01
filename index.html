@@ -88,8 +88,16 @@
 
             <form id="register-form" onsubmit="handleAppRegister(event)">
                 <div class="mb-3">
+                    <label class="pixel-label">處室</label>
+                    <select id="reg-department" required class="pixel-input" onchange="updatePositionOptions()">
+                        <option value="">-- 請選擇處室 --</option>
+                    </select>
+                </div>
+                <div class="mb-3">
                     <label class="pixel-label">職稱</label>
-                    <input type="text" id="reg-jobTitle" required class="pixel-input" placeholder="例如：教導主任">
+                    <select id="reg-jobTitle" required class="pixel-input">
+                        <option value="">-- 請先選擇處室 --</option>
+                    </select>
                 </div>
                 <div class="mb-3">
                     <label class="pixel-label">姓名</label>
@@ -125,12 +133,16 @@
                         style="font-family: 'VT323', monospace; font-size: 18px;">載入中...</h3>
                     <p class="text-gray-400 text-xs truncate" id="sidebar-job" style="font-family: 'VT323', monospace;">
                         ...</p>
+                    <p class="text-xs truncate" id="sidebar-dept"
+                        style="font-family: 'VT323', monospace; color: #fdcb6e;">...</p>
                 </div>
             </div>
 
             <nav class="flex-1 p-3 space-y-2">
                 <button onclick="switchTab('dashboard')" class="nav-btn w-full active"><i class="fas fa-gamepad"></i>
                     主頁面</button>
+                <button onclick="switchTab('calendar')" class="nav-btn w-full"><i class="fas fa-calendar-alt"></i>
+                    共用日曆</button>
                 <button onclick="switchTab('account')" class="nav-btn w-full"><i class="fas fa-user-cog"></i>
                     帳號設定</button>
                 <button onclick="switchTab('notifications')" class="nav-btn w-full relative"><i class="fas fa-bell"></i>
@@ -159,6 +171,7 @@
             </header>
 
             <div class="flex-1 overflow-y-auto p-6" id="content-area">
+                <!-- Dashboard -->
                 <div id="view-dashboard">
                     <div class="content-card p-4 mb-4">
                         <h2>📢 最新公告</h2>
@@ -174,26 +187,98 @@
                     </div>
                 </div>
 
+                <!-- Shared Calendar -->
+                <div id="view-calendar" class="hidden-section">
+                    <div class="content-card p-4 mb-4">
+                        <div class="flex justify-between items-center mb-4">
+                            <h2>📅 共用日曆</h2>
+                            <div class="flex items-center gap-2">
+                                <button onclick="prevMonth()" class="pixel-btn" style="padding: 8px 12px;">◀</button>
+                                <span id="calendar-month-year"
+                                    style="font-family: 'VT323', monospace; font-size: 24px; min-width: 150px; text-align: center;">2026年1月</span>
+                                <button onclick="nextMonth()" class="pixel-btn" style="padding: 8px 12px;">▶</button>
+                            </div>
+                        </div>
+
+                        <!-- Department Filter -->
+                        <div class="flex flex-wrap gap-2 mb-4" id="dept-filter">
+                            <button onclick="filterByDept('all')" class="dept-filter-btn active" data-dept="all"
+                                style="font-family: 'VT323', monospace; font-size: 18px; padding: 6px 12px; border: 2px solid #2d3436; cursor: pointer;">全部</button>
+                            <button onclick="filterByDept('academic')" class="dept-filter-btn" data-dept="academic"
+                                style="font-family: 'VT323', monospace; font-size: 18px; padding: 6px 12px; border: 2px solid #3498db; background: #3498db22; cursor: pointer;">📚
+                                教務處</button>
+                            <button onclick="filterByDept('student')" class="dept-filter-btn" data-dept="student"
+                                style="font-family: 'VT323', monospace; font-size: 18px; padding: 6px 12px; border: 2px solid #27ae60; background: #27ae6022; cursor: pointer;">🎓
+                                學務處</button>
+                            <button onclick="filterByDept('general')" class="dept-filter-btn" data-dept="general"
+                                style="font-family: 'VT323', monospace; font-size: 18px; padding: 6px 12px; border: 2px solid #e67e22; background: #e67e2222; cursor: pointer;">🏢
+                                總務處</button>
+                            <button onclick="filterByDept('counseling')" class="dept-filter-btn" data-dept="counseling"
+                                style="font-family: 'VT323', monospace; font-size: 18px; padding: 6px 12px; border: 2px solid #9b59b6; background: #9b59b622; cursor: pointer;">💜
+                                輔導室</button>
+                        </div>
+
+                        <!-- Calendar Grid -->
+                        <div class="calendar-grid"
+                            style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; background: #dfe6e9;">
+                            <div class="text-center py-2 font-bold" style="background: #2d3436; color: white;">日</div>
+                            <div class="text-center py-2 font-bold" style="background: #2d3436; color: white;">一</div>
+                            <div class="text-center py-2 font-bold" style="background: #2d3436; color: white;">二</div>
+                            <div class="text-center py-2 font-bold" style="background: #2d3436; color: white;">三</div>
+                            <div class="text-center py-2 font-bold" style="background: #2d3436; color: white;">四</div>
+                            <div class="text-center py-2 font-bold" style="background: #2d3436; color: white;">五</div>
+                            <div class="text-center py-2 font-bold" style="background: #2d3436; color: white;">六</div>
+                        </div>
+                        <div id="calendar-days" class="calendar-grid"
+                            style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; background: #dfe6e9;">
+                            <!-- Days will be rendered here -->
+                        </div>
+                    </div>
+
+                    <!-- Selected Day Events -->
+                    <div class="content-card p-4" id="day-events-card">
+                        <h2 id="selected-day-title">📋 選擇日期查看行程</h2>
+                        <div id="day-events-list" class="mt-4 space-y-2">
+                            <p class="text-gray-400 text-center py-4">點擊日曆上的日期查看當日行程</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Account Settings -->
                 <div id="view-account" class="hidden-section">
                     <div class="content-card p-6">
                         <h2>⚙️ 修改個人資料</h2>
                         <form onsubmit="handleUpdateProfile(event)" class="mt-4">
                             <div class="grid grid-cols-2 gap-4 mb-4">
-                                <div><label class="pixel-label">職稱</label><input type="text" id="edit-jobTitle"
-                                        class="pixel-input"></div>
-                                <div><label class="pixel-label">姓名</label><input type="text" id="edit-name"
-                                        class="pixel-input"></div>
+                                <div>
+                                    <label class="pixel-label">處室</label>
+                                    <select id="edit-department" class="pixel-input"
+                                        onchange="updateEditPositionOptions()"></select>
+                                </div>
+                                <div>
+                                    <label class="pixel-label">職稱</label>
+                                    <select id="edit-jobTitle" class="pixel-input"></select>
+                                </div>
                             </div>
-                            <div class="mb-4"><label class="pixel-label">帳號（不可修改）</label><input type="text"
-                                    id="edit-username" disabled class="pixel-input opacity-50"></div>
-                            <div class="mb-6"><label class="pixel-label">新密碼</label><input type="password"
-                                    id="edit-password" class="pixel-input" placeholder="不修改請留空"
-                                    autocomplete="new-password"></div>
+                            <div class="mb-4">
+                                <label class="pixel-label">姓名</label>
+                                <input type="text" id="edit-name" class="pixel-input">
+                            </div>
+                            <div class="mb-4">
+                                <label class="pixel-label">帳號（不可修改）</label>
+                                <input type="text" id="edit-username" disabled class="pixel-input opacity-50">
+                            </div>
+                            <div class="mb-6">
+                                <label class="pixel-label">新密碼</label>
+                                <input type="password" id="edit-password" class="pixel-input" placeholder="不修改請留空"
+                                    autocomplete="new-password">
+                            </div>
                             <button type="submit" class="pixel-btn pixel-btn-success w-full">💾 儲存變更</button>
                         </form>
                     </div>
                 </div>
 
+                <!-- Notifications -->
                 <div id="view-notifications" class="hidden-section">
                     <div class="content-card p-6">
                         <h2>📋 待辦事項與通知</h2>
@@ -203,12 +288,15 @@
                     </div>
                 </div>
 
+                <!-- Event Editor -->
                 <div id="view-editor" class="hidden-section">
                     <div class="content-card p-6">
                         <h2>📅 新增行程</h2>
                         <form onsubmit="handleFirebaseAddEvent(event)" class="mt-4">
-                            <div class="mb-4"><label class="pixel-label">項目名稱</label><input type="text" id="evt-title"
-                                    required class="pixel-input" placeholder="例如：期中考務會議"></div>
+                            <div class="mb-4">
+                                <label class="pixel-label">項目名稱</label>
+                                <input type="text" id="evt-title" required class="pixel-input" placeholder="例如：期中考務會議">
+                            </div>
                             <div class="grid grid-cols-2 gap-4 mb-4">
                                 <div><label class="pixel-label">日期</label><input type="date" id="evt-date" required
                                         class="pixel-input"></div>
@@ -216,11 +304,29 @@
                                         class="pixel-input"></div>
                             </div>
                             <div class="mb-4">
-                                <label class="pixel-label">通知人員</label>
+                                <label class="pixel-label">通知人員（可按處室篩選）</label>
+                                <div class="flex flex-wrap gap-2 mb-2" id="target-dept-filter">
+                                    <button type="button" onclick="filterTargetsByDept('all')"
+                                        class="target-filter-btn active"
+                                        style="font-size: 14px; padding: 4px 8px; border: 1px solid #636e72; cursor: pointer;">全部</button>
+                                    <button type="button" onclick="filterTargetsByDept('academic')"
+                                        class="target-filter-btn"
+                                        style="font-size: 14px; padding: 4px 8px; border: 1px solid #3498db; cursor: pointer;">教務處</button>
+                                    <button type="button" onclick="filterTargetsByDept('student')"
+                                        class="target-filter-btn"
+                                        style="font-size: 14px; padding: 4px 8px; border: 1px solid #27ae60; cursor: pointer;">學務處</button>
+                                    <button type="button" onclick="filterTargetsByDept('general')"
+                                        class="target-filter-btn"
+                                        style="font-size: 14px; padding: 4px 8px; border: 1px solid #e67e22; cursor: pointer;">總務處</button>
+                                    <button type="button" onclick="filterTargetsByDept('counseling')"
+                                        class="target-filter-btn"
+                                        style="font-size: 14px; padding: 4px 8px; border: 1px solid #9b59b6; cursor: pointer;">輔導室</button>
+                                </div>
                                 <div id="selected-targets-container"
                                     class="flex flex-wrap gap-2 mb-2 p-3 border-2 border-dashed min-h-[50px] bg-white items-center"
-                                    style="font-family: 'VT323', monospace; font-size: 18px;"><span
-                                        class="text-gray-400">尚未選擇人員...</span></div>
+                                    style="font-family: 'VT323', monospace; font-size: 18px;">
+                                    <span class="text-gray-400">尚未選擇人員...</span>
+                                </div>
                                 <div class="border-2 h-48 overflow-y-auto bg-gray-50 p-2 space-y-1"
                                     id="target-selection-list">
                                     <div class="text-gray-400 text-sm p-2">載入中...</div>

@@ -137,10 +137,16 @@ export async function handleAppRegister(e) {
         if (!db) throw new Error("資料庫未連線");
         if (!auth || !auth.currentUser) throw new Error("驗證中，請稍候");
 
+        const dept = document.getElementById('reg-department').value;
         const job = document.getElementById('reg-jobTitle').value;
         const name = document.getElementById('reg-name').value;
         const username = document.getElementById('reg-username').value;
         const password = document.getElementById('reg-password').value;
+
+        // Validate department
+        if (!dept) {
+            throw new Error('請選擇處室');
+        }
 
         // Validate password strength
         if (password.length < 6) {
@@ -157,10 +163,11 @@ export async function handleAppRegister(e) {
 
         const usersRef = collection(db, 'artifacts', appId, 'public', 'data', 'school_users');
         await addDoc(usersRef, {
+            department: dept,
             jobTitle: job,
             name,
             username,
-            password: hashedPassword, // Store hashed password
+            password: hashedPassword,
             createdAt: new Date().toISOString()
         });
 
