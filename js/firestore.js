@@ -1,5 +1,5 @@
 // Firestore Database Operations Module - With Offline Caching
-import { collection, addDoc, onSnapshot, doc, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { db, appId } from './firebase-config.js';
 import { showAlert } from '../components/modal.js';
 import { cacheUsers, cacheEvents, getCachedUsers, getCachedEvents, isOnline, registerNetworkHandlers } from './cache-manager.js';
@@ -237,9 +237,60 @@ export async function handleUpdateProfile(e) {
     }
 }
 
+// Update an existing event
+export async function updateEvent(eventId, data) {
+    if (!isOnline()) {
+        showAlert('離線中無法更新行程');
+        return false;
+    }
+
+    if (!_appCurrentUser || !db) return false;
+
+    try {
+        const eventRef = doc(db, 'artifacts', appId, 'public', 'data', 'school_events', eventId);
+        await updateDoc(eventRef, {
+            ...data,
+            updatedAt: new Date().toISOString()
+        });
+        showAlert('行程已更新！');
+        return true;
+    } catch (err) {
+        showAlert('更新失敗：' + err.message);
+        return false;
+    }
+}
+
+// Delete an event
+export async function deleteEvent(eventId) {
+    if (!isOnline()) {
+        showAlert('離線中無法刪除行程');
+        return false;
+    }
+
+    if (!_appCurrentUser || !db) return false;
+
+    try {
+        const eventRef = doc(db, 'artifacts', appId, 'public', 'data', 'school_events', eventId);
+        await deleteDoc(eventRef);
+        showAlert('行程已刪除！');
+        return true;
+    } catch (err) {
+        showAlert('刪除失敗：' + err.message);
+        return false;
+    }
+}
+
+// Get event by ID
+export function getEventById(eventId) {
+    return _globalEvents.find(e => e.id === eventId);
+}
+
 window.handleFirebaseAddEvent = handleFirebaseAddEvent;
 window.handleMarkAsDone = handleMarkAsDone;
 window.handleUpdateProfile = handleUpdateProfile;
+window.updateEvent = updateEvent;
+window.deleteEvent = deleteEvent;
+window.getEventById = getEventById;
 window.toggleTarget = (uid) => {
     toggleTarget(uid);
     if (window.renderEditorOptions) window.renderEditorOptions();

@@ -340,9 +340,11 @@ export function renderDashboard() {
         const deptColor = getDepartmentColor(author?.department);
 
         const div = document.createElement('div');
-        div.className = "p-3 border-l-4 bg-purple-50 hover:bg-purple-100 transition";
+        div.className = "p-3 border-l-4 bg-purple-50 hover:bg-purple-100 transition cursor-pointer";
         div.style.fontFamily = "'VT323', monospace";
         div.style.borderColor = deptColor;
+        div.dataset.eventId = evt.id;
+        div.onclick = () => window.openEventModal && window.openEventModal(evt.id);
         div.innerHTML = '<div class="flex justify-between"><h4 class="font-bold text-lg">' + evt.title +
             '</h4><span class="text-sm bg-purple-200 px-2 py-1">' + evt.date +
             '</span></div><p class="text-sm text-gray-600 mt-1">發起人：' + evt.authorName + ' | 時間：' + evt.time + '</p>';
@@ -359,8 +361,10 @@ export function renderDashboard() {
         const deptColor = getDepartmentColor(author?.department);
 
         const div = document.createElement('div');
-        div.className = "flex items-center gap-3 p-2 border-b";
+        div.className = "flex items-center gap-3 p-2 border-b cursor-pointer hover:bg-gray-50";
         div.style.fontFamily = "'VT323', monospace";
+        div.dataset.eventId = evt.id;
+        div.onclick = () => window.openEventModal && window.openEventModal(evt.id);
         div.innerHTML = '<div style="background: ' + deptColor + '22; color: ' + deptColor + '; font-weight: bold; padding: 4px 8px; text-align: center; min-width: 60px;">' +
             evt.date.split('-')[1] + '/' + evt.date.split('-')[2] + '</div><div class="text-lg">' + evt.title + '</div>';
         listImportant.appendChild(div);

@@ -3,6 +3,7 @@ import { initModal } from '../components/modal.js';
 import { initAuth, checkLoadingComplete, setAuthDeps } from './auth.js';
 import { globalUsers, getAppCurrentUser, setAppCurrentUser, startDataListeners, setFirestoreDeps } from './firestore.js';
 import { initAppUI, updateSidebar, renderDashboard, renderNotifications, renderEditorOptions, updateNotificationBadge, switchTab } from './ui.js';
+import { initEventModal } from './event-modal.js';
 
 // Wire up dependencies (avoid circular imports)
 setAuthDeps({
@@ -21,8 +22,9 @@ setFirestoreDeps({
 async function init() {
     console.log("Initializing modular application...");
 
-    // Initialize modal
+    // Initialize modals
     initModal();
+    initEventModal();
 
     // Initialize authentication
     await initAuth();
