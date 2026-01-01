@@ -668,6 +668,7 @@ body {
         min-height: 48px;
     }
 }
+
 /* ========================================
    RWD - Very Short Screens (height < 700px)
    ======================================== */
@@ -676,26 +677,158 @@ body {
         align-items: flex-start;
         padding: 8px;
     }
-    .pixel-card { padding: 12px; }
-    .pixel-card::before { display: none; }
-    .login-icon { font-size: 28px; margin-bottom: 4px; }
-    .login-title { font-size: 20px; margin-bottom: 2px; }
-    .login-subtitle { font-size: 14px; margin-bottom: 6px; }
-    .pixel-input { padding: 8px 10px; min-height: 40px; }
-    .pixel-btn { padding: 8px 12px; min-height: 40px; }
-    .pixel-label { font-size: 14px; margin-bottom: 2px; }
-    .mb-3, .mb-4 { margin-bottom: 6px !important; }
-    .mb-6 { margin-bottom: 10px !important; }
+
+    .pixel-card {
+        padding: 12px;
+    }
+
+    .pixel-card::before {
+        display: none;
+    }
+
+    .login-icon {
+        font-size: 28px;
+        margin-bottom: 4px;
+    }
+
+    .login-title {
+        font-size: 20px;
+        margin-bottom: 2px;
+    }
+
+    .login-subtitle {
+        font-size: 14px;
+        margin-bottom: 6px;
+    }
+
+    .pixel-input {
+        padding: 8px 10px;
+        min-height: 40px;
+    }
+
+    .pixel-btn {
+        padding: 8px 12px;
+        min-height: 40px;
+    }
+
+    .pixel-label {
+        font-size: 14px;
+        margin-bottom: 2px;
+    }
+
+    .mb-3,
+    .mb-4 {
+        margin-bottom: 6px !important;
+    }
+
+    .mb-6 {
+        margin-bottom: 10px !important;
+    }
 }
 
 @media (max-height: 600px) {
-    #auth-container { padding: 4px; }
-    .pixel-card { padding: 8px; }
-    .login-icon { font-size: 24px; margin-bottom: 2px; }
-    .login-title { font-size: 18px; }
-    .login-subtitle { font-size: 12px; margin-bottom: 4px; }
-    .pixel-input { padding: 6px 8px; min-height: 36px; font-size: 14px; }
-    .pixel-btn { padding: 6px 10px; min-height: 36px; font-size: 14px; }
-    .pixel-label { font-size: 12px; }
-    .mb-3, .mb-4, .mb-6 { margin-bottom: 4px !important; }
+    #auth-container {
+        padding: 4px;
+    }
+
+    .pixel-card {
+        padding: 8px;
+    }
+
+    .login-icon {
+        font-size: 24px;
+        margin-bottom: 2px;
+    }
+
+    .login-title {
+        font-size: 18px;
+    }
+
+    .login-subtitle {
+        font-size: 12px;
+        margin-bottom: 4px;
+    }
+
+    .pixel-input {
+        padding: 6px 8px;
+        min-height: 36px;
+        font-size: 14px;
+    }
+
+    .pixel-btn {
+        padding: 6px 10px;
+        min-height: 36px;
+        font-size: 14px;
+    }
+
+    .pixel-label {
+        font-size: 12px;
+    }
+
+    .mb-3,
+    .mb-4,
+    .mb-6 {
+        margin-bottom: 4px !important;
+    }
+}
+
+/* ==================================================
+   Font Size Improvements for Better Readability
+   ================================================== */
+
+/* Modal - Larger title and message */
+#sys-modal #modal-title {
+    font-size: 20px !important;
+    letter-spacing: 0.5px;
+}
+
+#sys-modal #modal-message {
+    font-size: 28px !important;
+    line-height: 1.4;
+}
+
+#sys-modal .pixel-btn {
+    font-size: 22px !important;
+    padding: 12px 24px !important;
+}
+
+/* Page title in header */
+#page-title {
+    font-size: 28px !important;
+}
+
+/* Current date in header */
+#current-date {
+    font-size: 24px !important;
+}
+
+/* Content card headings (h2) */
+.content-card h2 {
+    font-size: 28px !important;
+    font-weight: bold;
+}
+
+/* Nav buttons in sidebar */
+.nav-btn {
+    font-size: 20px !important;
+}
+
+/* Calendar month/year display */
+#calendar-month-year {
+    font-size: 28px !important;
+}
+
+/* Form labels */
+.pixel-label {
+    font-size: 20px !important;
+}
+
+/* Event modal title */
+#event-modal-title {
+    font-size: 28px !important;
+}
+
+/* Search modal input */
+#search-input {
+    font-size: 22px !important;
 }
