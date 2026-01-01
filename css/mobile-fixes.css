@@ -1,0 +1,128 @@
+/* Mobile Short Screen Fixes */
+@media (max-height: 800px) {
+    #auth-container {
+        align-items: flex-start !important;
+        padding-top: 10px !important;
+    }
+
+    .pixel-card {
+        padding: 16px !important;
+    }
+
+    .login-icon {
+        font-size: 32px !important;
+        margin-bottom: 6px !important;
+    }
+
+    .login-title {
+        font-size: 24px !important;
+        margin-bottom: 4px !important;
+    }
+
+    .login-subtitle {
+        font-size: 18px !important;
+        margin-bottom: 10px !important;
+    }
+}
+
+@media (max-height: 700px) {
+    #auth-container {
+        padding: 8px !important;
+    }
+
+    .pixel-card {
+        padding: 12px !important;
+    }
+
+    .pixel-card::before {
+        display: none !important;
+    }
+
+    .login-icon {
+        font-size: 28px !important;
+        margin-bottom: 4px !important;
+    }
+
+    .login-title {
+        font-size: 20px !important;
+        margin-bottom: 2px !important;
+    }
+
+    .login-subtitle {
+        font-size: 14px !important;
+        margin-bottom: 6px !important;
+    }
+
+    .pixel-input {
+        padding: 8px 10px !important;
+        min-height: 38px !important;
+        font-size: 16px !important;
+    }
+
+    .pixel-btn {
+        padding: 8px 12px !important;
+        min-height: 38px !important;
+        font-size: 16px !important;
+    }
+
+    .pixel-label {
+        font-size: 14px !important;
+        margin-bottom: 2px !important;
+    }
+
+    .mb-3,
+    .mb-4 {
+        margin-bottom: 6px !important;
+    }
+
+    .mb-6 {
+        margin-bottom: 8px !important;
+    }
+}
+
+@media (max-height: 600px) {
+    #auth-container {
+        padding: 4px !important;
+    }
+
+    .pixel-card {
+        padding: 8px !important;
+    }
+
+    .login-icon {
+        font-size: 22px !important;
+        margin-bottom: 2px !important;
+    }
+
+    .login-title {
+        font-size: 18px !important;
+    }
+
+    .login-subtitle {
+        font-size: 12px !important;
+        margin-bottom: 4px !important;
+    }
+
+    .pixel-input {
+        padding: 5px 8px !important;
+        min-height: 32px !important;
+        font-size: 14px !important;
+    }
+
+    .pixel-btn {
+        padding: 5px 10px !important;
+        min-height: 32px !important;
+        font-size: 14px !important;
+    }
+
+    .pixel-label {
+        font-size: 12px !important;
+        margin-bottom: 1px !important;
+    }
+
+    .mb-3,
+    .mb-4,
+    .mb-6 {
+        margin-bottom: 3px !important;
+    }
+}
