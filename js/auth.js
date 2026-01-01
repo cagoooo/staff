@@ -188,8 +188,21 @@ export async function handleGoogleLogin() {
 
     try {
         const provider = new GoogleAuthProvider();
+
+        // Add Calendar scope for event sync
+        provider.addScope('https://www.googleapis.com/auth/calendar.events');
+
         const result = await signInWithPopup(auth, provider);
         const googleUser = result.user;
+
+        // Get OAuth credential to extract access token
+        const credential = GoogleAuthProvider.credentialFromResult(result);
+        if (credential && credential.accessToken) {
+            // Store access token for Calendar API
+            const { setAccessToken } = await import('./google-calendar.js');
+            setAccessToken(credential.accessToken);
+            console.log('[Auth] Calendar access token stored');
+        }
 
         const usersRef = collection(db, 'artifacts', appId, 'public', 'data', 'school_users');
         const q = query(usersRef, where('googleUid', '==', googleUser.uid));
@@ -209,7 +222,7 @@ export async function handleGoogleLogin() {
             };
             const docRef = await addDoc(usersRef, newUserData);
             userData = { id: docRef.id, ...newUserData };
-            showAlert('Google 帳號註冊成功！');
+            showAlert('Google 帳號註冊成功！已授權行事曆同步');
         } else {
             const existingDoc = querySnapshot.docs[0];
             userData = { id: existingDoc.id, ...existingDoc.data() };

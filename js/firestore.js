@@ -131,6 +131,7 @@ export async function handleFirebaseAddEvent(e) {
     const date = document.getElementById('evt-date').value;
     const time = document.getElementById('evt-time').value;
     const isPublic = document.getElementById('evt-is-public').checked;
+    const syncToCalendar = document.getElementById('evt-sync-calendar')?.checked || false;
     const targets = [..._currentSelectedTargets];
     const btn = document.getElementById('btn-add-event');
 
@@ -138,6 +139,7 @@ export async function handleFirebaseAddEvent(e) {
     btn.innerText = "傳送中...";
 
     try {
+        // Add to Firestore first
         const eventsRef = collection(db, 'artifacts', appId, 'public', 'data', 'school_events');
         await addDoc(eventsRef, {
             authorId: _appCurrentUser.id,
@@ -151,7 +153,30 @@ export async function handleFirebaseAddEvent(e) {
             createdAt: new Date().toISOString()
         });
 
-        showAlert('行程已新增！');
+        // Sync to Google Calendar if enabled and user is Google user
+        if (syncToCalendar && _appCurrentUser.authType === 'google') {
+            try {
+                const { addToGoogleCalendar, hasCalendarAccess } = await import('./google-calendar.js');
+
+                if (hasCalendarAccess()) {
+                    await addToGoogleCalendar({
+                        title,
+                        date,
+                        time,
+                        authorName: _appCurrentUser.name
+                    });
+                    showAlert('行程已新增並同步至 Google 行事曆！');
+                } else {
+                    showAlert('行程已新增！（需重新以 Google 登入以同步行事曆）');
+                }
+            } catch (calErr) {
+                console.error('[Calendar] Sync failed:', calErr);
+                showAlert('行程已新增！（行事曆同步失敗：' + calErr.message + '）');
+            }
+        } else {
+            showAlert('行程已新增！');
+        }
+
         e.target.reset();
         _currentSelectedTargets = [];
         if (window.renderEditorOptions) window.renderEditorOptions();
