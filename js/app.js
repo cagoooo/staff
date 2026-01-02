@@ -8,6 +8,7 @@ import { initSearch } from './search.js';
 import { initStats } from './stats.js';
 import { initNotificationSystem } from './notification-system.js';
 import { initAdmin } from './admin.js';
+import './storage.js'; // Load storage utilities
 
 // Wire up dependencies (avoid circular imports)
 setAuthDeps({

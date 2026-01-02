@@ -43,6 +43,10 @@ export function initEventModal() {
                         <span class="text-gray-500" style="font-family: 'VT323', monospace; font-size: 16px;">狀態</span>
                         <p id="event-detail-status" style="font-family: 'VT323', monospace; font-size: 20px;"></p>
                     </div>
+                    <div class="mb-3" id="event-attachments-view">
+                        <span class="text-gray-500" style="font-family: 'VT323', monospace; font-size: 16px;">📎 附件</span>
+                        <div id="event-detail-attachments" class="mt-2 space-y-2"></div>
+                    </div>
                 </div>
                 <!-- Edit Mode -->
                 <div id="event-edit-mode" class="hidden-section">
@@ -75,6 +79,14 @@ export function initEventModal() {
                     <div class="flex items-center gap-3 mb-3" style="font-family: 'VT323', monospace; font-size: 20px;">
                         <input type="checkbox" id="edit-evt-pinned" class="w-5 h-5">
                         <label for="edit-evt-pinned">📌 置頂公告</label>
+                    </div>
+                    <div class="mb-3">
+                        <label class="pixel-label">📎 上傳附件</label>
+                        <input type="file" id="edit-evt-file" class="pixel-input" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt">
+                        <p style="font-family: 'VT323', monospace; font-size: 14px; color: #636e72; margin-top: 4px;">
+                            支援：圖片、PDF、Word、Excel、TXT（最大 10MB）
+                        </p>
+                        <div id="edit-attachments-list" class="mt-2 space-y-1"></div>
                     </div>
                 </div>
             </div>
@@ -128,6 +140,32 @@ export function openEventModal(eventId) {
     document.getElementById('event-detail-status').innerHTML = completed
         ? '<span style="color: #00b894;">✅ 已完成</span>'
         : '<span style="color: #fdcb6e;">⏳ 待處理</span>';
+
+    // Render attachments
+    const attachContainer = document.getElementById('event-detail-attachments');
+    const attachViewSection = document.getElementById('event-attachments-view');
+    if (event.attachments && event.attachments.length > 0) {
+        attachViewSection.style.display = 'block';
+        attachContainer.innerHTML = event.attachments.map(att => {
+            const icon = window.getFileIcon ? window.getFileIcon(att.type) : '📎';
+            const size = window.formatFileSize ? window.formatFileSize(att.size) : '';
+            const isImage = att.type.startsWith('image/');
+            return `
+                <div style="background: #f8f9fa; padding: 8px; border-radius: 4px; display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 20px;">${icon}</span>
+                    <div style="flex: 1; min-width: 0;">
+                        <a href="${att.url}" target="_blank" style="font-family: 'VT323', monospace; font-size: 18px; color: #6c5ce7; text-decoration: none;">
+                            ${att.name}
+                        </a>
+                        <div style="font-size: 14px; color: #636e72;">${size}</div>
+                    </div>
+                    ${isImage ? `<img src="${att.url}" style="max-width: 60px; max-height: 60px; border-radius: 4px;">` : ''}
+                </div>
+            `;
+        }).join('');
+    } else {
+        attachViewSection.style.display = 'none';
+    }
 
     // Show/hide edit button based on ownership
     const isOwner = event.authorId === currentUser?.id;
@@ -206,6 +244,21 @@ export async function saveEventEdit() {
         announcementType: document.getElementById('edit-evt-type').value,
         pinned: document.getElementById('edit-evt-pinned').checked
     };
+
+    // Handle file upload if selected
+    const fileInput = document.getElementById('edit-evt-file');
+    if (fileInput && fileInput.files.length > 0) {
+        const file = fileInput.files[0];
+        if (window.uploadAttachment) {
+            const attachment = await window.uploadAttachment(file, currentEditingEventId);
+            if (attachment) {
+                // Get existing attachments and add new one
+                const event = getEventById(currentEditingEventId);
+                const existingAttachments = event?.attachments || [];
+                data.attachments = [...existingAttachments, attachment];
+            }
+        }
+    }
 
     const success = await updateEvent(currentEditingEventId, data);
     if (success) {
