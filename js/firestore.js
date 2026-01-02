@@ -233,7 +233,9 @@ export async function handleUpdateProfile(e) {
         await updateDoc(userRef, updateData);
         showAlert('資料已更新！');
     } catch (err) {
-        showAlert('更新失敗');
+        console.error('[Firestore] Update profile failed:', err);
+        console.error('[Firestore] User ID:', _appCurrentUser?.id);
+        showAlert('更新失敗：' + err.message);
     }
 }
 

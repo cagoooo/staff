@@ -307,20 +307,26 @@ async function processGoogleLoginResult(result) {
         showAlert('Google 帳號註冊成功！請設定您的處室和職稱');
     } else {
         const existingDoc = querySnapshot.docs[0];
-        userData = { id: existingDoc.id, ...existingDoc.data() };
+        // If the existing document ID doesn't match googleUser.uid, we need to migrate
+        if (existingDoc.id !== googleUser.uid) {
+            console.log('[Auth] Migrating user document to new ID:', googleUser.uid);
+            // Create new document with correct ID
+            const newUserData = { ...existingDoc.data(), googleUid: googleUser.uid };
+            await setDoc(userDocRef, newUserData);
+            userData = { id: googleUser.uid, ...newUserData };
+        } else {
+            userData = { id: existingDoc.id, ...existingDoc.data() };
+        }
     }
 
     _setAppCurrentUser(userData);
     saveSession(userData);
 
-    // Start data listeners and init UI
-    try {
-        await signInAnonymously(auth);
-    } catch (err) {
-        console.error("[Auth] Anonymous auth after Google login:", err);
-    }
+    // Do NOT sign in anonymously - keep the Google auth state!
+    // The Google user is already authenticated and has proper permissions
+    console.log('[Auth] Keeping Google auth state, uid:', googleUser.uid);
 
-    _startDataListeners(auth.currentUser);
+    _startDataListeners(googleUser);
 
     // Wait for data listeners to load
     setTimeout(() => {
