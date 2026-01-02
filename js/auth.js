@@ -31,14 +31,20 @@ export async function initAuth() {
 
     // Handle Google login redirect result (for COOP compatibility)
     try {
+        console.log('[Auth] Checking for Google redirect result...');
         const result = await getRedirectResult(auth);
+        console.log('[Auth] getRedirectResult:', result);
         if (result && result.user) {
-            console.log('[Auth] Processing Google redirect result');
+            console.log('[Auth] Processing Google redirect result for:', result.user.email);
             await processGoogleLoginResult(result);
             return; // Exit early, processGoogleLoginResult will handle the rest
+        } else {
+            console.log('[Auth] No Google redirect result found');
         }
     } catch (err) {
         console.error('[Auth] Redirect result error:', err);
+        console.error('[Auth] Error code:', err.code);
+        console.error('[Auth] Error message:', err.message);
         if (err.code !== 'auth/popup-closed-by-user') {
             showAlert('Google 登入失敗：' + err.message);
         }

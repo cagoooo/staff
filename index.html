@@ -358,7 +358,7 @@
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js').then(r => console.log('[SW] Registered')).catch(e => console.log('[SW] Failed', e));
+                navigator.serviceWorker.register('./sw.js').then(r => console.log('[SW] Registered')).catch(e => console.log('[SW] Failed', e));
             });
         }
         function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); document.getElementById('sidebar-overlay').classList.toggle('active'); }
