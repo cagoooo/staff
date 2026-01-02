@@ -14,14 +14,31 @@ function isAdmin() {
 export function initAdmin() {
     console.log('[Admin] Initializing...');
 
-    // Wait for user data to load
-    setTimeout(() => {
+    // Check for admin role multiple times as user data may load async
+    const checkAdmin = () => {
         const currentUser = getAppCurrentUser();
-        if (!currentUser) return;
+        console.log('[Admin] Checking user role:', currentUser?.role, 'User:', currentUser?.email || currentUser?.username);
 
-        // Only inject for admins
+        if (!currentUser) {
+            console.log('[Admin] No user found yet, will retry...');
+            return false;
+        }
+
         if (currentUser.role === 'admin') {
+            console.log('[Admin] Admin user detected, injecting UI...');
             injectAdminUI();
+            return true;
+        } else {
+            console.log('[Admin] User is not admin, role:', currentUser.role);
+            return false;
+        }
+    };
+
+    // Initial check after 2 seconds
+    setTimeout(() => {
+        if (!checkAdmin()) {
+            // Retry after 4 more seconds in case data loaded slowly
+            setTimeout(checkAdmin, 4000);
         }
     }, 2000);
 
