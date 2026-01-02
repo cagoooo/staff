@@ -1,0 +1,299 @@
+/* Animations & Transitions CSS */
+
+/* ====================================
+   Page Transition Animations
+   ==================================== */
+
+/* Fade in animation for view switching */
+#view-dashboard,
+#view-calendar,
+#view-account,
+#view-notifications,
+#view-editor,
+#view-stats,
+#view-admin {
+    animation: fadeSlideIn 0.3s ease-out;
+}
+
+@keyframes fadeSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ====================================
+   List Item Animations
+   ==================================== */
+
+/* Staggered list item animation */
+.content-card>div>div {
+    animation: listItemIn 0.3s ease-out backwards;
+}
+
+.content-card>div>div:nth-child(1) {
+    animation-delay: 0.05s;
+}
+
+.content-card>div>div:nth-child(2) {
+    animation-delay: 0.1s;
+}
+
+.content-card>div>div:nth-child(3) {
+    animation-delay: 0.15s;
+}
+
+.content-card>div>div:nth-child(4) {
+    animation-delay: 0.2s;
+}
+
+.content-card>div>div:nth-child(5) {
+    animation-delay: 0.25s;
+}
+
+@keyframes listItemIn {
+    from {
+        opacity: 0;
+        transform: translateX(-15px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* ====================================
+   Button Animations
+   ==================================== */
+
+/* Button hover scale */
+.pixel-btn {
+    transition: transform 0.1s, box-shadow 0.1s, background-color 0.2s;
+}
+
+/* Button ripple effect */
+.pixel-btn::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition: width 0.3s, height 0.3s;
+}
+
+.pixel-btn:active::after {
+    width: 200px;
+    height: 200px;
+}
+
+/* Nav button hover animation */
+.nav-btn {
+    transition: all 0.2s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.nav-btn::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    width: 3px;
+    background: var(--pixel-accent);
+    transform: scaleY(0);
+    transition: transform 0.2s ease;
+}
+
+.nav-btn:hover::before,
+.nav-btn.active::before {
+    transform: scaleY(1);
+}
+
+/* ====================================
+   Card Hover Effects
+   ==================================== */
+
+.content-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.content-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 6px 6px 0 #2d3436;
+}
+
+/* ====================================
+   Modal Animations
+   ==================================== */
+
+#event-modal>div,
+#sys-modal>div,
+#search-modal>div {
+    animation: modalSlideIn 0.25s ease-out;
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95) translateY(-20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+/* Modal backdrop fade */
+#event-modal,
+#sys-modal,
+#search-modal {
+    animation: backdropFadeIn 0.2s ease-out;
+}
+
+@keyframes backdropFadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+/* ====================================
+   Skeleton Loading Effect
+   ==================================== */
+
+.skeleton {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s infinite;
+    border-radius: 4px;
+}
+
+@keyframes skeleton-loading {
+    0% {
+        background-position: 200% 0;
+    }
+
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+.skeleton-text {
+    height: 20px;
+    margin-bottom: 8px;
+}
+
+.skeleton-title {
+    height: 28px;
+    width: 60%;
+    margin-bottom: 12px;
+}
+
+.skeleton-avatar {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+}
+
+/* Dark mode skeleton */
+[data-theme="dark"] .skeleton {
+    background: linear-gradient(90deg, #2d2d4a 25%, #3d3d5c 50%, #2d2d4a 75%);
+    background-size: 200% 100%;
+}
+
+/* ====================================
+   Notification Badge Animation
+   ==================================== */
+
+#notif-badge {
+    animation: badgePulse 2s infinite;
+}
+
+@keyframes badgePulse {
+
+    0%,
+    100% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.1);
+    }
+}
+
+/* ====================================
+   Calendar Day Hover
+   ==================================== */
+
+.calendar-day {
+    transition: all 0.15s ease;
+}
+
+.calendar-day:hover {
+    background-color: rgba(108, 92, 231, 0.1);
+    transform: scale(1.02);
+}
+
+/* ====================================
+   Smooth scroll
+   ==================================== */
+
+#content-area {
+    scroll-behavior: smooth;
+}
+
+/* ====================================
+   Form focus animations
+   ==================================== */
+
+.pixel-input {
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.pixel-input:focus {
+    animation: inputFocus 0.3s ease;
+}
+
+@keyframes inputFocus {
+    0% {
+        box-shadow: 0 0 0 0 rgba(108, 92, 231, 0.6);
+    }
+
+    100% {
+        box-shadow: 0 0 0 4px rgba(108, 92, 231, 0.4);
+    }
+}
+
+/* ====================================
+   Loading spinner
+   ==================================== */
+
+.loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid var(--pixel-bg-light);
+    border-top-color: var(--pixel-primary);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}

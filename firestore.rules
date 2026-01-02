@@ -6,21 +6,56 @@ service cloud.firestore {
       allow read, write: if false;
     }
     
+    // Helper function to check if user is admin
+    function isAdmin() {
+      return request.auth != null 
+        && exists(/databases/$(database)/documents/artifacts/$(request.path[1])/public/data/users/$(request.auth.uid))
+        && get(/databases/$(database)/documents/artifacts/$(request.path[1])/public/data/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    
+    // Helper function to check if user is document owner
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+    
     // Allow authenticated users to access app data
     match /artifacts/{appId}/public/data/{collection}/{docId} {
       // Allow read for authenticated users
       allow read: if request.auth != null;
       
-      // Allow create for authenticated users
-      allow create: if request.auth != null
+      // Users collection rules
+      allow create: if request.auth != null 
+        && collection == 'users'
         && request.resource.data.createdAt is string;
       
-      // Allow update for authenticated users
-      allow update: if request.auth != null;
+      // Allow user to update their own profile
+      allow update: if request.auth != null 
+        && collection == 'users' 
+        && isOwner(resource.data.id);
       
-      // Allow delete only for document owner (if authorId exists)
-      allow delete: if request.auth != null
-        && resource.data.authorId == request.auth.uid;
+      // Admin can update any user
+      allow update: if request.auth != null 
+        && collection == 'users' 
+        && isAdmin();
+      
+      // Events collection rules
+      allow create: if request.auth != null 
+        && collection == 'school_events'
+        && request.resource.data.authorId == request.auth.uid
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.title.size() <= 100
+        && request.resource.data.date is string;
+      
+      // Allow update for event owner or admin
+      allow update: if request.auth != null 
+        && collection == 'school_events' 
+        && (resource.data.authorId == request.auth.uid || isAdmin());
+      
+      // Allow delete only for event owner or admin
+      allow delete: if request.auth != null 
+        && collection == 'school_events'
+        && (resource.data.authorId == request.auth.uid || isAdmin());
     }
   }
 }

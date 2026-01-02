@@ -9,6 +9,7 @@ import { initStats } from './stats.js';
 import { initNotificationSystem } from './notification-system.js';
 import { initAdmin } from './admin.js';
 import './storage.js'; // Load storage utilities
+import { initTheme } from './theme.js';
 
 // Wire up dependencies (avoid circular imports)
 setAuthDeps({
@@ -34,6 +35,7 @@ async function init() {
     initStats();
     initNotificationSystem();
     initAdmin();
+    initTheme();
 
     // Initialize authentication
     await initAuth();
