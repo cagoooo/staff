@@ -5,7 +5,7 @@
 | 項目 | 說明 |
 |------|------|
 | 專案名稱 | 行政業務協調系統 |
-| 版本 | v3.2.0 |
+| 版本 | v3.3.0 |
 | 更新日期 | 2026-01-02 |
 | 部署網址 | https://cagoooo.github.io/staff/ |
 | 技術棧 | HTML5, Tailwind CSS, Firebase (Auth, Firestore, Storage), ES Modules |
@@ -22,6 +22,9 @@
 | 行程編輯/刪除 | 建立者可編輯、刪除前確認 | `event-modal.js` |
 | 公告系統增強 | 一般/重要/緊急類型、置頂、已讀狀態 | `ui.js`, `firestore.js` |
 | 搜尋功能 | 標題/建立者搜尋、日期篩選 | `search.js` |
+| 🏷️ 標籤系統 | 自訂標籤、彩色徽章、標籤篩選 | `tags.js` |
+| 💬 評論功能 | 行程討論區、@提及、即時更新 | `comments.js` |
+| ⏰ 提醒自訂 | 自訂提醒時間、瀏覽器通知 | `reminders.js` |
 
 ### 📊 P1 - 進階功能
 
