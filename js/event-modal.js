@@ -11,13 +11,13 @@ let isEditMode = false;
 // Create and inject the modal HTML into the DOM
 export function initEventModal() {
     const modalHTML = `
-    <div id="event-modal" class="fixed inset-0 z-[60] bg-black bg-opacity-60 hidden-section flex items-center justify-center p-4">
-        <div class="bg-white w-full max-w-md border-4 border-gray-800" style="box-shadow: 6px 6px 0 #2d3436;">
-            <div class="p-4 border-b-4 border-gray-800 flex justify-between items-center" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+    <div id="event-modal" class="fixed inset-0 z-[60] bg-black bg-opacity-60 hidden-section flex items-start justify-center p-2 sm:p-4 overflow-y-auto">
+        <div class="bg-white w-full max-w-md border-4 border-gray-800 my-4 sm:my-8" style="box-shadow: 6px 6px 0 #2d3436;">
+            <div class="p-3 sm:p-4 border-b-4 border-gray-800 flex justify-between items-center sticky top-0 z-10" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
                 <h3 id="event-modal-title" class="text-white" style="font-family: 'VT323', monospace; font-size: 24px;">📅 行程詳情</h3>
                 <button onclick="closeEventModal()" class="text-white text-2xl hover:text-gray-300">&times;</button>
             </div>
-            <div class="p-4" id="event-modal-content">
+            <div class="p-3 sm:p-4 max-h-[70vh] overflow-y-auto" id="event-modal-content">
                 <!-- View Mode -->
                 <div id="event-view-mode">
                     <div class="mb-3">
@@ -106,11 +106,11 @@ export function initEventModal() {
                 </div>
             </div>
             <!-- Footer Buttons -->
-            <div class="p-4 border-t-2 border-gray-200 flex gap-2" id="event-modal-footer">
-                <button onclick="toggleEventEditMode()" id="btn-edit-event" class="pixel-btn flex-1">✏️ 編輯</button>
-                <button onclick="confirmDeleteEvent()" id="btn-delete-event" class="pixel-btn flex-1" style="background: #e17055;">🗑️ 刪除</button>
-                <button onclick="saveEventEdit()" id="btn-save-event" class="pixel-btn pixel-btn-success flex-1 hidden-section">💾 儲存</button>
-                <button onclick="cancelEventEdit()" id="btn-cancel-edit" class="pixel-btn pixel-btn-secondary flex-1 hidden-section">❌ 取消</button>
+            <div class="p-3 sm:p-4 border-t-2 border-gray-200 flex flex-wrap gap-2 sticky bottom-0 bg-white" id="event-modal-footer">
+                <button onclick="toggleEventEditMode()" id="btn-edit-event" class="pixel-btn flex-1 min-w-[80px] text-sm sm:text-base">✏️ 編輯</button>
+                <button onclick="confirmDeleteEvent()" id="btn-delete-event" class="pixel-btn flex-1 min-w-[80px] text-sm sm:text-base" style="background: #e17055;">🗑️ 刪除</button>
+                <button onclick="saveEventEdit()" id="btn-save-event" class="pixel-btn pixel-btn-success flex-1 min-w-[80px] text-sm sm:text-base hidden-section">💾 儲存</button>
+                <button onclick="cancelEventEdit()" id="btn-cancel-edit" class="pixel-btn pixel-btn-secondary flex-1 min-w-[80px] text-sm sm:text-base hidden-section">❌ 取消</button>
             </div>
         </div>
     </div>`;
