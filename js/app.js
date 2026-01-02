@@ -16,6 +16,7 @@ import { initRecurringEvents } from './recurring-events.js';
 import { initTags } from './tags.js';
 import { initComments } from './comments.js';
 import { initReminders } from './reminders.js';
+import { initLineConnect } from './line-connect.js';
 
 // Wire up dependencies (avoid circular imports)
 setAuthDeps({
@@ -48,6 +49,7 @@ async function init() {
     initTags();
     initComments();
     initReminders();
+    initLineConnect();
 
     // Initialize authentication (includes 3s timeout fallback)
     await initAuth();

@@ -617,6 +617,12 @@ export function switchTab(tabName) {
         }, 0);
         document.getElementById('edit-name').value = currentUser.name;
         document.getElementById('edit-username').value = currentUser.username;
+
+        // Render LINE settings
+        const lineSettingsContainer = document.getElementById('line-settings-container');
+        if (lineSettingsContainer && window.renderLineSettings) {
+            lineSettingsContainer.innerHTML = window.renderLineSettings(currentUser);
+        }
     }
     if (tabName === 'editor') {
         renderEditorOptions();
