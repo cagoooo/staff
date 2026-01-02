@@ -135,13 +135,17 @@ export async function handleFirebaseAddEvent(e) {
     const targets = [..._currentSelectedTargets];
     const btn = document.getElementById('btn-add-event');
 
+    // New fields
+    const announcementType = document.getElementById('evt-type')?.value || 'normal';
+    const pinned = document.getElementById('evt-pinned')?.checked || false;
+    const tags = window._selectedEventTags || [];
+
     btn.disabled = true;
     btn.innerText = "傳送中...";
 
     try {
-        // Add to Firestore first
-        const eventsRef = collection(db, 'artifacts', appId, 'public', 'data', 'school_events');
-        await addDoc(eventsRef, {
+        // Prepare event data
+        const eventData = {
             authorId: _appCurrentUser.id,
             authorName: _appCurrentUser.name,
             title,
@@ -149,9 +153,24 @@ export async function handleFirebaseAddEvent(e) {
             time,
             targets,
             isPublic,
+            announcementType,
+            pinned,
+            tags,
             completedBy: [],
+            readBy: [],
             createdAt: new Date().toISOString()
-        });
+        };
+
+        // Handle file upload if selected
+        const fileInput = document.getElementById('evt-file');
+        if (fileInput && fileInput.files.length > 0 && window.uploadAttachment) {
+            const file = fileInput.files[0];
+            // We'll upload after creating the event to get event ID
+        }
+
+        // Add to Firestore first
+        const eventsRef = collection(db, 'artifacts', appId, 'public', 'data', 'school_events');
+        const docRef = await addDoc(eventsRef, eventData);
 
         // Sync to Google Calendar if enabled and user is Google user
         if (syncToCalendar && _appCurrentUser.authType === 'google') {

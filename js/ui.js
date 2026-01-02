@@ -288,6 +288,82 @@ export function filterTargetsByDept(deptId) {
     renderEditorOptions();
 }
 
+// Enhance the add event form with new fields
+function enhanceEditorForm() {
+    const form = document.querySelector('#view-editor form');
+    if (!form || form.dataset.enhanced) return;
+
+    // Mark as enhanced to prevent duplicate injection
+    form.dataset.enhanced = 'true';
+
+    // Find the date/time grid and insert after it
+    const dateTimeGrid = form.querySelector('.grid.grid-cols-2');
+    if (!dateTimeGrid) return;
+
+    // Create announcement type field
+    const typeDiv = document.createElement('div');
+    typeDiv.className = 'mb-4';
+    typeDiv.innerHTML = `
+        <label class="pixel-label">公告類型</label>
+        <select id="evt-type" class="pixel-input">
+            <option value="normal">📋 一般</option>
+            <option value="important">⚡ 重要</option>
+            <option value="urgent">🚨 緊急</option>
+        </select>
+    `;
+    dateTimeGrid.insertAdjacentElement('afterend', typeDiv);
+
+    // Create tags field
+    const tagsDiv = document.createElement('div');
+    tagsDiv.className = 'mb-4';
+    tagsDiv.innerHTML = `
+        <label class="pixel-label">🏷️ 標籤</label>
+        <div id="add-event-tags-container" style="position: relative;"></div>
+    `;
+    typeDiv.insertAdjacentElement('afterend', tagsDiv);
+
+    // Initialize tags selector
+    if (window.setSelectedTags) window.setSelectedTags([]);
+    if (window.renderTagSelectorForAdd) {
+        window.renderTagSelectorForAdd('add-event-tags-container', []);
+    }
+
+    // Find and enhance the checkboxes section - add pinned option
+    const publicCheckbox = document.querySelector('#evt-is-public');
+    if (publicCheckbox) {
+        const checkboxParent = publicCheckbox.closest('.flex');
+        if (checkboxParent) {
+            // Create file attachment field before checkboxes
+            const attachDiv = document.createElement('div');
+            attachDiv.className = 'mb-4';
+            attachDiv.innerHTML = `
+                <label class="pixel-label">📎 上傳附件</label>
+                <input type="file" id="evt-file" class="pixel-input" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt">
+                <p style="font-family: 'VT323', monospace; font-size: 14px; color: #636e72; margin-top: 4px;">
+                    支援：圖片、PDF、Word、Excel、TXT（最大 10MB）
+                </p>
+            `;
+            checkboxParent.insertAdjacentElement('beforebegin', attachDiv);
+
+            // Create pinned checkbox
+            const pinnedDiv = document.createElement('div');
+            pinnedDiv.className = 'flex items-center gap-3 mb-3';
+            pinnedDiv.style.fontFamily = "'VT323', monospace";
+            pinnedDiv.style.fontSize = '20px';
+            pinnedDiv.innerHTML = `
+                <input type="checkbox" id="evt-pinned" class="w-6 h-6">
+                <label for="evt-pinned">📌 置頂公告</label>
+            `;
+            checkboxParent.insertAdjacentElement('afterend', pinnedDiv);
+
+            // Update spacing for public checkbox
+            checkboxParent.className = 'flex items-center gap-3 mb-3';
+        }
+    }
+
+    console.log('[UI] Editor form enhanced with new fields');
+}
+
 function renderSelectedChips() {
     const chipContainer = document.getElementById('selected-targets-container');
     if (!chipContainer) return;
@@ -542,7 +618,10 @@ export function switchTab(tabName) {
         document.getElementById('edit-name').value = currentUser.name;
         document.getElementById('edit-username').value = currentUser.username;
     }
-    if (tabName === 'editor') renderEditorOptions();
+    if (tabName === 'editor') {
+        renderEditorOptions();
+        enhanceEditorForm();
+    }
     if (tabName === 'notifications') renderNotifications();
 }
 

@@ -314,6 +314,13 @@ window.createAndAddTag = async function (tagName) {
 
 window.filterByTag = filterByTag;
 window.renderTagFilters = renderTagFilters;
+window.setSelectedTags = setSelectedTags;
+
+// Render tag selector for add event form
+window.renderTagSelectorForAdd = function (containerId, selectedTags = []) {
+    setSelectedTags(selectedTags);
+    renderTagSelector(containerId, selectedTags);
+};
 
 function updateSelectedTagsDisplay() {
     const display = document.getElementById('selected-tags-display');
