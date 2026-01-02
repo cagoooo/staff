@@ -54,6 +54,15 @@ service cloud.firestore {
       allow update, delete: if request.auth != null 
         && collection == 'school_events' 
         && (resource.data.authorId == request.auth.uid || isAdmin());
+      
+      // Tags - anyone can read, any authenticated user can create
+      allow read: if request.auth != null && collection == 'tags';
+      allow create: if request.auth != null && collection == 'tags';
+      
+      // Tags - only admin can update/delete
+      allow update, delete: if request.auth != null 
+        && collection == 'tags' 
+        && isAdmin();
     }
   }
 }

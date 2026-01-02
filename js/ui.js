@@ -1,6 +1,7 @@
 // UI Rendering Module - With Department & Calendar
 import { globalUsers, globalEvents, getAppCurrentUser, getCurrentSelectedTargets } from './firestore.js';
 import { DEPARTMENTS, getDepartmentList, getDepartmentName, getDepartmentColor, renderDepartmentOptions, renderPositionOptions } from './departments.js';
+import { renderTagBadges, eventMatchesTagFilter, renderTagFilters } from './tags.js';
 
 // Calendar state
 let currentCalendarDate = new Date();
@@ -381,6 +382,7 @@ export function renderDashboard() {
             ? `<span style="background: ${typeConfig.border}22; color: ${typeConfig.border}; padding: 2px 6px; font-size: 14px; margin-right: 4px;">${typeConfig.icon} ${typeConfig.label}</span>`
             : '';
         const unreadDot = !isRead ? '<span style="color: #e74c3c; margin-right: 4px;">●</span>' : '';
+        const tagsBadges = renderTagBadges(evt.tags);
 
         div.innerHTML = `
             <div class="flex justify-between items-start">
@@ -388,6 +390,7 @@ export function renderDashboard() {
                 <span class="text-sm bg-purple-200 px-2 py-1 shrink-0">${evt.date}</span>
             </div>
             <p class="text-sm text-gray-600 mt-1">發起人：${evt.authorName} | 時間：${evt.time || '--:--'}</p>
+            ${tagsBadges ? `<div class="mt-1">${tagsBadges}</div>` : ''}
         `;
         listAnnounce.appendChild(div);
     });

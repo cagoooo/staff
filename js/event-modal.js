@@ -1,6 +1,7 @@
 // Event Modal Module - For viewing, editing, and deleting events
 import { globalUsers, getAppCurrentUser, updateEvent, deleteEvent, getEventById } from './firestore.js';
 import { showConfirm } from '../components/modal.js';
+import { renderTagSelector, setSelectedTags, getSelectedTags, renderTagBadges, getAllTags } from './tags.js';
 
 let currentEditingEventId = null;
 let isEditMode = false;
@@ -47,6 +48,10 @@ export function initEventModal() {
                         <span class="text-gray-500" style="font-family: 'VT323', monospace; font-size: 16px;">📎 附件</span>
                         <div id="event-detail-attachments" class="mt-2 space-y-2"></div>
                     </div>
+                    <div class="mb-3" id="event-tags-view">
+                        <span class="text-gray-500" style="font-family: 'VT323', monospace; font-size: 16px;">🏷️ 標籤</span>
+                        <div id="event-detail-tags" class="mt-1"></div>
+                    </div>
                 </div>
                 <!-- Edit Mode -->
                 <div id="event-edit-mode" class="hidden-section">
@@ -87,6 +92,10 @@ export function initEventModal() {
                             支援：圖片、PDF、Word、Excel、TXT（最大 10MB）
                         </p>
                         <div id="edit-attachments-list" class="mt-2 space-y-1"></div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="pixel-label">🏷️ 標籤</label>
+                        <div id="edit-event-tags-container" style="position: relative;"></div>
                     </div>
                 </div>
             </div>
@@ -167,6 +176,16 @@ export function openEventModal(eventId) {
         attachViewSection.style.display = 'none';
     }
 
+    // Render tags
+    const tagsViewSection = document.getElementById('event-tags-view');
+    const tagsContainer = document.getElementById('event-detail-tags');
+    if (event.tags && event.tags.length > 0) {
+        tagsViewSection.style.display = 'block';
+        tagsContainer.innerHTML = renderTagBadges(event.tags);
+    } else {
+        tagsViewSection.style.display = 'none';
+    }
+
     // Show/hide edit button based on ownership
     const isOwner = event.authorId === currentUser?.id;
     document.getElementById('btn-edit-event').style.display = isOwner ? 'block' : 'none';
@@ -207,6 +226,10 @@ export function toggleEventEditMode() {
     document.getElementById('edit-evt-type').value = event.announcementType || 'normal';
     document.getElementById('edit-evt-pinned').checked = event.pinned || false;
 
+    // Initialize tag selector with existing tags
+    setSelectedTags(event.tags || []);
+    renderTagSelector('edit-event-tags-container', event.tags || []);
+
     // Switch UI
     document.getElementById('event-view-mode').classList.add('hidden-section');
     document.getElementById('event-edit-mode').classList.remove('hidden-section');
@@ -242,7 +265,8 @@ export async function saveEventEdit() {
         time: document.getElementById('edit-evt-time').value,
         isPublic: document.getElementById('edit-evt-is-public').checked,
         announcementType: document.getElementById('edit-evt-type').value,
-        pinned: document.getElementById('edit-evt-pinned').checked
+        pinned: document.getElementById('edit-evt-pinned').checked,
+        tags: getSelectedTags()
     };
 
     // Handle file upload if selected

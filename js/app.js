@@ -13,6 +13,7 @@ import { initTheme } from './theme.js';
 import { initCalendarExport } from './calendar-export.js';
 import { initBatchOperations } from './batch-operations.js';
 import { initRecurringEvents } from './recurring-events.js';
+import { initTags } from './tags.js';
 
 // Wire up dependencies (avoid circular imports)
 setAuthDeps({
@@ -42,6 +43,7 @@ async function init() {
     initCalendarExport();
     initBatchOperations();
     initRecurringEvents();
+    initTags();
 
     // Initialize authentication (includes 3s timeout fallback)
     await initAuth();
