@@ -15,6 +15,7 @@ import { initBatchOperations } from './batch-operations.js';
 import { initRecurringEvents } from './recurring-events.js';
 import { initTags } from './tags.js';
 import { initComments } from './comments.js';
+import { initReminders } from './reminders.js';
 
 // Wire up dependencies (avoid circular imports)
 setAuthDeps({
@@ -46,6 +47,7 @@ async function init() {
     initRecurringEvents();
     initTags();
     initComments();
+    initReminders();
 
     // Initialize authentication (includes 3s timeout fallback)
     await initAuth();

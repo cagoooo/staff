@@ -3,6 +3,7 @@ import { globalUsers, getAppCurrentUser, updateEvent, deleteEvent, getEventById 
 import { showConfirm } from '../components/modal.js';
 import { renderTagSelector, setSelectedTags, getSelectedTags, renderTagBadges, getAllTags } from './tags.js';
 import { startCommentsListener, stopCommentsListener, renderCommentsSection } from './comments.js';
+import { renderReminderSettings } from './reminders.js';
 
 let currentEditingEventId = null;
 let isEditMode = false;
@@ -53,6 +54,8 @@ export function initEventModal() {
                         <span class="text-gray-500" style="font-family: 'VT323', monospace; font-size: 16px;">🏷️ 標籤</span>
                         <div id="event-detail-tags" class="mt-1"></div>
                     </div>
+                    <!-- Reminders Section -->
+                    <div id="event-reminders-section"></div>
                     <!-- Comments Section -->
                     <div id="event-comments-section"></div>
                 </div>
@@ -204,6 +207,12 @@ export function openEventModal(eventId) {
 
     // Start comments listener for this event
     startCommentsListener(eventId);
+
+    // Render reminders section
+    const remindersContainer = document.getElementById('event-reminders-section');
+    if (remindersContainer) {
+        remindersContainer.innerHTML = renderReminderSettings(eventId);
+    }
 
     modal.classList.remove('hidden-section');
 }
