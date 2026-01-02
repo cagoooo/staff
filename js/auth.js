@@ -53,10 +53,18 @@ export async function initAuth() {
         }
     }
 
-    try {
-        await signInAnonymously(auth);
-    } catch (err) {
-        console.error("Auth error:", err);
+    // Only sign in anonymously if:
+    // 1. No existing session (not a returning user)
+    // 2. No current Firebase auth user
+    if (!existingSession && !auth.currentUser) {
+        console.log('[Auth] No session or auth user, signing in anonymously...');
+        try {
+            await signInAnonymously(auth);
+        } catch (err) {
+            console.error("[Auth] Anonymous auth error:", err);
+        }
+    } else {
+        console.log('[Auth] Skipping anonymous auth - session or auth exists');
     }
 
     onAuthStateChanged(auth, (user) => {
@@ -107,13 +115,28 @@ export function checkLoadingComplete() {
 async function refreshUserFromFirestore(sessionUser) {
     if (!db || !sessionUser?.id) return;
 
+    // Check if Firebase Auth has a different UID than session
+    // This can happen after Google login when user revisits the page
+    let userIdToFetch = sessionUser.id;
+    if (auth.currentUser && auth.currentUser.uid !== sessionUser.id) {
+        console.log('[Auth] Firebase Auth UID differs from session ID');
+        console.log('[Auth] Firebase Auth UID:', auth.currentUser.uid);
+        console.log('[Auth] Session ID:', sessionUser.id);
+
+        // For Google users, try to find their document by googleUid
+        if (sessionUser.authType === 'google' || sessionUser.googleUid) {
+            userIdToFetch = auth.currentUser.uid;
+        }
+    }
+
     try {
-        const userDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', sessionUser.id);
+        const userDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', userIdToFetch);
         const userDoc = await getDoc(userDocRef);
 
         if (userDoc.exists()) {
-            const freshData = { id: sessionUser.id, ...userDoc.data() };
+            const freshData = { id: userIdToFetch, ...userDoc.data() };
             console.log('[Auth] Refreshed user data from Firestore, role:', freshData.role);
+            console.log('[Auth] Using user ID:', userIdToFetch);
 
             // Update current user with fresh data
             _setAppCurrentUser(freshData);
@@ -125,6 +148,20 @@ async function refreshUserFromFirestore(sessionUser) {
                 // Trigger admin UI injection if not already done
                 const { initAdmin } = await import('./admin.js');
                 setTimeout(() => initAdmin(), 500);
+            }
+        } else {
+            console.log('[Auth] User document not found at:', userIdToFetch);
+            // Try the original session ID as fallback
+            if (userIdToFetch !== sessionUser.id) {
+                console.log('[Auth] Trying fallback ID:', sessionUser.id);
+                const fallbackRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', sessionUser.id);
+                const fallbackDoc = await getDoc(fallbackRef);
+                if (fallbackDoc.exists()) {
+                    const freshData = { id: sessionUser.id, ...fallbackDoc.data() };
+                    console.log('[Auth] Found user with fallback ID, role:', freshData.role);
+                    _setAppCurrentUser(freshData);
+                    saveSession(freshData);
+                }
             }
         }
     } catch (err) {

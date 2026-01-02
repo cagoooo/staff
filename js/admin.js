@@ -243,11 +243,18 @@ async function promoteToAdmin(userId) {
 async function deleteUser(userId, userName) {
     showConfirm(`確定要刪除使用者「${userName}」嗎？此操作無法復原！`, async () => {
         try {
+            // Debug: Check current auth state
+            const { auth } = await import('./firebase-config.js');
+            console.log('[Admin] Delete user - Target userId:', userId);
+            console.log('[Admin] Delete user - Firebase Auth UID:', auth.currentUser?.uid);
+            console.log('[Admin] Delete user - App current user ID:', getAppCurrentUser()?.id);
+
             const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', userId);
             await deleteDoc(userRef);
             showAlert('已刪除使用者');
             renderAdminPanel();
         } catch (err) {
+            console.error('[Admin] Delete failed:', err);
             showAlert('刪除失敗：' + err.message);
         }
     });
