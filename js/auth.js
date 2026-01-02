@@ -1,6 +1,6 @@
 // Authentication Module - With Security Enhancements
 import { signInAnonymously, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-import { collection, addDoc, query, where, getDocs, doc, updateDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { collection, addDoc, query, where, getDocs, doc, getDoc, updateDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { auth, db, appId } from './firebase-config.js';
 import { showAlert } from '../components/modal.js';
 import { hashPassword, verifyPassword, isHashed, saveSession, getSession, clearSession } from './crypto.js';
@@ -25,8 +25,11 @@ export async function initAuth() {
     // Check existing session first
     const existingSession = getSession();
     if (existingSession) {
-        console.log('Valid session found, restoring user');
+        console.log('[Auth] Valid session found, restoring user:', existingSession.email || existingSession.username);
         _setAppCurrentUser(existingSession);
+
+        // Refresh user data from Firestore to get latest fields (e.g., role)
+        refreshUserFromFirestore(existingSession);
     }
 
     // Handle Google login redirect result (for COOP compatibility)
@@ -97,6 +100,35 @@ export function checkLoadingComplete() {
         } else {
             authContainer.classList.remove('hidden-section');
         }
+    }
+}
+
+// Refresh user data from Firestore to get latest fields (e.g., role)
+async function refreshUserFromFirestore(sessionUser) {
+    if (!db || !sessionUser?.id) return;
+
+    try {
+        const userDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', sessionUser.id);
+        const userDoc = await getDoc(userDocRef);
+
+        if (userDoc.exists()) {
+            const freshData = { id: sessionUser.id, ...userDoc.data() };
+            console.log('[Auth] Refreshed user data from Firestore, role:', freshData.role);
+
+            // Update current user with fresh data
+            _setAppCurrentUser(freshData);
+            saveSession(freshData);
+
+            // Re-check admin status
+            if (freshData.role === 'admin') {
+                console.log('[Auth] Admin user detected after refresh');
+                // Trigger admin UI injection if not already done
+                const { initAdmin } = await import('./admin.js');
+                setTimeout(() => initAdmin(), 500);
+            }
+        }
+    } catch (err) {
+        console.error('[Auth] Failed to refresh user data:', err);
     }
 }
 
