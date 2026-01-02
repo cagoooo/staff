@@ -5,7 +5,7 @@
 | 項目 | 說明 |
 |------|------|
 | 專案名稱 | 行政業務協調系統 |
-| 版本 | v3.1.0 |
+| 版本 | v3.2.0 |
 | 更新日期 | 2026-01-02 |
 | 部署網址 | https://cagoooo.github.io/staff/ |
 | 技術棧 | HTML5, Tailwind CSS, Firebase (Auth, Firestore, Storage), ES Modules |
@@ -29,7 +29,7 @@
 |------|------|------|
 | 統計儀表板 | 本月統計、Chart.js 圖表 | `stats.js` |
 | 通知提醒 | 瀏覽器推播、1天/1小時提醒 | `notification-system.js` |
-| 使用者管理 | 管理員可停用/啟用帳號、設定角色 | `admin.js` |
+| 使用者管理 | 管理員可新增/編輯/刪除/停用帳號、設定角色 | `admin.js` |
 | 檔案附件 | Firebase Storage 上傳/下載/預覽 | `storage.js` |
 
 ### 🎨 P2 - UI/UX 優化
@@ -43,8 +43,8 @@
 
 | 功能 | 說明 | 檔案 |
 |------|------|------|
-| Firestore 規則 | 管理員權限、擁有者驗證、UID 文件 ID | `firestore.rules` |
-| Google 登入修復 | Redirect 模式避免 COOP 錯誤 | `auth.js` |
+| Firestore 規則 | 管理員權限（含刪除）、擁有者驗證、UID 文件 ID | `firestore.rules` |
+| Google 登入修復 | Popup 模式解決第三方 Cookie 限制 | `auth.js` |
 
 ### 🔥 高優先級新功能
 
@@ -70,7 +70,7 @@ smes/
 │   └── animations.css      # 動畫效果
 ├── js/
 │   ├── app.js              # 應用程式入口
-│   ├── auth.js             # 認證邏輯 (含 Google Redirect)
+│   ├── auth.js             # 認證邏輯 (含 Google Popup)
 │   ├── firestore.js        # 資料庫操作
 │   ├── firebase-config.js  # Firebase 設定
 │   ├── ui.js               # UI 渲染
@@ -96,14 +96,12 @@ smes/
 
 | Commit | 說明 |
 |--------|------|
-| `19dc080` | 適配新 Firestore 規則 - UID 作為文件 ID、users 集合 |
-| `d0da445` | 修復 Google 登入 COOP 問題 - Redirect 模式 |
-| `a2b386e` | 高優先級功能 - 行事曆匯出、批次操作、行程重複 |
-| `a815f97` | 文件更新 - CHANGELOG v3.0.0 |
-| `96abed7` | P2/P3 - 深色模式、動畫、Firestore 規則增強 |
-| `dd18d17` | P1 - 檔案附件 (Firebase Storage) |
-| `b7ba0cb` | P1 - 通知系統、管理後台 |
-| `47a1842` | P1 - 統計儀表板 (Chart.js) |
+| `4df68b8` | fix: 優化建立帳號表單在小螢幕上的滾動體驗 |
+| `e1988c6` | feat: 管理員新增、編輯、刪除使用者功能 |
+| `896792e` | fix: 修正管理員角色載入問題 |
+| `49cd366` | fix: 修正 Google 登入後帳號無法更新的問題 |
+| `d6585c5` | fix: 改用 signInWithPopup 解決 Google 登入問題 |
+| `82a13d0` | fix: 修正頁面卡在連線中問題及清理 console 警告 |
 
 ---
 
