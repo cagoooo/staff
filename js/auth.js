@@ -1,5 +1,5 @@
 // Authentication Module - With Security Enhancements
-import { signInAnonymously, onAuthStateChanged, GoogleAuthProvider, signInWithRedirect, getRedirectResult } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { signInAnonymously, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { collection, addDoc, query, where, getDocs, doc, updateDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { auth, db, appId } from './firebase-config.js';
 import { showAlert } from '../components/modal.js';
@@ -230,7 +230,7 @@ export async function handleGoogleLogin() {
 
     const googleBtn = document.getElementById('btn-google-login');
     googleBtn.disabled = true;
-    googleBtn.innerHTML = '跳轉中...';
+    googleBtn.innerHTML = '登入中...';
 
     try {
         const provider = new GoogleAuthProvider();
@@ -238,16 +238,27 @@ export async function handleGoogleLogin() {
         // Add Calendar scope for event sync
         provider.addScope('https://www.googleapis.com/auth/calendar.events');
 
-        // Use redirect instead of popup for COOP compatibility
-        await signInWithRedirect(auth, provider);
-        // Note: Page will redirect to Google and back, 
-        // result will be handled in initAuth -> getRedirectResult
+        console.log('[Auth] Starting Google popup login...');
+
+        // Use popup for more reliable login (redirect has issues with third-party cookie restrictions)
+        const result = await signInWithPopup(auth, provider);
+
+        console.log('[Auth] Google popup login successful:', result.user.email);
+
+        // Process the result directly
+        await processGoogleLoginResult(result);
+
     } catch (err) {
+        console.error('[Auth] Google login error:', err);
         googleBtn.disabled = false;
         googleBtn.innerHTML = '🌐 使用 Google 登入';
 
         if (err.code === 'auth/unauthorized-domain') {
             showAlert('網域未授權！請至 Firebase Console 新增此網域');
+        } else if (err.code === 'auth/popup-closed-by-user') {
+            showAlert('登入視窗已關閉');
+        } else if (err.code === 'auth/popup-blocked') {
+            showAlert('彈出視窗被阻擋，請允許此網站的彈出視窗');
         } else {
             showAlert('Google 登入失敗：' + err.message);
         }
