@@ -60,7 +60,7 @@ export function startDataListeners(user) {
         return;
     }
 
-    const usersRef = collection(db, 'artifacts', appId, 'public', 'data', 'school_users');
+    const usersRef = collection(db, 'artifacts', appId, 'public', 'data', 'users');
     const eventsRef = collection(db, 'artifacts', appId, 'public', 'data', 'school_events');
 
     onSnapshot(usersRef, (snapshot) => {
@@ -221,7 +221,7 @@ export async function handleUpdateProfile(e) {
     const newPass = document.getElementById('edit-password').value;
 
     try {
-        const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'school_users', _appCurrentUser.id);
+        const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', _appCurrentUser.id);
         const updateData = { department: newDept, jobTitle: newJob, name: newName };
 
         if (newPass) {

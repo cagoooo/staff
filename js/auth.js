@@ -1,6 +1,6 @@
 // Authentication Module - With Security Enhancements
 import { signInAnonymously, onAuthStateChanged, GoogleAuthProvider, signInWithRedirect, getRedirectResult } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-import { collection, addDoc, query, where, getDocs, doc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { collection, addDoc, query, where, getDocs, doc, updateDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { auth, db, appId } from './firebase-config.js';
 import { showAlert } from '../components/modal.js';
 import { hashPassword, verifyPassword, isHashed, saveSession, getSession, clearSession } from './crypto.js';
@@ -118,7 +118,7 @@ export async function handleAppLogin(e) {
                 // Migrate to hashed password
                 try {
                     const hashedPwd = await hashPassword(password);
-                    const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'school_users', user.id);
+                    const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', user.id);
                     await updateDoc(userRef, { password: hashedPwd });
                     console.log('Password migrated to hash');
                 } catch (e) {
@@ -176,8 +176,9 @@ export async function handleAppRegister(e) {
         // Hash password before storing
         const hashedPassword = await hashPassword(password);
 
-        const usersRef = collection(db, 'artifacts', appId, 'public', 'data', 'school_users');
-        await addDoc(usersRef, {
+        // Use auth UID as document ID (required by new Firestore rules)
+        const userDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', auth.currentUser.uid);
+        await setDoc(userDocRef, {
             department: dept,
             jobTitle: job,
             name,
@@ -247,7 +248,9 @@ async function processGoogleLoginResult(result) {
         }
     }
 
-    const usersRef = collection(db, 'artifacts', appId, 'public', 'data', 'school_users');
+    // Use 'users' collection to match the Firestore rules
+    const userDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', googleUser.uid);
+    const usersRef = collection(db, 'artifacts', appId, 'public', 'data', 'users');
     const q = query(usersRef, where('googleUid', '==', googleUser.uid));
     const querySnapshot = await getDocs(q);
 
@@ -263,8 +266,9 @@ async function processGoogleLoginResult(result) {
             createdAt: new Date().toISOString(),
             authType: 'google'
         };
-        const docRef = await addDoc(usersRef, newUserData);
-        userData = { id: docRef.id, ...newUserData };
+        // Use setDoc with auth UID as document ID (required by new Firestore rules)
+        await setDoc(userDocRef, newUserData);
+        userData = { id: googleUser.uid, ...newUserData };
         showAlert('Google 帳號註冊成功！請設定您的處室和職稱');
     } else {
         const existingDoc = querySnapshot.docs[0];

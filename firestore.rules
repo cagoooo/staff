@@ -1,60 +1,53 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    
     // Default deny all
     match /{document=**} {
       allow read, write: if false;
     }
     
-    // Helper function to check if user is admin
+    // Check if user is admin
     function isAdmin() {
       return request.auth != null 
-        && exists(/databases/$(database)/documents/artifacts/$(request.path[1])/public/data/users/$(request.auth.uid))
-        && get(/databases/$(database)/documents/artifacts/$(request.path[1])/public/data/users/$(request.auth.uid)).data.role == 'admin';
+        && exists(/databases/$(database)/documents/artifacts/$(request.path[4])/public/data/users/$(request.auth.uid))
+        && get(/databases/$(database)/documents/artifacts/$(request.path[4])/public/data/users/$(request.auth.uid)).data.role == 'admin';
     }
-    
-    // Helper function to check if user is document owner
-    function isOwner(userId) {
-      return request.auth != null && request.auth.uid == userId;
+
+    // Check if user is document owner (by document ID)
+    function isOwner(docId) {
+      return request.auth != null && request.auth.uid == docId;
     }
-    
-    // Allow authenticated users to access app data
+
+    // App data rules
     match /artifacts/{appId}/public/data/{collection}/{docId} {
+      
       // Allow read for authenticated users
       allow read: if request.auth != null;
       
-      // Users collection rules
+      // Users collection - create only own document
       allow create: if request.auth != null 
         && collection == 'users'
-        && request.resource.data.createdAt is string;
+        && docId == request.auth.uid;
       
-      // Allow user to update their own profile
+      // Users collection - update own document
       allow update: if request.auth != null 
         && collection == 'users' 
-        && isOwner(resource.data.id);
+        && isOwner(docId);
       
       // Admin can update any user
       allow update: if request.auth != null 
         && collection == 'users' 
         && isAdmin();
       
-      // Events collection rules
+      // Events - create with author check
       allow create: if request.auth != null 
         && collection == 'school_events'
-        && request.resource.data.authorId == request.auth.uid
-        && request.resource.data.title is string
-        && request.resource.data.title.size() > 0
-        && request.resource.data.title.size() <= 100
-        && request.resource.data.date is string;
+        && request.resource.data.authorId == request.auth.uid;
       
-      // Allow update for event owner or admin
-      allow update: if request.auth != null 
+      // Events - update/delete for owner or admin
+      allow update, delete: if request.auth != null 
         && collection == 'school_events' 
-        && (resource.data.authorId == request.auth.uid || isAdmin());
-      
-      // Allow delete only for event owner or admin
-      allow delete: if request.auth != null 
-        && collection == 'school_events'
         && (resource.data.authorId == request.auth.uid || isAdmin());
     }
   }
