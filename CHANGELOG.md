@@ -1,78 +1,241 @@
-# CHANGELOG
+# 行政業務協調系統 - 版本紀錄
 
-## [v2.4.0] - 2026-01-01
+## 📋 系統資訊
 
-### Department Management
-- **Department Dropdown**: Register with department selection
-- **Position by Department**: Positions filtered by department
-- **4 Departments**: 教務處、學務處、總務處、輔導室
-- **24 Positions**: All official positions with color coding
-- **Sidebar Display**: Shows user's department with color
-
-### Shared Calendar View
-- **Monthly Calendar**: Navigate between months
-- **Event Dots**: Color-coded by department
-- **Department Filter**: Filter events by department
-- **Day Detail View**: Click date to see all events
-- **Cross-Department View**: See all school events
-
-### New Files
-- `js/departments.js` - Department configuration
+| 項目 | 說明 |
+|------|------|
+| 專案名稱 | 行政業務協調系統 |
+| 版本 | v3.0.0 |
+| 更新日期 | 2026-01-02 |
+| 部署網址 | https://cagoooo.github.io/staff/ |
+| 技術棧 | HTML5, Tailwind CSS, Firebase, ES Modules |
 
 ---
 
-## [v2.3.0] - 2026-01-01
+## ✅ 已完成功能
 
-### Google Calendar Integration
-- **Calendar Sync**: One-way sync from system to Google Calendar
-- **OAuth Scope**: Auto-request calendar permission on Google login
-- **Sync Option**: "📅 同步至 Google 行事曆" checkbox in event form
-- **Access Token**: Store and manage calendar access token
+### 🎯 P0 - 核心功能
 
-### New Files
-- `js/google-calendar.js` - Google Calendar API module
+#### 1. 行程編輯與刪除
+- 點擊公告項目可查看行程詳情
+- 建立者可編輯標題、日期、時間
+- 刪除前有確認對話框
+- **檔案**: `js/event-modal.js`
 
----
+#### 2. 公告系統增強
+- **公告類型**: 一般 📋 / 重要 ⚡ / 緊急 🚨
+- **置頂功能**: 📌 置頂公告排在最前
+- **已讀狀態**: ● 未讀標記，點擊後自動標為已讀
 
-## [v2.2.0] - 2026-01-01
-
-### Backend RWD Optimization
-- **Mobile Hamburger Menu**: ☰ toggle for sidebar
-- **Collapsible Sidebar**: Slide-in animation with overlay
-- **Touch-Friendly**: Min 48px button/input size
-- **Responsive Dashboard**: Grid → single column on mobile
-- **Scrollable Auth**: Login page scrollable on short screens
-- **Larger Title**: 36px login title with RWD breakpoints
+#### 3. 搜尋功能
+- 依標題或建立者搜尋
+- 日期範圍篩選
+- 即時搜尋結果
+- **檔案**: `js/search.js`
 
 ---
 
-## [v2.1.0] - 2026-01-01
+### 📊 P1 - 進階功能
 
-### P0 Security Enhancements
-- **Password Hashing**: SHA-256 encryption via Web Crypto API
-- **Password Migration**: Auto-migrate plain text to hashed on login
-- **Session Expiration**: 24-hour session with auto-expiry
-- **Security Rules**: Firestore rules for access control
+#### 4. 統計儀表板
+- 本月行程統計（總數/已完成/待處理）
+- 各處室工作量分布圖表 (Chart.js)
+- 個人任務完成率
+- **檔案**: `js/stats.js`
 
-### P0 Offline Support
-- **Service Worker**: Cache static assets for offline access
-- **LocalStorage Caching**: Cache users/events data
-- **Offline Detection**: Network status handling
-- **Offline Messages**: User-friendly offline alerts
+#### 5. 通知提醒系統
+- 瀏覽器推播通知 (Web Push)
+- 行程前 1 天/1 小時提醒
+- 權限請求 UI
+- **檔案**: `js/notification-system.js`
+
+#### 6. 使用者管理後台
+- 管理員可查看所有用戶
+- 停用/啟用帳號功能
+- 設為管理員功能
+- **檔案**: `js/admin.js`
+
+#### 7. 檔案附件功能
+- Firebase Storage 上傳/下載
+- 支援圖片、PDF、Word、Excel
+- 附件預覽功能
+- **檔案**: `js/storage.js`
 
 ---
 
-## [v2.0.0] - 2026-01-01
+### 🎨 P2 - UI/UX 優化
 
-### Major Updates
-- Code Modularization (6 ES6 modules)
-- Full Traditional Chinese Localization
-- Pixel Art UI with animations
+#### 8. 深色模式
+- 系統自動偵測 + 手動切換
+- 保存用戶偏好設定
+- 右下角切換按鈕
+- **檔案**: `js/theme.js`, `css/dark-mode.css`
+
+#### 9. 動畫與過場效果
+- 頁面切換過場動畫
+- 列表項目載入動畫
+- 按鈕點擊回饋動畫
+- Skeleton Loading 效果
+- **檔案**: `css/animations.css`
 
 ---
 
-## [v1.0.0] - Initial Release
-- Basic login/register
-- Google OAuth
-- Firebase Firestore
-- Dashboard & notifications
+### 🔒 P3 - 安全性
+
+#### 10. Firestore 安全規則
+- 管理員權限驗證
+- 文件擁有者驗證
+- 輸入資料驗證
+- **檔案**: `firestore.rules`
+
+---
+
+## 📁 專案結構
+
+```
+smes/
+├── index.html              # 主頁面
+├── firestore.rules         # Firestore 安全規則
+├── css/
+│   ├── pixel-style.css     # 主要樣式
+│   ├── mobile-fixes.css    # 行動裝置修正
+│   ├── dark-mode.css       # 深色主題
+│   └── animations.css      # 動畫效果
+├── js/
+│   ├── app.js              # 應用程式入口
+│   ├── auth.js             # 認證邏輯
+│   ├── firestore.js        # 資料庫操作
+│   ├── firebase-config.js  # Firebase 設定
+│   ├── ui.js               # UI 渲染
+│   ├── departments.js      # 處室設定
+│   ├── event-modal.js      # 行程詳情 Modal
+│   ├── search.js           # 搜尋功能
+│   ├── stats.js            # 統計儀表板
+│   ├── notification-system.js  # 通知系統
+│   ├── admin.js            # 管理後台
+│   ├── storage.js          # 檔案附件
+│   └── theme.js            # 深色模式
+└── components/
+    └── modal.js            # Modal 元件
+```
+
+---
+
+## 🚀 未來開發規劃
+
+### 🔥 高優先級 (推薦優先開發)
+
+#### 1. 行事曆匯出功能
+- 匯出行程到 iCal 格式
+- 與 Google Calendar 同步
+- 訂閱日曆網址 (WebCal)
+
+#### 2. 批次操作功能
+- 批次刪除多個行程
+- 批次標記為已完成
+- 批次匯出行程
+
+#### 3. 行程重複功能
+- 每日/每週/每月重複
+- 自訂重複規則
+- 重複行程管理
+
+#### 4. 更多圖表統計
+- 年度統計報表
+- 處室績效比較
+- 趨勢分析圖表
+- 匯出 PDF 報表
+
+---
+
+### 💡 中優先級 (功能增強)
+
+#### 5. 評論/討論功能
+- 行程下方評論區
+- @提及通知
+- 評論編輯/刪除
+
+#### 6. 標籤/分類系統
+- 自訂標籤
+- 依標籤篩選
+- 標籤顏色設定
+
+#### 7. 時間軸視圖
+- 甘特圖視圖
+- 時間線展示
+- 拖曳調整日期
+
+#### 8. 行程提醒自訂
+- 自訂提醒時間
+- Email 通知選項
+- LINE 通知整合
+
+---
+
+### 🌟 低優先級 (進階功能)
+
+#### 9. 多語言支援
+- 英文版本
+- 語言切換選項
+
+#### 10. 資料匯入/匯出
+- Excel 匯入行程
+- JSON 備份/還原
+- 資料遷移工具
+
+#### 11. 權限細分
+- 只讀用戶
+- 部門管理員
+- 自訂權限角色
+
+#### 12. API 整合
+- REST API 端點
+- Webhook 通知
+- 第三方整合
+
+---
+
+### 🎨 UI/UX 改進
+
+#### 13. 自訂主題色彩
+- 主題色選擇器
+- 自訂品牌色
+
+#### 14. 行動版 App
+- PWA 安裝
+- 離線支援增強
+- 推播通知優化
+
+#### 15. 無障礙優化
+- 鍵盤導航
+- 螢幕閱讀器支援
+- 高對比模式
+
+---
+
+## 📝 變更日誌
+
+### v3.0.0 (2026-01-02)
+- ✅ 行程編輯/刪除功能
+- ✅ 公告類型、置頂、已讀狀態
+- ✅ 搜尋功能
+- ✅ 統計儀表板 + Chart.js
+- ✅ 通知提醒系統
+- ✅ 使用者管理後台
+- ✅ 檔案附件 (Firebase Storage)
+- ✅ 深色模式
+- ✅ 動畫效果
+- ✅ Firestore 安全規則增強
+- ✅ 字體大小優化
+
+### v2.0.0 (2025-12-31)
+- 基礎行程管理系統
+- 共用日曆
+- 帳號設定
+- 待辦與通知
+- 處室篩選
+
+### v1.0.0 (2025-12-30)
+- 初始版本
+- Firebase 認證
+- 基礎 UI 框架
