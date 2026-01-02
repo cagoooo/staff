@@ -64,5 +64,23 @@ service cloud.firestore {
         && collection == 'tags' 
         && isAdmin();
     }
+    
+    // Comments subcollection under events
+    match /artifacts/{appId}/public/data/school_events/{eventId}/comments/{commentId} {
+      // Anyone can read comments
+      allow read: if request.auth != null;
+      
+      // Any authenticated user can create comments
+      allow create: if request.auth != null 
+        && request.resource.data.authorId == request.auth.uid;
+      
+      // Only comment author can update
+      allow update: if request.auth != null 
+        && resource.data.authorId == request.auth.uid;
+      
+      // Comment author or admin can delete
+      allow delete: if request.auth != null 
+        && (resource.data.authorId == request.auth.uid || isAdmin());
+    }
   }
 }

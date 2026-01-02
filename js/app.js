@@ -14,6 +14,7 @@ import { initCalendarExport } from './calendar-export.js';
 import { initBatchOperations } from './batch-operations.js';
 import { initRecurringEvents } from './recurring-events.js';
 import { initTags } from './tags.js';
+import { initComments } from './comments.js';
 
 // Wire up dependencies (avoid circular imports)
 setAuthDeps({
@@ -44,6 +45,7 @@ async function init() {
     initBatchOperations();
     initRecurringEvents();
     initTags();
+    initComments();
 
     // Initialize authentication (includes 3s timeout fallback)
     await initAuth();

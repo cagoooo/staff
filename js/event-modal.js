@@ -2,6 +2,7 @@
 import { globalUsers, getAppCurrentUser, updateEvent, deleteEvent, getEventById } from './firestore.js';
 import { showConfirm } from '../components/modal.js';
 import { renderTagSelector, setSelectedTags, getSelectedTags, renderTagBadges, getAllTags } from './tags.js';
+import { startCommentsListener, stopCommentsListener, renderCommentsSection } from './comments.js';
 
 let currentEditingEventId = null;
 let isEditMode = false;
@@ -52,6 +53,8 @@ export function initEventModal() {
                         <span class="text-gray-500" style="font-family: 'VT323', monospace; font-size: 16px;">🏷️ 標籤</span>
                         <div id="event-detail-tags" class="mt-1"></div>
                     </div>
+                    <!-- Comments Section -->
+                    <div id="event-comments-section"></div>
                 </div>
                 <!-- Edit Mode -->
                 <div id="event-edit-mode" class="hidden-section">
@@ -199,6 +202,9 @@ export function openEventModal(eventId) {
     document.getElementById('btn-save-event').classList.add('hidden-section');
     document.getElementById('btn-cancel-edit').classList.add('hidden-section');
 
+    // Start comments listener for this event
+    startCommentsListener(eventId);
+
     modal.classList.remove('hidden-section');
 }
 
@@ -207,6 +213,9 @@ export function closeEventModal() {
     document.getElementById('event-modal')?.classList.add('hidden-section');
     currentEditingEventId = null;
     isEditMode = false;
+
+    // Stop comments listener
+    stopCommentsListener();
 }
 
 // Toggle edit mode
