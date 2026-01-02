@@ -10,6 +10,9 @@ import { initNotificationSystem } from './notification-system.js';
 import { initAdmin } from './admin.js';
 import './storage.js'; // Load storage utilities
 import { initTheme } from './theme.js';
+import { initCalendarExport } from './calendar-export.js';
+import { initBatchOperations } from './batch-operations.js';
+import { initRecurringEvents } from './recurring-events.js';
 
 // Wire up dependencies (avoid circular imports)
 setAuthDeps({
@@ -36,6 +39,9 @@ async function init() {
     initNotificationSystem();
     initAdmin();
     initTheme();
+    initCalendarExport();
+    initBatchOperations();
+    initRecurringEvents();
 
     // Initialize authentication
     await initAuth();
