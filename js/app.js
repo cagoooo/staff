@@ -43,24 +43,8 @@ async function init() {
     initBatchOperations();
     initRecurringEvents();
 
-    // Initialize authentication
+    // Initialize authentication (includes 3s timeout fallback)
     await initAuth();
-
-    // Timeout fallback
-    setTimeout(() => {
-        const loader = document.getElementById('global-loader');
-        if (loader && loader.style.display !== 'none') {
-            console.warn("Loading timeout, forcing entry");
-            loader.style.display = 'none';
-
-            const currentUser = getAppCurrentUser();
-            if (currentUser) {
-                initAppUI();
-            } else {
-                document.getElementById('auth-container').classList.remove('hidden-section');
-            }
-        }
-    }, 8000);
 }
 
 // Start application when DOM is ready

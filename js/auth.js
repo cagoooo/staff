@@ -57,21 +57,39 @@ export async function initAuth() {
             checkLoadingComplete();
         }
     });
+
+    // Reliable timeout fallback - ensure UI is shown within 3 seconds
+    setTimeout(() => {
+        const loader = document.getElementById('global-loader');
+        // Check if loader is visible using computed style (more reliable than inline style)
+        const isLoaderVisible = loader && window.getComputedStyle(loader).display !== 'none';
+        if (isLoaderVisible) {
+            console.warn('[Auth] Initialization timeout - forcing UI display');
+            checkLoadingComplete();
+        }
+    }, 3000);
 }
 
 export function checkLoadingComplete() {
     const loader = document.getElementById('global-loader');
+    const authContainer = document.getElementById('auth-container');
+    const mainApp = document.getElementById('main-app');
+
+    // Hide loader
     if (loader) {
         loader.style.display = 'none';
-        const authVisible = !document.getElementById('auth-container').classList.contains('hidden-section');
-        const mainVisible = !document.getElementById('main-app').classList.contains('hidden-section');
-        if (!authVisible && !mainVisible) {
-            const currentUser = _getAppCurrentUser();
-            if (currentUser) {
-                _initAppUI();
-            } else {
-                document.getElementById('auth-container').classList.remove('hidden-section');
-            }
+    }
+
+    // If neither auth nor main is visible, show appropriate one
+    const authVisible = authContainer && !authContainer.classList.contains('hidden-section');
+    const mainVisible = mainApp && !mainApp.classList.contains('hidden-section');
+
+    if (!authVisible && !mainVisible) {
+        const currentUser = _getAppCurrentUser();
+        if (currentUser) {
+            _initAppUI();
+        } else {
+            authContainer.classList.remove('hidden-section');
         }
     }
 }

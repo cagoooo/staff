@@ -317,6 +317,35 @@ export async function toggleEventPin(eventId) {
     }
 }
 
+// Add new event programmatically (for recurring events)
+export async function addNewEvent(eventData) {
+    if (!isOnline()) {
+        throw new Error('離線中無法新增行程');
+    }
+
+    if (!_appCurrentUser || !db) {
+        throw new Error('用戶未登入或資料庫未連線');
+    }
+
+    const eventsRef = collection(db, 'artifacts', appId, 'public', 'data', 'school_events');
+    const docRef = await addDoc(eventsRef, {
+        authorId: _appCurrentUser.id,
+        authorName: _appCurrentUser.name,
+        title: eventData.title,
+        date: eventData.date,
+        time: eventData.time || '09:00',
+        targets: eventData.targets || [],
+        isPublic: eventData.isPublic || false,
+        completedBy: [],
+        recurrenceGroup: eventData.recurrenceGroup || null,
+        recurrenceIndex: eventData.recurrenceIndex || null,
+        recurrenceTotal: eventData.recurrenceTotal || null,
+        createdAt: new Date().toISOString()
+    });
+
+    return docRef.id;
+}
+
 window.handleFirebaseAddEvent = handleFirebaseAddEvent;
 window.handleMarkAsDone = handleMarkAsDone;
 window.handleUpdateProfile = handleUpdateProfile;
@@ -325,6 +354,7 @@ window.deleteEvent = deleteEvent;
 window.getEventById = getEventById;
 window.markEventAsRead = markEventAsRead;
 window.toggleEventPin = toggleEventPin;
+window.addNewEvent = addNewEvent;
 window.toggleTarget = (uid) => {
     toggleTarget(uid);
     if (window.renderEditorOptions) window.renderEditorOptions();
