@@ -398,8 +398,19 @@ async function processGoogleLoginResult(result) {
     _startDataListeners(googleUser);
 
     // Wait for data listeners to load
-    setTimeout(() => {
+    setTimeout(async () => {
         _initAppUI();
+
+        // Check if user is admin and inject admin UI
+        if (userData.role === 'admin') {
+            console.log('[Auth] Google login - user is admin, injecting admin UI...');
+            try {
+                const { initAdmin } = await import('./admin.js');
+                setTimeout(() => initAdmin(), 500);
+            } catch (e) {
+                console.log('[Auth] Failed to load admin module');
+            }
+        }
 
         // Check if user needs to set department
         if (!userData.department || userData.jobTitle === '待設定') {
