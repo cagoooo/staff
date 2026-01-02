@@ -1,5 +1,5 @@
 // Authentication Module - With Security Enhancements
-import { signInAnonymously, onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { signInAnonymously, onAuthStateChanged, GoogleAuthProvider, signInWithRedirect, getRedirectResult } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { collection, addDoc, query, where, getDocs, doc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { auth, db, appId } from './firebase-config.js';
 import { showAlert } from '../components/modal.js';
@@ -27,6 +27,21 @@ export async function initAuth() {
     if (existingSession) {
         console.log('Valid session found, restoring user');
         _setAppCurrentUser(existingSession);
+    }
+
+    // Handle Google login redirect result (for COOP compatibility)
+    try {
+        const result = await getRedirectResult(auth);
+        if (result && result.user) {
+            console.log('[Auth] Processing Google redirect result');
+            await processGoogleLoginResult(result);
+            return; // Exit early, processGoogleLoginResult will handle the rest
+        }
+    } catch (err) {
+        console.error('[Auth] Redirect result error:', err);
+        if (err.code !== 'auth/popup-closed-by-user') {
+            showAlert('Google 登入失敗：' + err.message);
+        }
     }
 
     try {
@@ -189,9 +204,8 @@ export async function handleGoogleLogin() {
     }
 
     const googleBtn = document.getElementById('btn-google-login');
-    const originalHTML = googleBtn.innerHTML;
     googleBtn.disabled = true;
-    googleBtn.innerHTML = '登入中...';
+    googleBtn.innerHTML = '跳轉中...';
 
     try {
         const provider = new GoogleAuthProvider();
@@ -199,44 +213,78 @@ export async function handleGoogleLogin() {
         // Add Calendar scope for event sync
         provider.addScope('https://www.googleapis.com/auth/calendar.events');
 
-        const result = await signInWithPopup(auth, provider);
-        const googleUser = result.user;
+        // Use redirect instead of popup for COOP compatibility
+        await signInWithRedirect(auth, provider);
+        // Note: Page will redirect to Google and back, 
+        // result will be handled in initAuth -> getRedirectResult
+    } catch (err) {
+        googleBtn.disabled = false;
+        googleBtn.innerHTML = '🌐 使用 Google 登入';
 
-        // Get OAuth credential to extract access token
-        const credential = GoogleAuthProvider.credentialFromResult(result);
-        if (credential && credential.accessToken) {
+        if (err.code === 'auth/unauthorized-domain') {
+            showAlert('網域未授權！請至 Firebase Console 新增此網域');
+        } else {
+            showAlert('Google 登入失敗：' + err.message);
+        }
+    }
+}
+
+// Process Google login result after redirect
+async function processGoogleLoginResult(result) {
+    const googleUser = result.user;
+    console.log('[Auth] Google user:', googleUser.email);
+
+    // Get OAuth credential to extract access token
+    const credential = GoogleAuthProvider.credentialFromResult(result);
+    if (credential && credential.accessToken) {
+        try {
             // Store access token for Calendar API
             const { setAccessToken } = await import('./google-calendar.js');
             setAccessToken(credential.accessToken);
             console.log('[Auth] Calendar access token stored');
+        } catch (e) {
+            console.log('[Auth] Calendar module not available');
         }
+    }
 
-        const usersRef = collection(db, 'artifacts', appId, 'public', 'data', 'school_users');
-        const q = query(usersRef, where('googleUid', '==', googleUser.uid));
-        const querySnapshot = await getDocs(q);
+    const usersRef = collection(db, 'artifacts', appId, 'public', 'data', 'school_users');
+    const q = query(usersRef, where('googleUid', '==', googleUser.uid));
+    const querySnapshot = await getDocs(q);
 
-        let userData;
-        if (querySnapshot.empty) {
-            const newUserData = {
-                googleUid: googleUser.uid,
-                email: googleUser.email,
-                name: googleUser.displayName || googleUser.email.split('@')[0],
-                jobTitle: '待設定',
-                username: googleUser.email,
-                photoURL: googleUser.photoURL || '',
-                createdAt: new Date().toISOString(),
-                authType: 'google'
-            };
-            const docRef = await addDoc(usersRef, newUserData);
-            userData = { id: docRef.id, ...newUserData };
-            showAlert('Google 帳號註冊成功！請設定您的處室和職稱');
-        } else {
-            const existingDoc = querySnapshot.docs[0];
-            userData = { id: existingDoc.id, ...existingDoc.data() };
-        }
+    let userData;
+    if (querySnapshot.empty) {
+        const newUserData = {
+            googleUid: googleUser.uid,
+            email: googleUser.email,
+            name: googleUser.displayName || googleUser.email.split('@')[0],
+            jobTitle: '待設定',
+            username: googleUser.email,
+            photoURL: googleUser.photoURL || '',
+            createdAt: new Date().toISOString(),
+            authType: 'google'
+        };
+        const docRef = await addDoc(usersRef, newUserData);
+        userData = { id: docRef.id, ...newUserData };
+        showAlert('Google 帳號註冊成功！請設定您的處室和職稱');
+    } else {
+        const existingDoc = querySnapshot.docs[0];
+        userData = { id: existingDoc.id, ...existingDoc.data() };
+    }
 
-        _setAppCurrentUser(userData);
-        saveSession(userData); // Save session with expiry
+    _setAppCurrentUser(userData);
+    saveSession(userData);
+
+    // Start data listeners and init UI
+    try {
+        await signInAnonymously(auth);
+    } catch (err) {
+        console.error("[Auth] Anonymous auth after Google login:", err);
+    }
+
+    _startDataListeners(auth.currentUser);
+
+    // Wait for data listeners to load
+    setTimeout(() => {
         _initAppUI();
 
         // Check if user needs to set department
@@ -246,18 +294,7 @@ export async function handleGoogleLogin() {
                 if (window.switchTab) window.switchTab('account');
             }, 500);
         }
-    } catch (err) {
-        if (err.code === 'auth/popup-closed-by-user') {
-            showAlert('登入已取消');
-        } else if (err.code === 'auth/unauthorized-domain') {
-            showAlert('網域未授權！請至 Firebase Console 新增此網域');
-        } else {
-            showAlert('Google 登入失敗：' + err.message);
-        }
-    } finally {
-        googleBtn.disabled = false;
-        googleBtn.innerHTML = originalHTML;
-    }
+    }, 1000);
 }
 
 export function appLogout() {
