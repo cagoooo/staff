@@ -160,6 +160,12 @@
 #sys-modal,
 #search-modal {
     animation: backdropFadeIn 0.2s ease-out;
+    z-index: 9999 !important; /* 確保在所有元素之上 */
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
 }
 
 @keyframes backdropFadeIn {
