@@ -243,13 +243,20 @@
                 <!-- Shared Calendar -->
                 <div id="view-calendar" class="hidden-section">
                     <div class="content-card p-4 mb-4">
-                        <div class="flex justify-between items-center mb-4">
-                            <h2>📅 共用日曆</h2>
+                        <!-- 日曆標題區 (RWD優化) -->
+                        <style>
+                            @media (max-width: 480px) {
+                                #calendar-nav-container { flex-direction: column; gap: 8px; }
+                                #calendar-month-year { font-size: 18px !important; min-width: 90px !important; }
+                            }
+                        </style>
+                        <div class="flex flex-wrap justify-between items-center gap-3 mb-4" id="calendar-nav-container">
+                            <h2 class="flex-shrink-0">📅 共用日曆</h2>
                             <div class="flex items-center gap-2">
-                                <button onclick="prevMonth()" class="pixel-btn" style="padding: 8px 12px;">◀</button>
+                                <button onclick="prevMonth()" class="pixel-btn" style="padding: 6px 10px;">◀</button>
                                 <span id="calendar-month-year"
-                                    style="font-family: 'VT323', monospace; font-size: 24px; min-width: 150px; text-align: center;">2026年1月</span>
-                                <button onclick="nextMonth()" class="pixel-btn" style="padding: 8px 12px;">▶</button>
+                                    style="font-family: 'VT323', monospace; font-size: 20px; min-width: 100px; text-align: center;">2026年1月</span>
+                                <button onclick="nextMonth()" class="pixel-btn" style="padding: 6px 10px;">▶</button>
                             </div>
                         </div>
 
