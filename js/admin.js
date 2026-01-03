@@ -246,12 +246,50 @@ async function deleteUser(userId, userName) {
             // Debug: Check current auth state
             const { auth } = await import('./firebase-config.js');
             console.log('[Admin] Delete user - Target userId:', userId);
-            console.log('[Admin] Delete user - Firebase Auth UID:', auth.currentUser?.uid);
-            console.log('[Admin] Delete user - App current user ID:', getAppCurrentUser()?.id);
 
+            // 先找到使用者的 email（用於刪除 Firebase Auth）
+            const users = globalUsers();
+            const targetUser = users.find(u => u.id === userId);
+            const userEmail = targetUser?.email || targetUser?.username;
+
+            // 如果用戶是 Google 登入的，嘗試刪除 Firebase Auth 帳號
+            if (targetUser?.authType === 'google' && userEmail) {
+                try {
+                    console.log('[Admin] Attempting to delete Firebase Auth for:', userEmail);
+
+                    // 取得當前使用者的 ID Token
+                    const idToken = await auth.currentUser?.getIdToken();
+                    if (!idToken) {
+                        throw new Error('無法取得認證 Token');
+                    }
+
+                    // 呼叫 Cloud Function 刪除 Auth 帳號
+                    const response = await fetch('https://asia-east1-smes-e1dc3.cloudfunctions.net/deleteAuthUser', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${idToken}`
+                        },
+                        body: JSON.stringify({ email: userEmail })
+                    });
+
+                    const result = await response.json();
+                    if (result.success) {
+                        console.log('[Admin] Firebase Auth account deleted:', result.message);
+                    } else {
+                        console.warn('[Admin] Firebase Auth deletion failed:', result.error);
+                    }
+                } catch (authErr) {
+                    // Auth 刪除失敗不阻止 Firestore 刪除
+                    console.warn('[Admin] Could not delete Firebase Auth account:', authErr.message);
+                }
+            }
+
+            // 刪除 Firestore 中的使用者資料
             const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', userId);
             await deleteDoc(userRef);
-            showAlert('已刪除使用者');
+
+            showAlert('已刪除使用者（包含登入帳號）');
             renderAdminPanel();
         } catch (err) {
             console.error('[Admin] Delete failed:', err);

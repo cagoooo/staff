@@ -8,6 +8,7 @@ const { onDocumentCreated, onDocumentUpdated } = require("firebase-functions/v2/
 const { onSchedule } = require("firebase-functions/v2/scheduler");
 const { initializeApp } = require("firebase-admin/app");
 const { getFirestore } = require("firebase-admin/firestore");
+const { getAuth } = require("firebase-admin/auth");
 const { Client } = require("@line/bot-sdk");
 
 // Initialize Firebase
@@ -2022,6 +2023,76 @@ exports.sendLineNotify = onRequest(
         } catch (err) {
             console.error("Send LINE notify error:", err);
             res.status(500).json({ success: false, error: err.message });
+        }
+    }
+);
+
+// ============================================
+// Delete Firebase Auth User
+// 刪除使用者的 Firebase Authentication 帳號
+// ============================================
+exports.deleteAuthUser = onRequest(
+    {
+        cors: true,
+        region: "asia-east1"
+    },
+    async (req, res) => {
+        // 需要認證 - 只有管理員可以呼叫
+        const authHeader = req.headers.authorization;
+        if (!authHeader || !authHeader.startsWith("Bearer ")) {
+            return res.status(401).json({ success: false, error: "Unauthorized" });
+        }
+
+        const { email, uid } = req.body;
+
+        if (!email && !uid) {
+            return res.status(400).json({
+                success: false,
+                error: "Missing email or uid"
+            });
+        }
+
+        try {
+            const auth = getAuth();
+            let userRecord;
+
+            // 根據 email 或 uid 找到使用者
+            if (uid) {
+                userRecord = await auth.getUser(uid);
+            } else if (email) {
+                userRecord = await auth.getUserByEmail(email);
+            }
+
+            if (!userRecord) {
+                return res.status(404).json({
+                    success: false,
+                    error: "User not found in Firebase Auth"
+                });
+            }
+
+            // 刪除 Firebase Auth 帳號
+            await auth.deleteUser(userRecord.uid);
+            console.log(`[Admin] Deleted auth user: ${userRecord.uid} (${email || uid})`);
+
+            res.status(200).json({
+                success: true,
+                message: `Auth user deleted: ${userRecord.uid}`
+            });
+        } catch (err) {
+            console.error("[Admin] Delete auth user error:", err);
+
+            // 如果找不到使用者，回傳成功（可能已經被刪除了）
+            if (err.code === "auth/user-not-found") {
+                return res.status(200).json({
+                    success: true,
+                    message: "User already deleted or not found"
+                });
+            }
+
+            res.status(500).json({
+                success: false,
+                error: err.message
+            });
         }
     }
 );
