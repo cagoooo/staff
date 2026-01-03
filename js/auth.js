@@ -322,7 +322,7 @@ export async function handleGoogleLogin() {
         provider.setCustomParameters({
             prompt: 'select_account',  // 強制顯示帳號選擇
             // 提示用戶使用石門學校帳號
-            login_hint: '@smes.tp.edu.tw'
+            login_hint: '@mail2.smes.tyc.edu.tw'
         });
 
         console.log('[Auth] Starting Google popup login with account selection...');
