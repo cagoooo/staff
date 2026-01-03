@@ -234,11 +234,15 @@ export function renderStats() {
         <div class="stats-grid stats-grid-2 mb-4">
             <div class="stats-card">
                 <h3 style="font-family: 'VT323', monospace; font-size: 22px; margin-bottom: 16px;">📊 各處室工作量分布</h3>
-                <canvas id="dept-chart" height="250"></canvas>
+                <div style="height: 280px; position: relative;">
+                    <canvas id="dept-chart"></canvas>
+                </div>
             </div>
             <div class="stats-card">
                 <h3 style="font-family: 'VT323', monospace; font-size: 22px; margin-bottom: 16px;">📈 近4週行程趨勢</h3>
-                <canvas id="trend-chart" height="250"></canvas>
+                <div style="height: 280px; position: relative;">
+                    <canvas id="trend-chart"></canvas>
+                </div>
             </div>
         </div>
 
