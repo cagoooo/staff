@@ -57,6 +57,16 @@ export const DEPARTMENTS = {
             '專輔教師',
             '資源班教師'
         ]
+    },
+    teachers: {
+        id: 'teachers',
+        name: '教師群',
+        color: '#00b894', // 綠松色
+        icon: '👨‍🏫',
+        positions: [
+            '班級導師',
+            '科任老師'
+        ]
     }
 };
 

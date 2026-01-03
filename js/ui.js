@@ -455,15 +455,15 @@ export function renderDashboard() {
         // Build announcement HTML
         const pinnedBadge = isPinned ? '<span style="color: #e74c3c; margin-right: 4px;">📌</span>' : '';
         const typeBadge = evt.announcementType && evt.announcementType !== 'normal'
-            ? `<span style="background: ${typeConfig.border}22; color: ${typeConfig.border}; padding: 2px 6px; font-size: 14px; margin-right: 4px;">${typeConfig.icon} ${typeConfig.label}</span>`
+            ? `<span style="background: ${typeConfig.border}22; color: ${typeConfig.border}; padding: 2px 6px; font-size: 14px; margin-right: 4px; white-space: nowrap; flex-shrink: 0;">${typeConfig.icon} ${typeConfig.label}</span>`
             : '';
         const unreadDot = !isRead ? '<span style="color: #e74c3c; margin-right: 4px;">●</span>' : '';
         const tagsBadges = renderTagBadges(evt.tags);
 
         div.innerHTML = `
-            <div class="flex justify-between items-start">
-                <h4 class="text-lg flex items-center">${unreadDot}${pinnedBadge}${typeBadge}${evt.title}</h4>
-                <span class="text-sm bg-purple-200 px-2 py-1 shrink-0">${evt.date}</span>
+            <div class="flex justify-between items-start gap-2">
+                <h4 class="text-lg flex items-center flex-wrap gap-1">${unreadDot}${pinnedBadge}${typeBadge}<span class="break-words">${evt.title}</span></h4>
+                <span class="text-sm bg-purple-200 px-2 py-1 shrink-0 whitespace-nowrap">${evt.date}</span>
             </div>
             <p class="text-sm text-gray-600 mt-1">發起人：${evt.authorName} | 時間：${evt.time || '--:--'}</p>
             ${tagsBadges ? `<div class="mt-1">${tagsBadges}</div>` : ''}

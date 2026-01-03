@@ -5,10 +5,10 @@
 | 項目 | 說明 |
 |------|------|
 | 專案名稱 | 行政業務協調系統 |
-| 版本 | v3.3.0 |
-| 更新日期 | 2026-01-02 |
+| 版本 | v3.4.0 |
+| 更新日期 | 2026-01-03 |
 | 部署網址 | https://cagoooo.github.io/staff/ |
-| 技術棧 | HTML5, Tailwind CSS, Firebase (Auth, Firestore, Storage), ES Modules |
+| 技術棧 | HTML5, Tailwind CSS, Firebase (Auth, Firestore, Cloud Functions), LINE Messaging API |
 | Firebase 專案 | Blaze 方案 |
 
 ---
@@ -25,6 +25,7 @@
 | 🏷️ 標籤系統 | 自訂標籤、彩色徽章、標籤篩選 | `tags.js` |
 | 💬 評論功能 | 行程討論區、@提及、即時更新 | `comments.js` |
 | ⏰ 提醒自訂 | 自訂提醒時間、瀏覽器通知 | `reminders.js` |
+| 📱 **LINE 通知整合** | LINE Messaging API 即時推播通知 | `functions/index.js`, `line-connect.js` |
 
 ### 📊 P1 - 進階功能
 
@@ -92,6 +93,22 @@ smes/
 └── components/
     └── modal.js            # Modal 元件
 ```
+
+---
+
+## 📝 Git Commits 紀錄 (2026-01-03)
+
+| Commit | 說明 |
+|--------|------|
+| LINE 通知整合 | Firebase Cloud Functions + LINE Messaging API 完整整合 |
+| Flex Message UI | 所有 LINE 通知使用精美的卡片式 Flex Message |
+| 行程更新通知 | 編輯行程後自動發送更新通知給被指派用戶 |
+| LINE Webhook 擴展 | 新增選單、幫助、功能、今日行程、關於等指令 |
+| 加入 LINE 按鈕 | 側邊欄新增醒目的 LINE 官方帳號加入按鈕 |
+| 處室新增教師群 | 處室選項新增「教師群」（班級導師、科任老師） |
+| 手機 UI 優化 | 修復行程標籤在手機上的換行問題 |
+| 刪除按鈕修復 | 修復確認對話框 z-index 問題 |
+| 登入文字優化 | Google 登入按鈕改為「使用 石門信箱 登入」 |
 
 ---
 

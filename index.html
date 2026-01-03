@@ -20,7 +20,7 @@
     </div>
 
     <div id="sys-modal"
-        class="fixed inset-0 z-[60] bg-black bg-opacity-60 hidden-section flex items-center justify-center p-4">
+        class="fixed inset-0 z-[100] bg-black bg-opacity-60 hidden-section flex items-center justify-center p-4">
         <div class="bg-white w-full max-w-sm p-6">
             <div class="text-center mb-4"><span class="text-4xl">!</span></div>
             <h3 id="modal-title" class="text-center text-xl font-bold mb-4"
@@ -80,7 +80,7 @@
                     <path fill="#EA4335"
                         d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
                 </svg>
-                🌐 使用 Google 登入
+                🌐 使用 石門信箱 登入
             </button>
         </div>
 
@@ -159,6 +159,15 @@
             </nav>
 
             <div class="p-3 border-t border-gray-700">
+                <a href="https://lin.ee/76AKi0Q" target="_blank" rel="noopener noreferrer"
+                    class="nav-btn w-full flex items-center justify-center gap-2 mb-2"
+                    style="background: linear-gradient(135deg, #00B900 0%, #00C300 100%); color: white; border: none;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="white">
+                        <path
+                            d="M12 2c-5.52 0-10 3.58-10 8 0 1.77.69 3.42 1.88 4.79L2 20l5.21-1.88C8.47 18.71 10.18 19 12 19c5.52 0 10-3.58 10-8s-4.48-7-10-9z" />
+                    </svg>
+                    加入 LINE 通知
+                </a>
                 <button onclick="appLogout()" class="nav-btn w-full text-red-400 hover:text-red-300"><i
                         class="fas fa-sign-out-alt"></i> 登出</button>
             </div>

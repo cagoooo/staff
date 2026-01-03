@@ -6,7 +6,7 @@ import { getAppCurrentUser } from './firestore.js';
 
 // LINE 官方帳號資訊
 const LINE_BOT_ID = "@行政業務協調系統";
-const LINE_BOT_ADD_URL = "https://line.me/R/ti/p/@行政協調";
+const LINE_BOT_ADD_URL = "https://lin.ee/76AKi0Q";
 
 // Initialize LINE connect module
 export function initLineConnect() {
@@ -86,14 +86,53 @@ export function renderLineSettings(user) {
     const isConnected = !!user.lineUserId;
     const notifyEnabled = user.lineNotifyEnabled || false;
 
+    // 共用的「加入 LINE 官方帳號」按鈕
+    const addLineButton = `
+        <a href="${LINE_BOT_ADD_URL}" target="_blank" rel="noopener noreferrer"
+            class="line-add-btn"
+            style="
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+                background: linear-gradient(135deg, #00B900 0%, #00C300 100%);
+                color: white;
+                padding: 12px 20px;
+                border-radius: 8px;
+                font-family: 'VT323', monospace;
+                font-size: 18px;
+                text-decoration: none;
+                border: 3px solid #008800;
+                box-shadow: 3px 3px 0 #006600;
+                transition: all 0.2s ease;
+                cursor: pointer;
+            "
+            onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='5px 5px 0 #006600'"
+            onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='3px 3px 0 #006600'"
+        >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+                <path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63h-2.366v2.87h2.366c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.996c-.349 0-.63-.285-.63-.629V9.108c0-.345.281-.63.63-.63h2.996c.349 0 .63.285.63.63 0 .346-.281.631-.63.631h-2.366v1.494h2.366zm-5.857 0c.348 0 .63.285.63.631v3.991c0 .344-.282.629-.63.629-.349 0-.63-.285-.63-.629V9.108c0-.345.281-.63.63-.63zm-3.123 4.621c.348 0 .63.285.63.63 0 .345-.282.63-.63.63-.348 0-.63-.285-.63-.63v-3.869l-2.02 4.107c-.121.244-.348.392-.609.392-.26 0-.487-.148-.608-.392l-2.02-4.107v3.869c0 .345-.281.63-.63.63-.348 0-.63-.285-.63-.63V9.108c0-.345.282-.63.63-.63.261 0 .488.148.609.392l2.644 5.367 2.644-5.367c.121-.244.348-.392.609-.392.349 0 .63.285.63.63v4.621zm-8.013-1.873c0 2.888 2.887 5.243 6.428 5.243 3.541 0 6.428-2.355 6.428-5.243 0-2.889-2.887-5.244-6.428-5.244-3.541 0-6.428 2.355-6.428 5.244z" transform="translate(0 -4)"/>
+            </svg>
+            加入 LINE 官方帳號
+        </a>
+    `;
+
     return `
         <div class="mt-6 pt-4 border-t-2 border-gray-200">
             <h3 style="font-family: 'VT323', monospace; font-size: 22px; margin-bottom: 16px;">
                 📱 LINE 通知設定
             </h3>
             
+            <!-- 醒目的加入 LINE 按鈕區塊 -->
+            <div class="p-4 mb-4" style="background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%); border-radius: 12px; border: 2px solid #81c784;">
+                <p style="font-family: 'VT323', monospace; font-size: 16px; color: #2e7d32; margin-bottom: 12px; text-align: center;">
+                    💬 加入官方 LINE 帳號，即時接收行程通知！
+                </p>
+                ${addLineButton}
+            </div>
+            
             ${isConnected ? `
-                <div class="p-4 bg-green-50 border-2 border-green-300 mb-4">
+                <div class="p-4 bg-green-50 border-2 border-green-300 mb-4" style="border-radius: 8px;">
                     <p style="font-family: 'VT323', monospace; font-size: 18px; color: #00b894;">
                         ✅ 已綁定 LINE 帳號
                     </p>
@@ -107,6 +146,7 @@ export function renderLineSettings(user) {
                         ${notifyEnabled ? 'checked' : ''} 
                         onchange="toggleLineNotifyUI(this.checked)">
                     <label for="line-notify-toggle">接收 LINE 通知</label>
+                    ${notifyEnabled ? '<span style="color: #00b894;">✓ 通知已啟用</span>' : '<span style="color: #e17055;">⚠ 通知已關閉</span>'}
                 </div>
                 
                 <button onclick="disconnectLineUI()" class="pixel-btn" 
@@ -114,20 +154,20 @@ export function renderLineSettings(user) {
                     ❌ 取消綁定
                 </button>
             ` : `
-                <div class="p-4 bg-gray-50 border-2 border-gray-300 mb-4">
-                    <p style="font-family: 'VT323', monospace; font-size: 16px; color: #636e72;">
-                        尚未綁定 LINE 帳號
+                <div class="p-4 bg-yellow-50 border-2 border-yellow-300 mb-4" style="border-radius: 8px;">
+                    <p style="font-family: 'VT323', monospace; font-size: 16px; color: #f39c12;">
+                        ⚠️ 尚未綁定 LINE 帳號
                     </p>
                 </div>
                 
-                <div class="mb-4">
-                    <p style="font-family: 'VT323', monospace; font-size: 16px; margin-bottom: 8px;">
+                <div class="mb-4 p-4" style="background: #f8f9fa; border-radius: 8px;">
+                    <p style="font-family: 'VT323', monospace; font-size: 16px; margin-bottom: 8px; color: #333;">
                         📋 綁定步驟：
                     </p>
-                    <ol style="font-family: 'VT323', monospace; font-size: 16px; margin-left: 20px; list-style-type: decimal;">
-                        <li style="margin-bottom: 4px;">加入官方 LINE 帳號為好友</li>
-                        <li style="margin-bottom: 4px;">在 LINE 中傳送「我的ID」</li>
-                        <li style="margin-bottom: 4px;">將收到的 ID 貼在下方</li>
+                    <ol style="font-family: 'VT323', monospace; font-size: 16px; margin-left: 20px; list-style-type: decimal; color: #555;">
+                        <li style="margin-bottom: 6px;">👆 點擊上方綠色按鈕加入官方帳號</li>
+                        <li style="margin-bottom: 6px;">💬 在 LINE 中傳送「我的ID」</li>
+                        <li style="margin-bottom: 6px;">📋 將收到的 ID 貼在下方</li>
                     </ol>
                 </div>
                 
