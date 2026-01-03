@@ -1,0 +1,23 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Default deny all
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+    
+    // Attachments - 行程附件
+    match /attachments/{eventId}/{fileName} {
+      // Any authenticated user can read attachments
+      allow read: if request.auth != null;
+      
+      // Any authenticated user can upload attachments
+      // Max file size: 10MB
+      allow create: if request.auth != null
+        && request.resource.size < 10 * 1024 * 1024;
+      
+      // Only allow delete by authenticated users (will be handled by server logic)
+      allow delete: if request.auth != null;
+    }
+  }
+}
