@@ -157,20 +157,7 @@ export function renderTemplateList() {
     `).join('');
 }
 
-/**
- * Toggle template selector visibility
- */
-export function toggleTemplateSelector() {
-    const selector = document.getElementById('template-selector');
-    if (!selector) return;
-
-    if (selector.classList.contains('hidden-section')) {
-        selector.classList.remove('hidden-section');
-        renderTemplateList();
-    } else {
-        selector.classList.add('hidden-section');
-    }
-}
+// toggleTemplateSelector is now defined after initTemplates to support on-demand loading
 
 /**
  * Toggle end date field visibility
@@ -262,12 +249,39 @@ export async function saveCurrentAsTemplate() {
 
 // Initialize
 export function initTemplates() {
-    loadTemplates();
+    // Don't load templates immediately - wait until user is authenticated
+    // Templates will be loaded when user first opens the template selector
 
-    // Inject UI after a short delay
+    // Inject UI after a short delay (UI can be shown, just not templates list)
     setTimeout(() => {
         injectTemplateUI();
     }, 1000);
+
+    console.log('[Templates] Module initialized (templates will load on demand)');
+}
+
+// Load templates on demand when selector is opened
+export function toggleTemplateSelector() {
+    const selector = document.getElementById('template-selector');
+    if (!selector) return;
+
+    if (selector.classList.contains('hidden-section')) {
+        selector.classList.remove('hidden-section');
+        // Load templates if not already loaded
+        if (_templates.length === 0) {
+            const currentUser = getAppCurrentUser();
+            if (currentUser) {
+                loadTemplates().then(() => renderTemplateList());
+            } else {
+                document.getElementById('template-list').innerHTML =
+                    '<p style="color: #e17055; font-size: 16px;">請先登入後再使用模板功能</p>';
+            }
+        } else {
+            renderTemplateList();
+        }
+    } else {
+        selector.classList.add('hidden-section');
+    }
 }
 
 // Export to window
