@@ -584,7 +584,8 @@ export function updateNotificationBadge() {
 export function switchTab(tabName) {
     const currentUser = getAppCurrentUser();
 
-    ['dashboard', 'calendar', 'account', 'notifications', 'editor', 'stats'].forEach(v => {
+    // Hide all views including admin
+    ['dashboard', 'calendar', 'account', 'notifications', 'editor', 'stats', 'admin'].forEach(v => {
         const el = document.getElementById('view-' + v);
         if (el) el.classList.add('hidden-section');
     });
