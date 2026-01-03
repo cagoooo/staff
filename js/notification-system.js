@@ -29,7 +29,6 @@ function injectNotificationUI() {
     if (!notifView || document.getElementById('notif-permission-section')) return;
 
     const lineSyncEnabled = localStorage.getItem('smes_line_sync') === 'true';
-    const calendarSyncEnabled = localStorage.getItem('smes_calendar_sync') === 'true';
 
     const permSection = document.createElement('div');
     permSection.id = 'notif-permission-section';
@@ -66,19 +65,6 @@ function injectNotificationUI() {
                     ${lineSyncEnabled ? '已開啟' : '已關閉'}
                 </span>
             </label>
-        </div>
-        
-        <!-- Google 日曆同步 -->
-        <div class="flex items-center justify-between flex-wrap gap-3">
-            <div>
-                <h3 style="font-family: 'VT323', monospace; font-size: 22px;">📅 Google 日曆同步</h3>
-                <p style="font-family: 'VT323', monospace; font-size: 18px; color: #636e72;">
-                    將未完成行程同步到您的 Google 日曆
-                </p>
-            </div>
-            <button onclick="syncToGoogleCalendar()" class="pixel-btn pixel-btn-success">
-                📅 立即同步
-            </button>
         </div>
     `;
 
@@ -226,67 +212,6 @@ export function toggleLineSync(enabled) {
     console.log('[Notifications] LINE sync:', enabled ? 'enabled' : 'disabled');
 }
 
-// Sync all relevant events to Google Calendar
-export async function syncToGoogleCalendar() {
-    const currentUser = getAppCurrentUser();
-    if (!currentUser) {
-        alert('請先登入');
-        return;
-    }
-
-    try {
-        const { hasCalendarAccess, addToGoogleCalendar } = await import('./google-calendar.js');
-
-        if (!hasCalendarAccess()) {
-            alert('請使用 Google 帳號登入以取得日曆存取權限');
-            return;
-        }
-
-        const events = globalEvents();
-        const myEvents = events.filter(e =>
-            (e.targets?.includes(currentUser.id) || e.authorId === currentUser.id) &&
-            !e.completedBy?.includes(currentUser.id) &&
-            new Date(`${e.date}T${e.time || '09:00'}`) > new Date() // 只同步未來的行程
-        );
-
-        if (myEvents.length === 0) {
-            alert('沒有需要同步的行程');
-            return;
-        }
-
-        let successCount = 0;
-        let failCount = 0;
-
-        for (const event of myEvents) {
-            const syncKey = `calendar_synced_${event.id}`;
-            if (localStorage.getItem(syncKey)) continue; // 已同步過
-
-            try {
-                await addToGoogleCalendar({
-                    title: event.title,
-                    date: event.date,
-                    time: event.time || '09:00',
-                    authorName: event.authorName || '系統'
-                });
-                localStorage.setItem(syncKey, 'true');
-                successCount++;
-            } catch (err) {
-                console.error('[Calendar] Sync error:', err);
-                failCount++;
-            }
-        }
-
-        if (successCount > 0 || failCount > 0) {
-            alert(`✅ 已同步 ${successCount} 筆行程到 Google 日曆${failCount > 0 ? `\n⚠️ ${failCount} 筆同步失敗` : ''}`);
-        } else {
-            alert('所有行程都已同步過');
-        }
-    } catch (err) {
-        console.error('[Notifications] Calendar sync error:', err);
-        alert('同步失敗：' + err.message);
-    }
-}
-
 // Send LINE reminder for an event (called when browser reminder triggers)
 async function sendLineReminder(event) {
     const lineSyncEnabled = localStorage.getItem('smes_line_sync') === 'true';
@@ -318,7 +243,6 @@ async function sendLineReminder(event) {
 window.requestNotificationPermission = requestNotificationPermission;
 window.triggerTestNotification = triggerTestNotification;
 window.toggleLineSync = toggleLineSync;
-window.syncToGoogleCalendar = syncToGoogleCalendar;
 
 // Make sendLineReminder available internally
 export { sendLineReminder };

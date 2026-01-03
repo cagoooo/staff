@@ -335,9 +335,6 @@ export async function handleGoogleLogin() {
     try {
         const provider = new GoogleAuthProvider();
 
-        // Add Calendar scope for event sync
-        provider.addScope('https://www.googleapis.com/auth/calendar.events');
-
         // 強制顯示帳號選擇畫面，讓用戶自己選擇要登入的帳號
         provider.setCustomParameters({
             prompt: 'select_account',  // 強制顯示帳號選擇
