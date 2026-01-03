@@ -2,6 +2,16 @@
 // 處室/組別管理配置
 
 export const DEPARTMENTS = {
+    principal: {
+        id: 'principal',
+        name: '校長室',
+        color: '#e74c3c', // 紅色
+        icon: '🏫',
+        positions: [
+            '校長',
+            '秘書'
+        ]
+    },
     academic: {
         id: 'academic',
         name: '教務處',

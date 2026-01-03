@@ -153,11 +153,12 @@ export function renderAdminPanel() {
 // Render a single user row
 function renderUserRow(user) {
     const deptLabels = {
+        'principal': '校長室',
         'academic': '教務處',
         'student': '學務處',
         'general': '總務處',
         'counseling': '輔導室',
-        'principal': '校長室'
+        'teachers': '教師群'
     };
 
     const isDisabled = user.disabled === true;
@@ -309,65 +310,77 @@ async function deleteUser(userId, userName) {
     });
 }
 
-// Department options
-const DEPARTMENTS = [
-    { value: 'principal', label: '校長室' },
-    { value: 'academic', label: '教務處' },
-    { value: 'student', label: '學務處' },
-    { value: 'general', label: '總務處' },
-    { value: 'counseling', label: '輔導室' }
-];
-
 // Show add user modal
 function showAddUserModal() {
     removeModal();
 
-    const modal = document.createElement('div');
-    modal.id = 'admin-modal-overlay';
-    modal.style.cssText = 'position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 9999;';
+    // Import department functions dynamically
+    import('./departments.js').then(({ DEPARTMENTS, renderDepartmentOptions, renderPositionOptions }) => {
+        const modal = document.createElement('div');
+        modal.id = 'admin-modal-overlay';
+        modal.style.cssText = 'position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 9999;';
 
-    modal.innerHTML = `
-        <div class="content-card p-6" style="width: 90%; max-width: 450px; max-height: 90vh; overflow-y: auto;">
-            <h3 style="font-family: 'VT323', monospace; font-size: 24px; margin-bottom: 16px;">➕ 新增使用者</h3>
-            <form id="add-user-form">
-                <div class="mb-3">
-                    <label class="pixel-label">帳號 *</label>
-                    <input type="text" id="new-username" class="pixel-input" required placeholder="登入用帳號">
-                </div>
-                <div class="mb-3">
-                    <label class="pixel-label">密碼 *</label>
-                    <input type="password" id="new-password" class="pixel-input" required placeholder="登入密碼">
-                </div>
-                <div class="mb-3">
-                    <label class="pixel-label">姓名 *</label>
-                    <input type="text" id="new-name" class="pixel-input" required placeholder="真實姓名">
-                </div>
-                <div class="mb-3">
-                    <label class="pixel-label">處室</label>
-                    <select id="new-department" class="pixel-input">
-                        ${DEPARTMENTS.map(d => `<option value="${d.value}">${d.label}</option>`).join('')}
-                    </select>
-                </div>
-                <div class="mb-3">
-                    <label class="pixel-label">職稱</label>
-                    <input type="text" id="new-jobtitle" class="pixel-input" placeholder="如：組長、幹事">
-                </div>
-                <div class="mb-4">
-                    <label style="font-family: 'VT323', monospace; font-size: 18px;">
-                        <input type="checkbox" id="new-is-admin"> 設為管理員
-                    </label>
-                </div>
-                <div style="display: flex; gap: 8px;">
-                    <button type="submit" class="pixel-btn" style="flex: 1; background: #00b894;">確定新增</button>
-                    <button type="button" onclick="removeModal()" class="pixel-btn" style="flex: 1; background: #636e72;">取消</button>
-                </div>
-            </form>
-        </div>
-    `;
+        modal.innerHTML = `
+            <div class="content-card p-6" style="width: 90%; max-width: 450px; max-height: 90vh; overflow-y: auto;">
+                <h3 style="font-family: 'VT323', monospace; font-size: 24px; margin-bottom: 16px;">➕ 新增使用者</h3>
+                <form id="add-user-form">
+                    <div class="mb-3">
+                        <label class="pixel-label">帳號 *</label>
+                        <input type="text" id="new-username" class="pixel-input" required placeholder="登入用帳號">
+                    </div>
+                    <div class="mb-3">
+                        <label class="pixel-label">密碼 *</label>
+                        <input type="password" id="new-password" class="pixel-input" required placeholder="登入密碼">
+                    </div>
+                    <div class="mb-3">
+                        <label class="pixel-label">姓名 *</label>
+                        <input type="text" id="new-name" class="pixel-input" required placeholder="真實姓名">
+                    </div>
+                    <div class="mb-3">
+                        <label class="pixel-label">處室</label>
+                        <select id="new-department" class="pixel-input" onchange="updateNewUserPositions()">
+                            ${renderDepartmentOptions()}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="pixel-label">職稱</label>
+                        <select id="new-jobtitle" class="pixel-input">
+                            <option value="">-- 請先選擇處室 --</option>
+                        </select>
+                    </div>
+                    <div class="mb-4">
+                        <label style="font-family: 'VT323', monospace; font-size: 18px;">
+                            <input type="checkbox" id="new-is-admin"> 設為管理員
+                        </label>
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <button type="submit" class="pixel-btn" style="flex: 1; background: #00b894;">確定新增</button>
+                        <button type="button" onclick="removeModal()" class="pixel-btn" style="flex: 1; background: #636e72;">取消</button>
+                    </div>
+                </form>
+            </div>
+        `;
 
-    document.body.appendChild(modal);
-    modal.querySelector('#add-user-form').onsubmit = addNewUser;
+        document.body.appendChild(modal);
+        modal.querySelector('#add-user-form').onsubmit = addNewUser;
+
+        // Store renderPositionOptions for later use
+        window._renderPositionOptions = renderPositionOptions;
+    });
 }
+
+// Update position options when department changes (for add user modal)
+function updateNewUserPositions() {
+    const deptSelect = document.getElementById('new-department');
+    const posSelect = document.getElementById('new-jobtitle');
+    if (!deptSelect || !posSelect) return;
+
+    const deptId = deptSelect.value;
+    if (window._renderPositionOptions) {
+        posSelect.innerHTML = window._renderPositionOptions(deptId);
+    }
+}
+window.updateNewUserPositions = updateNewUserPositions;
 
 // Add new user
 async function addNewUser(e) {
