@@ -438,6 +438,9 @@ async function showEditUserModal(userId) {
 
     removeModal();
 
+    // Import department functions dynamically
+    const { renderDepartmentOptions, renderPositionOptions } = await import('./departments.js');
+
     const modal = document.createElement('div');
     modal.id = 'admin-modal-overlay';
     modal.style.cssText = 'position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 9999;';
@@ -456,13 +459,15 @@ async function showEditUserModal(userId) {
                 </div>
                 <div class="mb-3">
                     <label class="pixel-label">處室</label>
-                    <select id="edit-department" class="pixel-input">
-                        ${DEPARTMENTS.map(d => `<option value="${d.value}" ${d.value === user.department ? 'selected' : ''}>${d.label}</option>`).join('')}
+                    <select id="edit-department" class="pixel-input" onchange="updateEditUserPositions()">
+                        ${renderDepartmentOptions(user.department)}
                     </select>
                 </div>
                 <div class="mb-3">
                     <label class="pixel-label">職稱</label>
-                    <input type="text" id="edit-jobtitle" class="pixel-input" value="${user.jobTitle || ''}">
+                    <select id="edit-jobtitle" class="pixel-input">
+                        ${renderPositionOptions(user.department, user.jobTitle)}
+                    </select>
                 </div>
                 <div class="mb-3">
                     <label class="pixel-label">新密碼（留空不修改）</label>
@@ -483,7 +488,23 @@ async function showEditUserModal(userId) {
 
     document.body.appendChild(modal);
     modal.querySelector('#edit-user-form').onsubmit = updateUserDetails;
+
+    // Store renderPositionOptions for later use
+    window._renderPositionOptions = renderPositionOptions;
 }
+
+// Update position options when department changes (for edit user modal)
+function updateEditUserPositions() {
+    const deptSelect = document.getElementById('edit-department');
+    const posSelect = document.getElementById('edit-jobtitle');
+    if (!deptSelect || !posSelect) return;
+
+    const deptId = deptSelect.value;
+    if (window._renderPositionOptions) {
+        posSelect.innerHTML = window._renderPositionOptions(deptId);
+    }
+}
+window.updateEditUserPositions = updateEditUserPositions;
 
 // Update user details
 async function updateUserDetails(e) {

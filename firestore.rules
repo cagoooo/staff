@@ -74,6 +74,21 @@ service cloud.firestore {
         && isAdmin();
       
       // ========================================
+      // EVENT TEMPLATES COLLECTION
+      // ========================================
+      
+      // Any authenticated user can read templates
+      allow read: if isAuthenticated() && collection == 'event_templates';
+      
+      // Any authenticated user can create templates
+      allow create: if isAuthenticated() && collection == 'event_templates';
+      
+      // Only creator or admin can update/delete templates
+      allow update, delete: if isAuthenticated() 
+        && collection == 'event_templates' 
+        && (resource.data.createdBy == request.auth.uid || isAdmin());
+      
+      // ========================================
       // REMINDERS COLLECTION
       // ========================================
       
