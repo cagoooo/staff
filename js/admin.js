@@ -136,6 +136,7 @@ export function renderAdminPanel() {
                             <th style="padding: 12px; text-align: left;">處室</th>
                             <th style="padding: 12px; text-align: left;">職稱</th>
                             <th style="padding: 12px; text-align: left;">角色</th>
+                            <th style="padding: 12px; text-align: center;">LINE</th>
                             <th style="padding: 12px; text-align: center;">狀態</th>
                             <th style="padding: 12px; text-align: center;">操作</th>
                         </tr>
@@ -174,6 +175,11 @@ function renderUserRow(user) {
                 <span style="color: ${isAdminUser ? '#f39c12' : '#636e72'};">
                     ${isAdminUser ? '👑 管理員' : '👤 一般'}
                 </span>
+            </td>
+            <td style="padding: 12px; text-align: center;">
+                ${user.lineUserId && user.lineNotifyEnabled
+            ? '<span style="color: #00B900;" title="已綁定 LINE">✅</span>'
+            : '<span style="color: #b2bec3;" title="未綁定 LINE">➖</span>'}
             </td>
             <td style="padding: 12px; text-align: center;">
                 ${isDisabled ? '<span style="color: #e74c3c;">⛔ 停用</span>' : '<span style="color: #00b894;">✅ 啟用</span>'}
