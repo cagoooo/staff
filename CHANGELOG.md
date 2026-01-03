@@ -5,7 +5,7 @@
 | 項目 | 說明 |
 |------|------|
 | 專案名稱 | 行政業務協調系統 |
-| 版本 | v3.4.0 |
+| 版本 | v3.4.1 |
 | 更新日期 | 2026-01-03 |
 | 部署網址 | https://cagoooo.github.io/staff/ |
 | 技術棧 | HTML5, Tailwind CSS, Firebase (Auth, Firestore, Cloud Functions), LINE Messaging API |
@@ -42,6 +42,7 @@
 |------|------|------|
 | 深色模式 | 自動偵測 + 手動切換、儲存偏好 | `theme.js`, `dark-mode.css` |
 | 動畫效果 | 頁面過場、列表動畫、按鈕回饋 | `animations.css` |
+| **LINE 橫幅 RWD** | 主頁 LINE 加入橫幅響應式優化 | `index.html` |
 
 ### 🔒 P3 - 安全性
 
@@ -89,7 +90,10 @@ smes/
 │   ├── theme.js            # 深色模式
 │   ├── calendar-export.js  # 行事曆匯出
 │   ├── batch-operations.js # 批次操作
-│   └── recurring-events.js # 行程重複
+│   ├── recurring-events.js # 行程重複
+│   └── line-connect.js     # LINE 連接功能
+├── functions/
+│   └── index.js            # Cloud Functions (LINE Bot)
 └── components/
     └── modal.js            # Modal 元件
 ```
@@ -100,6 +104,7 @@ smes/
 
 | Commit | 說明 |
 |--------|------|
+| **v3.4.1** LINE 橫幅 RWD 優化 | 主頁 LINE 加入橫幅響應式設計，電腦端緊湊顯示、手機端置頂 |
 | LINE 通知整合 | Firebase Cloud Functions + LINE Messaging API 完整整合 |
 | Flex Message UI | 所有 LINE 通知使用精美的卡片式 Flex Message |
 | 行程更新通知 | 編輯行程後自動發送更新通知給被指派用戶 |

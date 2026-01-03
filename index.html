@@ -185,6 +185,39 @@
             <div class="flex-1 overflow-y-auto p-6" id="content-area">
                 <!-- Dashboard -->
                 <div id="view-dashboard">
+                    <!-- LINE 通知橫幅 (RWD: 手機端在最上方，電腦端在重要行事後) -->
+                    <a href="https://lin.ee/76AKi0Q" target="_blank" rel="noopener noreferrer" id="line-banner" class="flex mb-4 rounded-xl shadow-lg" style="background: linear-gradient(135deg, #00B900 0%, #00D900 50%, #00B900 100%); background-size: 200% 200%; animation: gradientMove 3s ease infinite; text-decoration: none; transition: all 0.3s ease; padding: 12px 16px; height: auto; align-items: center;">
+                        <style>
+                            @keyframes gradientMove { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+                            #line-banner:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0, 185, 0, 0.35); }
+                            #line-banner { display: flex !important; height: auto !important; min-height: 0 !important; flex-shrink: 0; }
+                            /* RWD 位置控制 */
+                            #view-dashboard { display: flex; flex-direction: column; }
+                            /* 手機端: LINE 橫幅在最上方 */
+                            @media (max-width: 767px) {
+                                #line-banner { order: -1; }
+                            }
+                            /* 電腦端: LINE 橫幅在重要行事後 */
+                            @media (min-width: 768px) {
+                                #line-banner { order: 10; margin-top: 16px; margin-bottom: 0; }
+                            }
+                        </style>
+                        <div class="flex items-center justify-between gap-4 w-full">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-md flex-shrink-0">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="#00B900"><path d="M12 2c-5.52 0-10 3.58-10 8 0 3.77 3.12 6.93 7.35 7.82-.29 1.02-.93 3.01-1.06 3.47-.17.59.21.58.45.42.19-.12 2.99-2.03 4.21-2.85.7.09 1.38.14 2.05.14 5.52 0 10-3.58 10-8s-4.48-8-10-8z"/></svg>
+                                </div>
+                                <div>
+                                    <p style="font-family: 'VT323', monospace; font-size: 18px; color: #ffffff; text-shadow: 1px 1px 2px rgba(0,0,0,0.3); margin: 0; line-height: 1.2;">📱 加入 LINE 官方帳號</p>
+                                    <p style="font-family: 'VT323', monospace; font-size: 14px; color: #e0ffe0; margin: 0;">即時接收行程通知、提醒、@提及</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg shadow-md flex-shrink-0">
+                                <span style="font-family: 'VT323', monospace; font-size: 16px; color: #00B900; font-weight: bold;">立即加入</span>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="#00B900"><path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/></svg>
+                            </div>
+                        </div>
+                    </a>
                     <div class="content-card p-4 mb-4">
                         <h2>📢 最新公告</h2>
                         <div id="announcement-list" class="mt-4 space-y-3">
