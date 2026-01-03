@@ -28,11 +28,15 @@ function injectNotificationUI() {
     const notifView = document.getElementById('view-notifications');
     if (!notifView || document.getElementById('notif-permission-section')) return;
 
+    const lineSyncEnabled = localStorage.getItem('smes_line_sync') === 'true';
+    const calendarSyncEnabled = localStorage.getItem('smes_calendar_sync') === 'true';
+
     const permSection = document.createElement('div');
     permSection.id = 'notif-permission-section';
     permSection.className = 'content-card p-4 mb-4';
     permSection.innerHTML = `
-        <div class="flex items-center justify-between flex-wrap gap-3">
+        <!-- 瀏覽器推播通知 -->
+        <div class="flex items-center justify-between flex-wrap gap-3 mb-4 pb-4" style="border-bottom: 2px dashed #dfe6e9;">
             <div>
                 <h3 style="font-family: 'VT323', monospace; font-size: 22px;">🔔 瀏覽器推播通知</h3>
                 <p id="notif-status" style="font-family: 'VT323', monospace; font-size: 18px; color: #636e72;">
@@ -42,6 +46,38 @@ function injectNotificationUI() {
             <button onclick="requestNotificationPermission()" id="btn-notify-perm" class="pixel-btn" 
                 ${notificationPermission === 'granted' ? 'disabled style="opacity: 0.5;"' : ''}>
                 ${notificationPermission === 'granted' ? '✅ 已啟用' : '🔔 啟用通知'}
+            </button>
+        </div>
+        
+        <!-- LINE 同步選項 -->
+        <div class="flex items-center justify-between flex-wrap gap-3 mb-4 pb-4" style="border-bottom: 2px dashed #dfe6e9;">
+            <div>
+                <h3 style="font-family: 'VT323', monospace; font-size: 22px;">📲 LINE 提醒同步</h3>
+                <p style="font-family: 'VT323', monospace; font-size: 18px; color: #636e72;">
+                    行程提醒時同步發送 LINE 訊息
+                </p>
+            </div>
+            <label class="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" id="line-sync-toggle" 
+                    ${lineSyncEnabled ? 'checked' : ''} 
+                    onchange="toggleLineSync(this.checked)"
+                    class="w-5 h-5 accent-green-500">
+                <span style="font-family: 'VT323', monospace; font-size: 18px; color: ${lineSyncEnabled ? '#00b894' : '#636e72'};">
+                    ${lineSyncEnabled ? '已開啟' : '已關閉'}
+                </span>
+            </label>
+        </div>
+        
+        <!-- Google 日曆同步 -->
+        <div class="flex items-center justify-between flex-wrap gap-3">
+            <div>
+                <h3 style="font-family: 'VT323', monospace; font-size: 22px;">📅 Google 日曆同步</h3>
+                <p style="font-family: 'VT323', monospace; font-size: 18px; color: #636e72;">
+                    將未完成行程同步到您的 Google 日曆
+                </p>
+            </div>
+            <button onclick="syncToGoogleCalendar()" class="pixel-btn pixel-btn-success">
+                📅 立即同步
             </button>
         </div>
     `;
@@ -147,6 +183,8 @@ function checkUpcomingEvents() {
                 `「${event.title}」將在 1 小時後開始`,
                 { tag: `event-${event.id}-1h` }
             );
+            // 同步發送 LINE 提醒
+            sendLineReminder(event).catch(console.error);
             sessionStorage.setItem(reminderKey, 'sent');
         }
 
@@ -157,6 +195,8 @@ function checkUpcomingEvents() {
                 `「${event.title}」將在明天 ${event.time || '09:00'} 開始`,
                 { tag: `event-${event.id}-1d` }
             );
+            // 同步發送 LINE 提醒
+            sendLineReminder(event).catch(console.error);
             sessionStorage.setItem(reminderKey, 'sent');
         }
     });
@@ -171,6 +211,114 @@ export function triggerTestNotification() {
     showNotification('🧪 測試通知', '這是一則測試通知訊息');
 }
 
+// Toggle LINE sync for reminders
+export function toggleLineSync(enabled) {
+    localStorage.setItem('smes_line_sync', enabled ? 'true' : 'false');
+
+    // Update UI
+    const toggle = document.getElementById('line-sync-toggle');
+    const label = toggle?.nextElementSibling;
+    if (label) {
+        label.style.color = enabled ? '#00b894' : '#636e72';
+        label.textContent = enabled ? '已開啟' : '已關閉';
+    }
+
+    console.log('[Notifications] LINE sync:', enabled ? 'enabled' : 'disabled');
+}
+
+// Sync all relevant events to Google Calendar
+export async function syncToGoogleCalendar() {
+    const currentUser = getAppCurrentUser();
+    if (!currentUser) {
+        alert('請先登入');
+        return;
+    }
+
+    try {
+        const { hasCalendarAccess, addToGoogleCalendar } = await import('./google-calendar.js');
+
+        if (!hasCalendarAccess()) {
+            alert('請使用 Google 帳號登入以取得日曆存取權限');
+            return;
+        }
+
+        const events = globalEvents();
+        const myEvents = events.filter(e =>
+            (e.targets?.includes(currentUser.id) || e.authorId === currentUser.id) &&
+            !e.completedBy?.includes(currentUser.id) &&
+            new Date(`${e.date}T${e.time || '09:00'}`) > new Date() // 只同步未來的行程
+        );
+
+        if (myEvents.length === 0) {
+            alert('沒有需要同步的行程');
+            return;
+        }
+
+        let successCount = 0;
+        let failCount = 0;
+
+        for (const event of myEvents) {
+            const syncKey = `calendar_synced_${event.id}`;
+            if (localStorage.getItem(syncKey)) continue; // 已同步過
+
+            try {
+                await addToGoogleCalendar({
+                    title: event.title,
+                    date: event.date,
+                    time: event.time || '09:00',
+                    authorName: event.authorName || '系統'
+                });
+                localStorage.setItem(syncKey, 'true');
+                successCount++;
+            } catch (err) {
+                console.error('[Calendar] Sync error:', err);
+                failCount++;
+            }
+        }
+
+        if (successCount > 0 || failCount > 0) {
+            alert(`✅ 已同步 ${successCount} 筆行程到 Google 日曆${failCount > 0 ? `\n⚠️ ${failCount} 筆同步失敗` : ''}`);
+        } else {
+            alert('所有行程都已同步過');
+        }
+    } catch (err) {
+        console.error('[Notifications] Calendar sync error:', err);
+        alert('同步失敗：' + err.message);
+    }
+}
+
+// Send LINE reminder for an event (called when browser reminder triggers)
+async function sendLineReminder(event) {
+    const lineSyncEnabled = localStorage.getItem('smes_line_sync') === 'true';
+    if (!lineSyncEnabled) return;
+
+    const currentUser = getAppCurrentUser();
+    if (!currentUser?.lineUserId || !currentUser?.lineNotifyEnabled) return;
+
+    try {
+        // Call Cloud Function to send LINE message
+        const { getFunctions, httpsCallable } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js");
+        const functions = getFunctions();
+        const sendReminder = httpsCallable(functions, 'sendLineReminder');
+
+        await sendReminder({
+            eventId: event.id,
+            eventTitle: event.title,
+            eventTime: event.time || '09:00',
+            userId: currentUser.id
+        });
+
+        console.log('[Notifications] LINE reminder sent for event:', event.id);
+    } catch (err) {
+        console.error('[Notifications] Failed to send LINE reminder:', err);
+    }
+}
+
 // Export to window
 window.requestNotificationPermission = requestNotificationPermission;
 window.triggerTestNotification = triggerTestNotification;
+window.toggleLineSync = toggleLineSync;
+window.syncToGoogleCalendar = syncToGoogleCalendar;
+
+// Make sendLineReminder available internally
+export { sendLineReminder };
