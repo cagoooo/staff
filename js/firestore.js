@@ -131,7 +131,7 @@ export async function handleFirebaseAddEvent(e) {
     const date = document.getElementById('evt-date').value;
     const time = document.getElementById('evt-time').value;
     const isPublic = document.getElementById('evt-is-public').checked;
-    const syncToCalendar = document.getElementById('evt-sync-calendar')?.checked || false;
+    const lineNotifyEnabled = document.getElementById('evt-line-notify')?.checked ?? true;
     const targets = [..._currentSelectedTargets];
     const btn = document.getElementById('btn-add-event');
 
@@ -156,42 +156,39 @@ export async function handleFirebaseAddEvent(e) {
             announcementType,
             pinned,
             tags,
+            lineNotifyEnabled, // 新增：LINE 提醒開關
             completedBy: [],
             readBy: [],
             createdAt: new Date().toISOString()
         };
 
-        // Handle file upload if selected
-        const fileInput = document.getElementById('evt-file');
-        if (fileInput && fileInput.files.length > 0 && window.uploadAttachment) {
-            const file = fileInput.files[0];
-            // We'll upload after creating the event to get event ID
-        }
-
         // Add to Firestore first
         const eventsRef = collection(db, 'artifacts', appId, 'public', 'data', 'school_events');
         const docRef = await addDoc(eventsRef, eventData);
 
-        // Sync to Google Calendar if enabled and user is Google user
-        if (syncToCalendar && _appCurrentUser.authType === 'google') {
+        // Handle file upload if selected (after we have the event ID)
+        const fileInput = document.getElementById('evt-file');
+        if (fileInput && fileInput.files.length > 0 && window.uploadAttachment) {
+            const file = fileInput.files[0];
             try {
-                const { addToGoogleCalendar, hasCalendarAccess } = await import('./google-calendar.js');
-
-                if (hasCalendarAccess()) {
-                    await addToGoogleCalendar({
-                        title,
-                        date,
-                        time,
-                        authorName: _appCurrentUser.name
+                const attachment = await window.uploadAttachment(file, docRef.id);
+                if (attachment) {
+                    // Update event with attachment info
+                    const { updateDoc, doc } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
+                    await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'school_events', docRef.id), {
+                        attachments: [attachment]
                     });
-                    showAlert('行程已新增並同步至 Google 行事曆！');
-                } else {
-                    showAlert('行程已新增！（需重新以 Google 登入以同步行事曆）');
+                    console.log('[Firestore] Attachment added to event:', docRef.id);
                 }
-            } catch (calErr) {
-                console.error('[Calendar] Sync failed:', calErr);
-                showAlert('行程已新增！（行事曆同步失敗：' + calErr.message + '）');
+            } catch (uploadErr) {
+                console.error('[Firestore] Attachment upload failed:', uploadErr);
+                // Continue anyway, event was already created
             }
+        }
+
+        // Show success message with LINE notify status
+        if (lineNotifyEnabled) {
+            showAlert('行程已新增！📲 已開啟 LINE 提醒通知');
         } else {
             showAlert('行程已新增！');
         }
