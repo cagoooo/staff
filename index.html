@@ -141,7 +141,7 @@
                 </div>
             </div>
 
-            <nav class="flex-1 p-3 space-y-2">
+            <nav class="flex-1 p-3 space-y-2 overflow-y-auto">
                 <button onclick="switchTab('dashboard')" class="nav-btn w-full active"><i class="fas fa-gamepad"></i>
                     主頁面</button>
                 <button onclick="switchTab('calendar')" class="nav-btn w-full"><i class="fas fa-calendar-alt"></i>
@@ -159,14 +159,22 @@
             </nav>
 
             <div class="p-3 border-t border-gray-700">
-                <a href="https://lin.ee/76AKi0Q" target="_blank" rel="noopener noreferrer"
-                    class="nav-btn w-full flex items-center justify-center gap-2 mb-2"
-                    style="background: linear-gradient(135deg, #00B900 0%, #00C300 100%); color: white; border: none;">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="white">
-                        <path
-                            d="M12 2c-5.52 0-10 3.58-10 8 0 1.77.69 3.42 1.88 4.79L2 20l5.21-1.88C8.47 18.71 10.18 19 12 19c5.52 0 10-3.58 10-8s-4.48-7-10-9z" />
+                <a href="https://lin.ee/76AKi0Q" target="_blank" rel="noopener noreferrer" id="sidebar-line-btn"
+                    class="w-full flex items-center justify-center gap-2 mb-2 py-2.5 px-3 rounded-lg text-white"
+                    style="background: linear-gradient(135deg, #00B900 0%, #00D900 50%, #00B900 100%); background-size: 200% 200%; animation: lineGlow 2s ease infinite; box-shadow: 0 4px 15px rgba(0, 185, 0, 0.4); transition: all 0.3s ease; font-family: 'VT323', monospace; font-size: 15px; text-decoration: none; min-height: 40px;">
+                    <style>
+                        @keyframes lineGlow { 0%, 100% { background-position: 0% 50%; box-shadow: 0 4px 15px rgba(0, 185, 0, 0.4); } 50% { background-position: 100% 50%; box-shadow: 0 4px 20px rgba(0, 185, 0, 0.6); } }
+                        #sidebar-line-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0, 185, 0, 0.5); }
+                        #sidebar-line-btn svg { flex-shrink: 0; }
+                        /* RWD: 寬度不足時縮小字體 */
+                        @media (max-width: 280px) {
+                            #sidebar-line-btn { font-size: 13px; padding: 8px 6px; }
+                        }
+                    </style>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="white" style="flex-shrink: 0;">
+                        <path d="M12 2c-5.52 0-10 3.58-10 8 0 3.77 3.12 6.93 7.35 7.82-.29 1.02-.93 3.01-1.06 3.47-.17.59.21.58.45.42.19-.12 2.99-2.03 4.21-2.85.7.09 1.38.14 2.05.14 5.52 0 10-3.58 10-8s-4.48-8-10-8z"/>
                     </svg>
-                    加入 LINE 通知
+                    <span style="white-space: nowrap;">加入LINE通知</span>
                 </a>
                 <button onclick="appLogout()" class="nav-btn w-full text-red-400 hover:text-red-300"><i
                         class="fas fa-sign-out-alt"></i> 登出</button>
