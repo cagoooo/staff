@@ -48,7 +48,12 @@ export async function initAuth() {
         console.error('[Auth] Redirect result error:', err);
         console.error('[Auth] Error code:', err.code);
         console.error('[Auth] Error message:', err.message);
-        if (err.code !== 'auth/popup-closed-by-user') {
+
+        // Handle specific error cases
+        if (err.message && err.message.includes('missing initial state')) {
+            // sessionStorage 不可用 (隱私模式、WebView 等)
+            showAlert('⚠️ 登入失敗\n\n可能原因：\n1. 使用隱私瀏覽模式\n2. 在 App 內瀏覽器中開啟\n\n請使用一般模式的 Safari 或 Chrome 瀏覽器重新開啟此網站');
+        } else if (err.code !== 'auth/popup-closed-by-user') {
             showAlert('Google 登入失敗：' + err.message);
         }
     }
