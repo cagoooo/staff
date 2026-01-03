@@ -297,6 +297,17 @@ export async function handleGoogleLogin() {
         return;
     }
 
+    // 偵測是否在 WebView 中（LINE、Facebook 等 App 內瀏覽器）
+    const ua = navigator.userAgent || navigator.vendor || window.opera;
+    const isWebView = /FBAN|FBAV|Instagram|Line|Twitter|MicroMessenger|WeChat/i.test(ua) ||
+        (/(iPhone|iPod|iPad).*AppleWebKit(?!.*Safari)/i.test(ua)) ||
+        (/wv/.test(ua) && /Android/.test(ua));
+
+    if (isWebView) {
+        showAlert('⚠️ 請使用 Safari 或 Chrome 開啟此網站\\n\\n您目前在 App 內瀏覽器中，無法使用 Google 登入。\\n\\n請點選右上角「⋯」選擇「在瀏覽器中開啟」\\n或複製網址到 Safari/Chrome');
+        return;
+    }
+
     const googleBtn = document.getElementById('btn-google-login');
     googleBtn.disabled = true;
     googleBtn.innerHTML = '登入中...';
@@ -307,7 +318,14 @@ export async function handleGoogleLogin() {
         // Add Calendar scope for event sync
         provider.addScope('https://www.googleapis.com/auth/calendar.events');
 
-        console.log('[Auth] Starting Google popup login...');
+        // 強制顯示帳號選擇畫面，讓用戶自己選擇要登入的帳號
+        provider.setCustomParameters({
+            prompt: 'select_account',  // 強制顯示帳號選擇
+            // 提示用戶使用石門學校帳號
+            login_hint: '@smes.tp.edu.tw'
+        });
+
+        console.log('[Auth] Starting Google popup login with account selection...');
 
         // Use popup for more reliable login (redirect has issues with third-party cookie restrictions)
         const result = await signInWithPopup(auth, provider);
@@ -328,6 +346,12 @@ export async function handleGoogleLogin() {
             showAlert('登入視窗已關閉');
         } else if (err.code === 'auth/popup-blocked') {
             showAlert('彈出視窗被阻擋，請允許此網站的彈出視窗');
+        } else if (err.message && (err.message.includes('disallowed_useragent') || err.message.includes('web_view'))) {
+            // WebView 不支援 Google 登入
+            showAlert('⚠️ 請使用 Safari 或 Chrome 瀏覽器開啟此網站登入\\n\\n您目前在 App 內瀏覽器中，Google 不支援此種登入方式。\\n\\n請點選右上角「⋯」選擇「在瀏覽器中開啟」或複製網址到 Safari/Chrome');
+        } else if (err.message && err.message.includes('403')) {
+            // 403 錯誤通常是 WebView 或不支援的瀏覽器
+            showAlert('⚠️ 登入失敗\\n\\n請確認：\\n1. 使用 Safari 或 Chrome 開啟此網站\\n2. 不要在 LINE、Facebook 等 App 內開啟\\n3. 選擇正確的 @smes.tp.edu.tw 帳號');
         } else {
             showAlert('Google 登入失敗：' + err.message);
         }
