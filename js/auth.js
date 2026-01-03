@@ -304,7 +304,7 @@ export async function handleGoogleLogin() {
         (/wv/.test(ua) && /Android/.test(ua));
 
     if (isWebView) {
-        showAlert('⚠️ 請使用 Safari 或 Chrome 開啟此網站\\n\\n您目前在 App 內瀏覽器中，無法使用 Google 登入。\\n\\n請點選右上角「⋯」選擇「在瀏覽器中開啟」\\n或複製網址到 Safari/Chrome');
+        showAlert('⚠️ 請使用 Safari 或 Chrome 開啟此網站\n\n您目前在 App 內瀏覽器中，無法使用 Google 登入。\n\n請點選右上角「⋯」選擇「在瀏覽器中開啟」或複製網址到 Safari/Chrome');
         return;
     }
 
@@ -348,10 +348,10 @@ export async function handleGoogleLogin() {
             showAlert('彈出視窗被阻擋，請允許此網站的彈出視窗');
         } else if (err.message && (err.message.includes('disallowed_useragent') || err.message.includes('web_view'))) {
             // WebView 不支援 Google 登入
-            showAlert('⚠️ 請使用 Safari 或 Chrome 瀏覽器開啟此網站登入\\n\\n您目前在 App 內瀏覽器中，Google 不支援此種登入方式。\\n\\n請點選右上角「⋯」選擇「在瀏覽器中開啟」或複製網址到 Safari/Chrome');
+            showAlert('⚠️ 請使用 Safari 或 Chrome 瀏覽器開啟此網站登入\n\n您目前在 App 內瀏覽器中，Google 不支援此種登入方式。\n\n請點選右上角「⋯」選擇「在瀏覽器中開啟」或複製網址到 Safari/Chrome');
         } else if (err.message && err.message.includes('403')) {
             // 403 錯誤通常是 WebView 或不支援的瀏覽器
-            showAlert('⚠️ 登入失敗\\n\\n請確認：\\n1. 使用 Safari 或 Chrome 開啟此網站\\n2. 不要在 LINE、Facebook 等 App 內開啟\\n3. 選擇正確的 @smes.tp.edu.tw 帳號');
+            showAlert('⚠️ 登入失敗\n\n請確認：\n1. 使用 Safari 或 Chrome 開啟此網站\n2. 不要在 LINE、Facebook 等 App 內開啟\n3. 選擇正確的 @mail2.smes.tyc.edu.tw 帳號');
         } else {
             showAlert('Google 登入失敗：' + err.message);
         }
