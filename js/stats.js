@@ -1,5 +1,6 @@
-// Statistics Dashboard Module
+// Statistics Dashboard Module - Enhanced Version
 import { globalEvents, globalUsers, getAppCurrentUser } from './firestore.js';
+import { DEPARTMENTS } from './departments.js';
 
 let statsCharts = {};
 
@@ -66,13 +67,58 @@ export function renderStats() {
     const pendingEvents = totalEvents - completedEvents;
     const completionRate = totalEvents > 0 ? Math.round((completedEvents / totalEvents) * 100) : 0;
 
-    // Department distribution
+    // Upcoming events (next 7 days)
+    const next7Days = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const upcomingEvents = events.filter(e => {
+        const eventDate = new Date(e.date);
+        return eventDate >= now && eventDate <= next7Days;
+    });
+
+    // Overdue events (past but not completed)
+    const overdueEvents = events.filter(e => {
+        const eventDate = new Date(e.date);
+        return eventDate < now &&
+            (e.targets?.includes(currentUser?.id) || e.authorId === currentUser?.id) &&
+            !e.completedBy?.includes(currentUser?.id);
+    });
+
+    // Department distribution (by target users, not just author)
     const deptCounts = {};
     monthEvents.forEach(e => {
-        const author = users.find(u => u.id === e.authorId);
-        const dept = author?.department || 'other';
-        deptCounts[dept] = (deptCounts[dept] || 0) + 1;
+        // Count by target users' departments
+        if (e.targets && e.targets.length > 0) {
+            e.targets.forEach(targetId => {
+                const targetUser = users.find(u => u.id === targetId);
+                if (targetUser && targetUser.department) {
+                    const dept = targetUser.department;
+                    deptCounts[dept] = (deptCounts[dept] || 0) + 1;
+                }
+            });
+        } else {
+            // If no targets, use author's department
+            const author = users.find(u => u.id === e.authorId);
+            const dept = author?.department || 'other';
+            deptCounts[dept] = (deptCounts[dept] || 0) + 1;
+        }
     });
+
+    // Weekly trend (last 4 weeks)
+    const weeklyData = [];
+    for (let i = 3; i >= 0; i--) {
+        const weekStart = new Date(now);
+        weekStart.setDate(now.getDate() - (i * 7) - now.getDay());
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekStart.getDate() + 6);
+
+        const weekEvents = events.filter(e => {
+            const eventDate = new Date(e.date);
+            return eventDate >= weekStart && eventDate <= weekEnd;
+        });
+        weeklyData.push({
+            label: `第${4 - i}週`,
+            count: weekEvents.length
+        });
+    }
 
     // My events
     const myEvents = monthEvents.filter(e =>
@@ -81,48 +127,162 @@ export function renderStats() {
     const myCompleted = myEvents.filter(e => e.completedBy?.includes(currentUser?.id)).length;
     const myRate = myEvents.length > 0 ? Math.round((myCompleted / myEvents.length) * 100) : 0;
 
-    // Render HTML
+    // Most active users
+    const userEventCounts = {};
+    monthEvents.forEach(e => {
+        if (e.authorId) {
+            userEventCounts[e.authorId] = (userEventCounts[e.authorId] || 0) + 1;
+        }
+    });
+    const topCreators = Object.entries(userEventCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5)
+        .map(([userId, count]) => {
+            const user = users.find(u => u.id === userId);
+            return { name: user?.name || '未知', count };
+        });
+
+    // Important events count
+    const importantEvents = monthEvents.filter(e => e.isPublic).length;
+
+    // Render HTML with RWD grid
     container.innerHTML = `
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <div class="content-card p-4 text-center">
-                <div style="font-size: 48px; color: #6c5ce7;">📋</div>
-                <div style="font-family: 'VT323', monospace; font-size: 36px; font-weight: bold;">${totalEvents}</div>
-                <div style="font-family: 'VT323', monospace; font-size: 20px; color: #636e72;">本月行程總數</div>
+        <style>
+            .stats-grid { display: grid; gap: 16px; }
+            .stats-card { 
+                background: white; 
+                border-radius: 12px; 
+                padding: 16px; 
+                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            }
+            .stats-number { 
+                font-family: 'VT323', monospace; 
+                font-size: 36px; 
+                font-weight: bold;
+            }
+            .stats-label { 
+                font-family: 'VT323', monospace; 
+                font-size: 16px; 
+                color: #636e72;
+            }
+            .stats-icon { font-size: 36px; }
+            @media (min-width: 768px) {
+                .stats-grid-4 { grid-template-columns: repeat(4, 1fr); }
+                .stats-grid-3 { grid-template-columns: repeat(3, 1fr); }
+                .stats-grid-2 { grid-template-columns: repeat(2, 1fr); }
+            }
+            @media (max-width: 767px) {
+                .stats-grid-4, .stats-grid-3 { grid-template-columns: repeat(2, 1fr); }
+                .stats-number { font-size: 28px; }
+                .stats-icon { font-size: 28px; }
+            }
+        </style>
+        
+        <!-- Overview Cards -->
+        <div class="stats-grid stats-grid-4 mb-4">
+            <div class="stats-card text-center">
+                <div class="stats-icon" style="color: #6c5ce7;">📋</div>
+                <div class="stats-number">${totalEvents}</div>
+                <div class="stats-label">本月行程總數</div>
             </div>
-            <div class="content-card p-4 text-center">
-                <div style="font-size: 48px; color: #00b894;">✅</div>
-                <div style="font-family: 'VT323', monospace; font-size: 36px; font-weight: bold;">${completedEvents}</div>
-                <div style="font-family: 'VT323', monospace; font-size: 20px; color: #636e72;">已完成</div>
+            <div class="stats-card text-center">
+                <div class="stats-icon" style="color: #00b894;">✅</div>
+                <div class="stats-number">${completedEvents}</div>
+                <div class="stats-label">已完成</div>
             </div>
-            <div class="content-card p-4 text-center">
-                <div style="font-size: 48px; color: #fdcb6e;">⏳</div>
-                <div style="font-family: 'VT323', monospace; font-size: 36px; font-weight: bold;">${pendingEvents}</div>
-                <div style="font-family: 'VT323', monospace; font-size: 20px; color: #636e72;">待處理</div>
+            <div class="stats-card text-center">
+                <div class="stats-icon" style="color: #fdcb6e;">⏳</div>
+                <div class="stats-number">${pendingEvents}</div>
+                <div class="stats-label">待處理</div>
+            </div>
+            <div class="stats-card text-center">
+                <div class="stats-icon" style="color: #e74c3c;">⭐</div>
+                <div class="stats-number">${importantEvents}</div>
+                <div class="stats-label">重要行事</div>
+            </div>
+        </div>
+
+        <!-- Alert Cards -->
+        <div class="stats-grid stats-grid-2 mb-4">
+            <div class="stats-card" style="border-left: 4px solid #0984e3;">
+                <h3 style="font-family: 'VT323', monospace; font-size: 20px; color: #0984e3; margin-bottom: 12px;">
+                    📅 近7日即將到來 (${upcomingEvents.length})
+                </h3>
+                <div style="max-height: 120px; overflow-y: auto;">
+                    ${upcomingEvents.length > 0 ? upcomingEvents.slice(0, 5).map(e => `
+                        <div style="font-family: 'VT323', monospace; font-size: 16px; padding: 4px 0; border-bottom: 1px solid #eee;">
+                            📌 ${e.date.substring(5)} ${e.time || ''} - ${e.title.substring(0, 20)}${e.title.length > 20 ? '...' : ''}
+                        </div>
+                    `).join('') : '<p style="color: #636e72; font-family: VT323, monospace;">沒有即將到來的行程</p>'}
+                </div>
+            </div>
+            <div class="stats-card" style="border-left: 4px solid ${overdueEvents.length > 0 ? '#e17055' : '#00b894'};">
+                <h3 style="font-family: 'VT323', monospace; font-size: 20px; color: ${overdueEvents.length > 0 ? '#e17055' : '#00b894'}; margin-bottom: 12px;">
+                    ${overdueEvents.length > 0 ? '⚠️' : '✅'} 逾期未完成 (${overdueEvents.length})
+                </h3>
+                <div style="max-height: 120px; overflow-y: auto;">
+                    ${overdueEvents.length > 0 ? overdueEvents.slice(0, 5).map(e => `
+                        <div style="font-family: 'VT323', monospace; font-size: 16px; padding: 4px 0; border-bottom: 1px solid #eee; color: #e17055;">
+                            ❌ ${e.date} - ${e.title.substring(0, 20)}${e.title.length > 20 ? '...' : ''}
+                        </div>
+                    `).join('') : '<p style="color: #00b894; font-family: VT323, monospace;">🎉 太棒了！沒有逾期行程</p>'}
+                </div>
             </div>
         </div>
         
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div class="content-card p-4">
-                <h3 style="font-family: 'VT323', monospace; font-size: 24px; margin-bottom: 16px;">📊 各處室工作量</h3>
-                <canvas id="dept-chart" height="200"></canvas>
+        <!-- Charts Row -->
+        <div class="stats-grid stats-grid-2 mb-4">
+            <div class="stats-card">
+                <h3 style="font-family: 'VT323', monospace; font-size: 22px; margin-bottom: 16px;">📊 各處室工作量分布</h3>
+                <canvas id="dept-chart" height="250"></canvas>
             </div>
-            <div class="content-card p-4">
-                <h3 style="font-family: 'VT323', monospace; font-size: 24px; margin-bottom: 16px;">🎯 個人完成率</h3>
-                <div class="flex items-center justify-center" style="min-height: 200px;">
+            <div class="stats-card">
+                <h3 style="font-family: 'VT323', monospace; font-size: 22px; margin-bottom: 16px;">📈 近4週行程趨勢</h3>
+                <canvas id="trend-chart" height="250"></canvas>
+            </div>
+        </div>
+
+        <!-- Personal Stats & Top Creators -->
+        <div class="stats-grid stats-grid-2 mb-4">
+            <div class="stats-card">
+                <h3 style="font-family: 'VT323', monospace; font-size: 22px; margin-bottom: 16px;">🎯 我的完成率</h3>
+                <div class="flex items-center justify-center" style="min-height: 180px;">
                     <div class="text-center">
-                        <div style="font-family: 'VT323', monospace; font-size: 72px; font-weight: bold; color: ${myRate >= 80 ? '#00b894' : myRate >= 50 ? '#fdcb6e' : '#e17055'};">${myRate}%</div>
+                        <div style="font-family: 'VT323', monospace; font-size: 64px; font-weight: bold; color: ${myRate >= 80 ? '#00b894' : myRate >= 50 ? '#fdcb6e' : '#e17055'};">${myRate}%</div>
                         <div style="font-family: 'VT323', monospace; font-size: 20px; color: #636e72;">${myCompleted}/${myEvents.length} 項任務</div>
-                        <div class="mt-4" style="font-family: 'VT323', monospace; font-size: 18px;">
+                        <div class="mt-3" style="font-family: 'VT323', monospace; font-size: 18px;">
                             ${myRate >= 80 ? '🏆 太棒了！繼續保持！' : myRate >= 50 ? '💪 加油！還有一些待完成！' : '📌 還有許多任務等著你！'}
                         </div>
                     </div>
                 </div>
             </div>
+            <div class="stats-card">
+                <h3 style="font-family: 'VT323', monospace; font-size: 22px; margin-bottom: 16px;">👑 本月活躍排行</h3>
+                <div style="font-family: 'VT323', monospace;">
+                    ${topCreators.length > 0 ? topCreators.map((u, i) => `
+                        <div style="display: flex; align-items: center; padding: 8px 0; border-bottom: 1px solid #eee;">
+                            <span style="font-size: 24px; margin-right: 12px;">${i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '🏅'}</span>
+                            <span style="flex: 1; font-size: 18px;">${u.name}</span>
+                            <span style="font-size: 20px; color: #6c5ce7; font-weight: bold;">${u.count} 筆</span>
+                        </div>
+                    `).join('') : '<p style="color: #636e72;">本月尚無資料</p>'}
+                </div>
+            </div>
+        </div>
+
+        <!-- User Count -->
+        <div class="stats-card text-center">
+            <div style="font-family: 'VT323', monospace; font-size: 20px; color: #636e72;">
+                👥 系統共有 <strong style="color: #6c5ce7; font-size: 24px;">${users.length}</strong> 位使用者
+            </div>
         </div>
     `;
 
-    // Render department chart
-    renderDeptChart(deptCounts);
+    // Render charts with delay to ensure canvas is ready
+    setTimeout(() => {
+        renderDeptChart(deptCounts);
+        renderTrendChart(weeklyData);
+    }, 100);
 }
 
 // Render department distribution chart
@@ -136,26 +296,35 @@ function renderDeptChart(deptCounts) {
     }
 
     const deptLabels = {
+        'principal': '校長室',
         'academic': '教務處',
         'student': '學務處',
         'general': '總務處',
         'counseling': '輔導室',
-        'principal': '校長室',
+        'teachers': '教師群',
         'other': '其他'
     };
 
     const deptColors = {
+        'principal': '#e74c3c',
         'academic': '#3498db',
         'student': '#27ae60',
         'general': '#e67e22',
         'counseling': '#9b59b6',
-        'principal': '#e74c3c',
+        'teachers': '#00b894',
         'other': '#636e72'
     };
 
-    const labels = Object.keys(deptCounts).map(k => deptLabels[k] || k);
-    const data = Object.values(deptCounts);
-    const colors = Object.keys(deptCounts).map(k => deptColors[k] || '#636e72');
+    // Only include departments with data
+    const filteredDepts = Object.keys(deptCounts).filter(k => deptCounts[k] > 0);
+    const labels = filteredDepts.map(k => deptLabels[k] || k);
+    const data = filteredDepts.map(k => deptCounts[k]);
+    const colors = filteredDepts.map(k => deptColors[k] || '#636e72');
+
+    if (data.length === 0) {
+        canvas.parentElement.innerHTML += '<p style="text-align: center; color: #636e72; font-family: VT323, monospace;">本月尚無行程資料</p>';
+        return;
+    }
 
     statsCharts.dept = new Chart(canvas, {
         type: 'doughnut',
@@ -164,17 +333,65 @@ function renderDeptChart(deptCounts) {
             datasets: [{
                 data: data,
                 backgroundColor: colors,
-                borderWidth: 2,
+                borderWidth: 3,
                 borderColor: '#fff'
             }]
         },
         options: {
             responsive: true,
+            maintainAspectRatio: false,
             plugins: {
                 legend: {
                     position: 'bottom',
                     labels: {
-                        font: { family: "'VT323', monospace", size: 16 }
+                        font: { family: "'VT323', monospace", size: 14 },
+                        padding: 12
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Render weekly trend chart
+function renderTrendChart(weeklyData) {
+    const canvas = document.getElementById('trend-chart');
+    if (!canvas || typeof Chart === 'undefined') return;
+
+    // Destroy existing chart
+    if (statsCharts.trend) {
+        statsCharts.trend.destroy();
+    }
+
+    statsCharts.trend = new Chart(canvas, {
+        type: 'bar',
+        data: {
+            labels: weeklyData.map(w => w.label),
+            datasets: [{
+                label: '行程數量',
+                data: weeklyData.map(w => w.count),
+                backgroundColor: ['#6c5ce7', '#a29bfe', '#74b9ff', '#0984e3'],
+                borderRadius: 8,
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        font: { family: "'VT323', monospace", size: 14 },
+                        stepSize: 1
+                    }
+                },
+                x: {
+                    ticks: {
+                        font: { family: "'VT323', monospace", size: 14 }
                     }
                 }
             }
