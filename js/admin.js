@@ -108,7 +108,12 @@ export function renderAdminPanel() {
 
     const users = globalUsers();
 
+    // Get backup UI HTML
+    const backupUI = window.getBackupUIHtml ? window.getBackupUIHtml() : '';
+
     container.innerHTML = `
+        ${backupUI}
+        
         <div class="content-card p-4 mb-4" style="display: flex; justify-content: space-between; align-items: center;">
             <div>
                 <h2 style="font-family: 'VT323', monospace; font-size: 28px;">👥 使用者管理</h2>

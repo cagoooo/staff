@@ -135,10 +135,24 @@ export async function handleFirebaseAddEvent(e) {
     const targets = [..._currentSelectedTargets];
     const btn = document.getElementById('btn-add-event');
 
-    // New fields
+    // New fields - date range support
+    const isMultiDay = document.getElementById('evt-multi-day')?.checked || false;
+    const endDate = isMultiDay ? document.getElementById('evt-end-date')?.value : null;
     const announcementType = document.getElementById('evt-type')?.value || 'normal';
     const pinned = document.getElementById('evt-pinned')?.checked || false;
     const tags = window._selectedEventTags || [];
+
+    // Check for conflicts before proceeding
+    if (window.checkConflicts && targets.length > 0) {
+        const conflicts = window.checkConflicts(targets, date, time, endDate);
+        if (conflicts.length > 0) {
+            // Show conflict warning
+            const container = document.querySelector('#view-editor .content-card');
+            if (container && window.showConflictWarningInContainer) {
+                window.showConflictWarningInContainer('view-editor', conflicts);
+            }
+        }
+    }
 
     btn.disabled = true;
     btn.innerText = "傳送中...";
@@ -150,13 +164,15 @@ export async function handleFirebaseAddEvent(e) {
             authorName: _appCurrentUser.name,
             title,
             date,
+            endDate: endDate || null, // 結束日期（跨日行程）
+            isMultiDay: isMultiDay, // 是否跨日
             time,
             targets,
             isPublic,
             announcementType,
             pinned,
             tags,
-            lineNotifyEnabled, // 新增：LINE 提醒開關
+            lineNotifyEnabled, // LINE 提醒開關
             completedBy: [],
             readBy: [],
             createdAt: new Date().toISOString()

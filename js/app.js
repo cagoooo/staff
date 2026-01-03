@@ -17,6 +17,9 @@ import { initTags } from './tags.js';
 import { initComments } from './comments.js';
 import { initReminders } from './reminders.js';
 import { initLineConnect } from './line-connect.js';
+import './conflict-detection.js'; // Load conflict detection
+import { initTemplates } from './templates.js';
+import './backup-restore.js'; // Load backup/restore
 
 // Wire up dependencies (avoid circular imports)
 setAuthDeps({
@@ -50,6 +53,7 @@ async function init() {
     initComments();
     initReminders();
     initLineConnect();
+    initTemplates();
 
     // 恢復記住的帳號密碼
     restoreRememberedCredentials();

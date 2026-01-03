@@ -366,11 +366,21 @@
                                 <label class="pixel-label">項目名稱</label>
                                 <input type="text" id="evt-title" required class="pixel-input" placeholder="例如：期中考務會議">
                             </div>
-                            <div class="grid grid-cols-2 gap-4 mb-4">
-                                <div><label class="pixel-label">日期</label><input type="date" id="evt-date" required
+                            <div class="grid grid-cols-2 gap-4 mb-2">
+                                <div><label class="pixel-label">開始日期</label><input type="date" id="evt-date" required
                                         class="pixel-input"></div>
                                 <div><label class="pixel-label">時間</label><input type="time" id="evt-time" required
                                         class="pixel-input"></div>
+                            </div>
+                            <div class="mb-4">
+                                <label class="flex items-center gap-2 mb-2" style="font-family: 'VT323', monospace; font-size: 18px;">
+                                    <input type="checkbox" id="evt-multi-day" class="w-5 h-5" onchange="toggleEndDate()">
+                                    📆 跨日行程（多天）
+                                </label>
+                                <div id="end-date-container" class="hidden-section">
+                                    <label class="pixel-label">結束日期</label>
+                                    <input type="date" id="evt-end-date" class="pixel-input">
+                                </div>
                             </div>
                             <div class="mb-4">
                                 <label class="pixel-label">通知人員（可按處室篩選）</label>
