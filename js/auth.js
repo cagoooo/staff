@@ -228,6 +228,21 @@ export async function handleAppLogin(e) {
         if (passwordMatch) {
             _setAppCurrentUser(user);
             saveSession(user); // Save session with expiry
+
+            // 記住帳號密碼功能
+            const rememberMe = document.getElementById('remember-me')?.checked;
+            if (rememberMe) {
+                localStorage.setItem('smes_remembered_username', username);
+                // 使用 Base64 編碼密碼（注意：這不是真正的加密，只是簡單混淆）
+                localStorage.setItem('smes_remembered_password', btoa(password));
+                localStorage.setItem('smes_remember_me', 'true');
+            } else {
+                // 清除記住的帳密
+                localStorage.removeItem('smes_remembered_username');
+                localStorage.removeItem('smes_remembered_password');
+                localStorage.removeItem('smes_remember_me');
+            }
+
             _initAppUI();
         } else {
             showAlert('帳號或密碼錯誤');
@@ -528,3 +543,29 @@ window.handleAppRegister = handleAppRegister;
 window.handleGoogleLogin = handleGoogleLogin;
 window.appLogout = appLogout;
 window.toggleAuthMode = toggleAuthMode;
+
+// 恢復記住的帳號密碼
+export function restoreRememberedCredentials() {
+    const remembered = localStorage.getItem('smes_remember_me') === 'true';
+    const username = localStorage.getItem('smes_remembered_username');
+    const encodedPassword = localStorage.getItem('smes_remembered_password');
+
+    const usernameInput = document.getElementById('login-username');
+    const passwordInput = document.getElementById('login-password');
+    const rememberCheckbox = document.getElementById('remember-me');
+
+    if (remembered && username && encodedPassword && usernameInput && passwordInput) {
+        usernameInput.value = username;
+        try {
+            passwordInput.value = atob(encodedPassword);
+        } catch (e) {
+            console.warn('[Auth] Failed to decode remembered password');
+        }
+        if (rememberCheckbox) {
+            rememberCheckbox.checked = true;
+        }
+        console.log('[Auth] Restored remembered credentials');
+    }
+}
+
+window.restoreRememberedCredentials = restoreRememberedCredentials;

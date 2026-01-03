@@ -1,6 +1,6 @@
 // Main Application Entry Point
 import { initModal } from '../components/modal.js';
-import { initAuth, checkLoadingComplete, setAuthDeps } from './auth.js';
+import { initAuth, checkLoadingComplete, setAuthDeps, restoreRememberedCredentials } from './auth.js';
 import { globalUsers, getAppCurrentUser, setAppCurrentUser, startDataListeners, setFirestoreDeps } from './firestore.js';
 import { initAppUI, updateSidebar, renderDashboard, renderNotifications, renderEditorOptions, updateNotificationBadge, switchTab } from './ui.js';
 import { initEventModal } from './event-modal.js';
@@ -50,6 +50,9 @@ async function init() {
     initComments();
     initReminders();
     initLineConnect();
+
+    // 恢復記住的帳號密碼
+    restoreRememberedCredentials();
 
     // Initialize authentication (includes 3s timeout fallback)
     await initAuth();
