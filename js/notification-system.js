@@ -202,7 +202,7 @@ export function triggerTestNotification() {
 }
 
 // Toggle LINE sync for reminders
-export function toggleLineSync(enabled) {
+export async function toggleLineSync(enabled) {
     localStorage.setItem('smes_line_sync', enabled ? 'true' : 'false');
 
     // Update UI with visual feedback
@@ -228,6 +228,29 @@ export function toggleLineSync(enabled) {
     showToast(message, enabled ? '#00b894' : '#636e72');
 
     console.log('[Notifications] LINE sync:', enabled ? 'enabled' : 'disabled');
+
+    // 發送 LINE 同步狀態通知給使用者
+    const currentUser = getAppCurrentUser();
+    if (currentUser?.lineUserId && currentUser?.lineNotifyEnabled) {
+        try {
+            const response = await fetch('https://notifysyncstatus-adbqeupora-de.a.run.app', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    userId: currentUser.id,
+                    enabled: enabled
+                })
+            });
+
+            if (response.ok) {
+                console.log('[Notifications] LINE sync status notification sent');
+            } else {
+                console.warn('[Notifications] Failed to send LINE sync status notification');
+            }
+        } catch (err) {
+            console.error('[Notifications] Error sending LINE sync status notification:', err);
+        }
+    }
 }
 
 // 簡易 Toast 通知

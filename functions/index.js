@@ -889,6 +889,113 @@ function getMinutesLabel(minutes) {
 }
 
 /**
+ * LINE 同步狀態通知 - Flex Message
+ */
+function createSyncStatusFlexMessage(enabled) {
+    const config = enabled
+        ? {
+            icon: '🔗',
+            title: '同步已開啟',
+            color: '#00b894',
+            message: '瀏覽器推播行程提醒時，將同時發送 LINE 訊息給您'
+        }
+        : {
+            icon: '🔌',
+            title: '同步已關閉',
+            color: '#636e72',
+            message: '已停止同步瀏覽器推播提醒至 LINE'
+        };
+
+    return {
+        type: "flex",
+        altText: `${config.icon} LINE 提醒同步${enabled ? '已開啟' : '已關閉'}`,
+        contents: {
+            type: "bubble",
+            size: "kilo",
+            header: {
+                type: "box",
+                layout: "vertical",
+                backgroundColor: config.color,
+                paddingAll: "15px",
+                contents: [
+                    {
+                        type: "box",
+                        layout: "horizontal",
+                        contents: [
+                            {
+                                type: "text",
+                                text: config.icon,
+                                size: "xl",
+                                color: "#ffffff",
+                                flex: 0
+                            },
+                            {
+                                type: "text",
+                                text: config.title,
+                                color: "#ffffff",
+                                size: "lg",
+                                weight: "bold",
+                                margin: "md",
+                                flex: 1
+                            }
+                        ],
+                        alignItems: "center"
+                    }
+                ]
+            },
+            body: {
+                type: "box",
+                layout: "vertical",
+                paddingAll: "15px",
+                spacing: "md",
+                contents: [
+                    {
+                        type: "text",
+                        text: "📲 LINE 提醒同步",
+                        weight: "bold",
+                        size: "md"
+                    },
+                    {
+                        type: "text",
+                        text: config.message,
+                        size: "sm",
+                        color: "#636e72",
+                        wrap: true
+                    },
+                    {
+                        type: "box",
+                        layout: "horizontal",
+                        margin: "lg",
+                        contents: [
+                            {
+                                type: "text",
+                                text: "🖥️ 瀏覽器",
+                                size: "sm",
+                                color: "#667eea"
+                            },
+                            {
+                                type: "text",
+                                text: enabled ? "⟷" : "✕",
+                                size: "sm",
+                                color: config.color,
+                                align: "center"
+                            },
+                            {
+                                type: "text",
+                                text: "📱 LINE",
+                                size: "sm",
+                                color: "#00b894",
+                                align: "end"
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+    };
+}
+
+/**
  * 行程更新通知 - Flex Message
  */
 function createEventUpdateFlexMessage(eventData, changedFields) {
@@ -2926,6 +3033,60 @@ exports.onReminderDelete = onDocumentDeleted(
             console.log(`LINE reminder delete confirmation sent to ${reminderData.userId}`);
         } catch (err) {
             console.error(`Failed to send reminder delete confirmation:`, err);
+        }
+    }
+);
+
+/**
+ * 通知使用者 LINE 提醒同步狀態變更
+ */
+exports.notifySyncStatus = onRequest(
+    {
+        region: "asia-east1",
+        cors: true,
+        secrets: ["LINE_CHANNEL_ACCESS_TOKEN", "LINE_CHANNEL_SECRET"]
+    },
+    async (req, res) => {
+        if (req.method !== 'POST') {
+            return res.status(405).json({ error: 'Method not allowed' });
+        }
+
+        const { userId, enabled } = req.body;
+
+        if (!userId) {
+            return res.status(400).json({ error: 'Missing userId' });
+        }
+
+        try {
+            const client = getLineClient();
+
+            // 取得使用者的 LINE ID
+            const userDoc = await db.doc(`artifacts/${APP_ID}/public/data/users/${userId}`).get();
+            if (!userDoc.exists) {
+                return res.status(404).json({ error: 'User not found' });
+            }
+
+            const userData = userDoc.data();
+            const lineUserId = userData.lineUserId;
+            const lineNotifyEnabled = userData.lineNotifyEnabled;
+
+            if (!lineUserId) {
+                return res.status(400).json({ error: 'User has not linked LINE account' });
+            }
+
+            if (!lineNotifyEnabled) {
+                return res.status(400).json({ error: 'LINE notifications are disabled' });
+            }
+
+            // 發送同步狀態通知
+            const message = createSyncStatusFlexMessage(enabled);
+            await client.pushMessage(lineUserId, message);
+
+            console.log(`LINE sync status notification sent to ${userId}: ${enabled ? 'enabled' : 'disabled'}`);
+            return res.status(200).json({ success: true, message: 'Notification sent' });
+        } catch (err) {
+            console.error('Failed to send sync status notification:', err);
+            return res.status(500).json({ error: err.message });
         }
     }
 );
