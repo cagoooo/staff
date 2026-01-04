@@ -194,6 +194,17 @@ export function selectCalendarDate(dateStr) {
     selectedCalendarDate = dateStr;
     renderCalendar();
     renderDayEvents(dateStr);
+
+    // 平滑滾動到行程列表區塊，提升 UX 體驗
+    const dayEventsSection = document.getElementById('selected-day-title');
+    if (dayEventsSection) {
+        setTimeout(() => {
+            dayEventsSection.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+            });
+        }, 100);
+    }
 }
 
 export function renderDayEvents(dateStr) {
