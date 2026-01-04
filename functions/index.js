@@ -4,7 +4,7 @@
  */
 
 const { onRequest } = require("firebase-functions/v2/https");
-const { onDocumentCreated, onDocumentUpdated } = require("firebase-functions/v2/firestore");
+const { onDocumentCreated, onDocumentUpdated, onDocumentDeleted } = require("firebase-functions/v2/firestore");
 const { onSchedule } = require("firebase-functions/v2/scheduler");
 const { initializeApp } = require("firebase-admin/app");
 const { getFirestore } = require("firebase-admin/firestore");
@@ -560,6 +560,192 @@ function createReminderFlexMessage(eventTitle, eventDate, eventTime) {
             }
         }
     };
+}
+
+/**
+ * 提醒設定確認 - Flex Message
+ */
+function createReminderSetFlexMessage(eventTitle, eventDate, eventTime, minutesBefore) {
+    const reminderLabel = getMinutesLabel(minutesBefore);
+    return {
+        type: "flex",
+        altText: `🔔 已設定提醒：${eventTitle}`,
+        contents: {
+            type: "bubble",
+            size: "kilo",
+            header: {
+                type: "box",
+                layout: "vertical",
+                backgroundColor: "#00b894",
+                paddingAll: "15px",
+                contents: [
+                    {
+                        type: "box",
+                        layout: "horizontal",
+                        contents: [
+                            {
+                                type: "text",
+                                text: "🔔",
+                                size: "xl",
+                                color: "#ffffff",
+                                flex: 0
+                            },
+                            {
+                                type: "text",
+                                text: "提醒已設定",
+                                color: "#ffffff",
+                                size: "lg",
+                                weight: "bold",
+                                margin: "md",
+                                flex: 1
+                            }
+                        ],
+                        alignItems: "center"
+                    }
+                ]
+            },
+            body: {
+                type: "box",
+                layout: "vertical",
+                paddingAll: "15px",
+                spacing: "md",
+                contents: [
+                    {
+                        type: "text",
+                        text: `📋 ${eventTitle}`,
+                        weight: "bold",
+                        size: "md",
+                        wrap: true
+                    },
+                    {
+                        type: "box",
+                        layout: "vertical",
+                        backgroundColor: "#f0fff4",
+                        cornerRadius: "8px",
+                        paddingAll: "12px",
+                        contents: [
+                            {
+                                type: "text",
+                                text: `📅 ${eventDate} ${eventTime}`,
+                                size: "sm",
+                                color: "#333333"
+                            },
+                            {
+                                type: "text",
+                                text: `⏰ 將於 ${reminderLabel} 提醒您`,
+                                size: "sm",
+                                color: "#00b894",
+                                weight: "bold",
+                                margin: "sm"
+                            }
+                        ]
+                    }
+                ]
+            },
+            footer: {
+                type: "box",
+                layout: "vertical",
+                paddingAll: "12px",
+                contents: [
+                    {
+                        type: "button",
+                        action: {
+                            type: "uri",
+                            label: "📋 查看行程",
+                            uri: LINK_URL
+                        },
+                        style: "primary",
+                        color: "#00b894",
+                        height: "sm"
+                    }
+                ]
+            }
+        }
+    };
+}
+
+/**
+ * 提醒刪除確認 - Flex Message
+ */
+function createReminderDeleteFlexMessage(eventTitle, minutesBefore) {
+    const reminderLabel = getMinutesLabel(minutesBefore);
+    return {
+        type: "flex",
+        altText: `🔕 已取消提醒：${eventTitle}`,
+        contents: {
+            type: "bubble",
+            size: "kilo",
+            header: {
+                type: "box",
+                layout: "vertical",
+                backgroundColor: "#636e72",
+                paddingAll: "15px",
+                contents: [
+                    {
+                        type: "box",
+                        layout: "horizontal",
+                        contents: [
+                            {
+                                type: "text",
+                                text: "🔕",
+                                size: "xl",
+                                color: "#ffffff",
+                                flex: 0
+                            },
+                            {
+                                type: "text",
+                                text: "提醒已取消",
+                                color: "#ffffff",
+                                size: "lg",
+                                weight: "bold",
+                                margin: "md",
+                                flex: 1
+                            }
+                        ],
+                        alignItems: "center"
+                    }
+                ]
+            },
+            body: {
+                type: "box",
+                layout: "vertical",
+                paddingAll: "15px",
+                spacing: "md",
+                contents: [
+                    {
+                        type: "text",
+                        text: `📋 ${eventTitle}`,
+                        weight: "bold",
+                        size: "md",
+                        wrap: true
+                    },
+                    {
+                        type: "text",
+                        text: `已取消 ${reminderLabel} 的提醒`,
+                        size: "sm",
+                        color: "#636e72"
+                    }
+                ]
+            }
+        }
+    };
+}
+
+/**
+ * 轉換分鐘數為文字標籤
+ */
+function getMinutesLabel(minutes) {
+    const presets = {
+        5: '5 分鐘前',
+        15: '15 分鐘前',
+        30: '30 分鐘前',
+        60: '1 小時前',
+        120: '2 小時前',
+        1440: '1 天前',
+        2880: '2 天前',
+        10080: '1 週前'
+    };
+    return presets[minutes] || `${minutes} 分鐘前`;
 }
 
 /**
@@ -2269,6 +2455,96 @@ exports.deleteAuthUser = onRequest(
                 success: false,
                 error: err.message
             });
+        }
+    }
+);
+
+/**
+ * 新增提醒時通知用戶確認
+ */
+exports.onReminderCreate = onDocumentCreated(
+    {
+        document: `artifacts/${APP_ID}/public/data/reminders/{reminderId}`,
+        region: "asia-east1",
+        secrets: ["LINE_CHANNEL_ACCESS_TOKEN", "LINE_CHANNEL_SECRET"]
+    },
+    async (event) => {
+        const reminderData = event.data.data();
+        const reminderId = event.params.reminderId;
+        const client = getLineClient();
+
+        console.log(`Reminder created: ${reminderId}`, reminderData);
+
+        try {
+            // 取得用戶的 LINE ID
+            const userDoc = await db.doc(`artifacts/${APP_ID}/public/data/users/${reminderData.userId}`).get();
+            if (!userDoc.exists) return;
+
+            const userData = userDoc.data();
+            const lineUserId = userData.lineUserId;
+            const lineNotifyEnabled = userData.lineNotifyEnabled;
+
+            if (!lineUserId || !lineNotifyEnabled) return;
+
+            // 發送 LINE 通知 (提醒設定確認)
+            const message = createReminderSetFlexMessage(
+                reminderData.eventTitle,
+                reminderData.eventDate,
+                reminderData.eventTime,
+                reminderData.minutesBefore
+            );
+
+            await client.pushMessage(lineUserId, message);
+            console.log(`LINE reminder set confirmation sent to ${reminderData.userId}`);
+        } catch (err) {
+            console.error(`Failed to send reminder set confirmation:`, err);
+        }
+    }
+);
+
+/**
+ * 刪除提醒時通知用戶確認
+ */
+exports.onReminderDelete = onDocumentDeleted(
+    {
+        document: `artifacts/${APP_ID}/public/data/reminders/{reminderId}`,
+        region: "asia-east1",
+        secrets: ["LINE_CHANNEL_ACCESS_TOKEN", "LINE_CHANNEL_SECRET"]
+    },
+    async (event) => {
+        const reminderData = event.data.data();
+        const reminderId = event.params.reminderId;
+        const client = getLineClient();
+
+        console.log(`Reminder deleted: ${reminderId}`, reminderData);
+
+        // 如果提醒已經觸發過，不發送刪除通知
+        if (reminderData.triggered) {
+            console.log('Reminder was already triggered, skipping delete notification');
+            return;
+        }
+
+        try {
+            // 取得用戶的 LINE ID
+            const userDoc = await db.doc(`artifacts/${APP_ID}/public/data/users/${reminderData.userId}`).get();
+            if (!userDoc.exists) return;
+
+            const userData = userDoc.data();
+            const lineUserId = userData.lineUserId;
+            const lineNotifyEnabled = userData.lineNotifyEnabled;
+
+            if (!lineUserId || !lineNotifyEnabled) return;
+
+            // 發送 LINE 通知 (提醒刪除確認)
+            const message = createReminderDeleteFlexMessage(
+                reminderData.eventTitle,
+                reminderData.minutesBefore
+            );
+
+            await client.pushMessage(lineUserId, message);
+            console.log(`LINE reminder delete confirmation sent to ${reminderData.userId}`);
+        } catch (err) {
+            console.error(`Failed to send reminder delete confirmation:`, err);
         }
     }
 );
