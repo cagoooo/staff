@@ -86,7 +86,7 @@ export function renderLineSettings(user) {
     const isConnected = !!user.lineUserId;
     const notifyEnabled = user.lineNotifyEnabled || false;
 
-    // 共用的「加入 LINE 官方帳號」按鈕
+    // 共用的「加入 LINE 官方帳號」按鈕（使用官方 LINE LOGO）
     const addLineButton = `
         <a href="${LINE_BOT_ADD_URL}" target="_blank" rel="noopener noreferrer"
             class="line-add-btn"
@@ -94,24 +94,26 @@ export function renderLineSettings(user) {
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                gap: 8px;
-                background: linear-gradient(135deg, #00B900 0%, #00C300 100%);
+                gap: 10px;
+                background: linear-gradient(135deg, #00B900 0%, #00C300 50%, #00D000 100%);
                 color: white;
-                padding: 12px 20px;
-                border-radius: 8px;
+                padding: 14px 24px;
+                border-radius: 50px;
                 font-family: 'VT323', monospace;
-                font-size: 18px;
+                font-size: 20px;
+                font-weight: bold;
                 text-decoration: none;
-                border: 3px solid #008800;
-                box-shadow: 3px 3px 0 #006600;
-                transition: all 0.2s ease;
+                border: none;
+                box-shadow: 0 4px 15px rgba(0, 185, 0, 0.4), inset 0 1px 0 rgba(255,255,255,0.2);
+                transition: all 0.3s ease;
                 cursor: pointer;
+                text-shadow: 0 1px 2px rgba(0,0,0,0.2);
             "
-            onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='5px 5px 0 #006600'"
-            onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='3px 3px 0 #006600'"
+            onmouseover="this.style.transform='translateY(-2px) scale(1.02)'; this.style.boxShadow='0 6px 20px rgba(0, 185, 0, 0.5), inset 0 1px 0 rgba(255,255,255,0.2)'"
+            onmouseout="this.style.transform='translateY(0) scale(1)'; this.style.boxShadow='0 4px 15px rgba(0, 185, 0, 0.4), inset 0 1px 0 rgba(255,255,255,0.2)'"
         >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
-                <path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63h-2.366v2.87h2.366c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.996c-.349 0-.63-.285-.63-.629V9.108c0-.345.281-.63.63-.63h2.996c.349 0 .63.285.63.63 0 .346-.281.631-.63.631h-2.366v1.494h2.366zm-5.857 0c.348 0 .63.285.63.631v3.991c0 .344-.282.629-.63.629-.349 0-.63-.285-.63-.629V9.108c0-.345.281-.63.63-.63zm-3.123 4.621c.348 0 .63.285.63.63 0 .345-.282.63-.63.63-.348 0-.63-.285-.63-.63v-3.869l-2.02 4.107c-.121.244-.348.392-.609.392-.26 0-.487-.148-.608-.392l-2.02-4.107v3.869c0 .345-.281.63-.63.63-.348 0-.63-.285-.63-.63V9.108c0-.345.282-.63.63-.63.261 0 .488.148.609.392l2.644 5.367 2.644-5.367c.121-.244.348-.392.609-.392.349 0 .63.285.63.63v4.621zm-8.013-1.873c0 2.888 2.887 5.243 6.428 5.243 3.541 0 6.428-2.355 6.428-5.243 0-2.889-2.887-5.244-6.428-5.244-3.541 0-6.428 2.355-6.428 5.244z" transform="translate(0 -4)"/>
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="white">
+                <path d="M12 2C6.48 2 2 5.58 2 10c0 2.12.87 4.04 2.3 5.48-.15.54-.8 2.75-1.3 3.52 0 0-.03.1.03.14.07.05.14.02.14.02 1.78-.26 3.25-1.11 4.09-1.67.91.24 1.87.39 2.86.39 5.52 0 10-3.58 10-8s-4.48-8-10-8zm-3 9.5c0 .28-.22.5-.5.5h-2c-.28 0-.5-.22-.5-.5v-4c0-.28.22-.5.5-.5s.5.22.5.5v3.5h1.5c.28 0 .5.22.5.5zm2.5.5c-.28 0-.5-.22-.5-.5v-4c0-.28.22-.5.5-.5s.5.22.5.5v4c0 .28-.22.5-.5.5zm5 0c-.21 0-.39-.13-.47-.32l-1.53-3.4v3.22c0 .28-.22.5-.5.5s-.5-.22-.5-.5v-4c0-.28.22-.5.5-.5.21 0 .39.13.47.32l1.53 3.4V7.5c0-.28.22-.5.5-.5s.5.22.5.5v4c0 .28-.22.5-.5.5zm3.5-.5c0 .28-.22.5-.5.5h-2c-.28 0-.5-.22-.5-.5v-4c0-.28.22-.5.5-.5h2c.28 0 .5.22.5.5s-.22.5-.5.5h-1.5v1h1.5c.28 0 .5.22.5.5s-.22.5-.5.5h-1.5v1h1.5c.28 0 .5.22.5.5z"/>
             </svg>
             加入 LINE 官方帳號
         </a>
