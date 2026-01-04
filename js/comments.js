@@ -364,17 +364,76 @@ window.insertMention = function (name) {
 
 window.editCommentPrompt = function (commentId) {
     const comment = _currentEventComments.find(c => c.id === commentId);
-    if (!comment) return;
+    if (!comment) {
+        showAlert('找不到評論');
+        return;
+    }
 
-    const newContent = prompt('編輯評論：', comment.content);
-    if (newContent !== null && newContent.trim() !== '') {
-        editComment(_currentCommentEventId, commentId, newContent);
+    // 創建編輯 Modal
+    const modal = document.createElement('div');
+    modal.id = 'edit-comment-modal';
+    modal.style.cssText = 'position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 16px;';
+
+    modal.innerHTML = `
+        <div style="background: white; border-radius: 12px; width: 100%; max-width: 450px; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
+            <div style="padding: 16px; border-bottom: 2px solid #dfe6e9;">
+                <h3 style="font-family: 'VT323', monospace; font-size: 24px; margin: 0; color: #2d3436;">✏️ 編輯評論</h3>
+            </div>
+            <div style="padding: 16px;">
+                <textarea id="edit-comment-content" class="pixel-input" 
+                    style="width: 100%; min-height: 100px; resize: vertical; font-size: 16px; font-family: 'VT323', monospace;">${comment.content.replace(/"/g, '&quot;')}</textarea>
+            </div>
+            <div style="padding: 16px; border-top: 2px solid #dfe6e9; display: flex; gap: 12px; justify-content: flex-end;">
+                <button onclick="closeEditCommentModal()" class="pixel-btn pixel-btn-secondary" style="padding: 8px 20px;">
+                    取消
+                </button>
+                <button onclick="saveEditComment('${commentId}')" class="pixel-btn pixel-btn-success" style="padding: 8px 20px;">
+                    💾 儲存
+                </button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // 聚焦到文字框並移動游標到最後
+    setTimeout(() => {
+        const textarea = document.getElementById('edit-comment-content');
+        if (textarea) {
+            textarea.focus();
+            textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+        }
+    }, 100);
+};
+
+window.closeEditCommentModal = function () {
+    const modal = document.getElementById('edit-comment-modal');
+    if (modal) modal.remove();
+};
+
+window.saveEditComment = async function (commentId) {
+    const textarea = document.getElementById('edit-comment-content');
+    if (!textarea) return;
+
+    const newContent = textarea.value.trim();
+    if (!newContent) {
+        showAlert('評論內容不能為空');
+        return;
+    }
+
+    const success = await editComment(_currentCommentEventId, commentId, newContent);
+    if (success) {
+        closeEditCommentModal();
+        showAlert('評論已更新！');
     }
 };
 
 window.deleteCommentConfirm = function (commentId) {
-    showConfirm('確定要刪除這則評論嗎？', () => {
-        deleteComment(_currentCommentEventId, commentId);
+    showConfirm('確定要刪除這則評論嗎？', async () => {
+        const success = await deleteComment(_currentCommentEventId, commentId);
+        if (success) {
+            showAlert('評論已刪除！');
+        }
     });
 };
 

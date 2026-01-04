@@ -20,7 +20,7 @@
     </div>
 
     <div id="sys-modal"
-        class="fixed inset-0 z-[100] bg-black bg-opacity-60 hidden-section flex items-center justify-center p-4">
+        class="fixed inset-0 z-[10000] bg-black bg-opacity-60 hidden-section flex items-center justify-center p-4">
         <div class="bg-white w-full max-w-sm p-6">
             <div class="text-center mb-4"><span class="text-4xl">!</span></div>
             <h3 id="modal-title" class="text-center text-xl font-bold mb-4"
@@ -54,7 +54,8 @@
                 </div>
                 <div class="mb-4 flex items-center gap-2">
                     <input type="checkbox" id="remember-me" class="w-5 h-5 cursor-pointer accent-purple-500">
-                    <label for="remember-me" class="cursor-pointer" style="font-family: 'VT323', monospace; font-size: 18px; color: #636e72;">
+                    <label for="remember-me" class="cursor-pointer"
+                        style="font-family: 'VT323', monospace; font-size: 18px; color: #636e72;">
                         💾 記住帳號密碼
                     </label>
                 </div>
@@ -169,16 +170,40 @@
                     class="w-full flex items-center justify-center gap-3 mb-2 py-3 px-4 rounded-full text-white"
                     style="background: linear-gradient(135deg, #00B900 0%, #00D900 50%, #00B900 100%); background-size: 200% 200%; animation: lineGlow 2s ease infinite; box-shadow: 0 4px 15px rgba(0, 185, 0, 0.4); transition: all 0.3s ease; font-family: 'VT323', monospace; font-size: 22px; font-weight: bold; text-decoration: none; min-height: 54px; text-shadow: 0 1px 2px rgba(0,0,0,0.2);">
                     <style>
-                        @keyframes lineGlow { 0%, 100% { background-position: 0% 50%; box-shadow: 0 4px 15px rgba(0, 185, 0, 0.4); } 50% { background-position: 100% 50%; box-shadow: 0 4px 20px rgba(0, 185, 0, 0.6); } }
-                        #sidebar-line-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0, 185, 0, 0.5); }
-                        #sidebar-line-btn svg { flex-shrink: 0; }
+                        @keyframes lineGlow {
+
+                            0%,
+                            100% {
+                                background-position: 0% 50%;
+                                box-shadow: 0 4px 15px rgba(0, 185, 0, 0.4);
+                            }
+
+                            50% {
+                                background-position: 100% 50%;
+                                box-shadow: 0 4px 20px rgba(0, 185, 0, 0.6);
+                            }
+                        }
+
+                        #sidebar-line-btn:hover {
+                            transform: translateY(-2px);
+                            box-shadow: 0 6px 20px rgba(0, 185, 0, 0.5);
+                        }
+
+                        #sidebar-line-btn svg {
+                            flex-shrink: 0;
+                        }
+
                         /* RWD: 寬度不足時縮小字體 */
                         @media (max-width: 280px) {
-                            #sidebar-line-btn { font-size: 13px; padding: 8px 6px; }
+                            #sidebar-line-btn {
+                                font-size: 13px;
+                                padding: 8px 6px;
+                            }
                         }
                     </style>
                     <svg width="28" height="28" viewBox="0 0 24 24" fill="white" style="flex-shrink: 0;">
-                        <path d="M12 2c-5.52 0-10 3.58-10 8 0 3.77 3.12 6.93 7.35 7.82-.29 1.02-.93 3.01-1.06 3.47-.17.59.21.58.45.42.19-.12 2.99-2.03 4.21-2.85.7.09 1.38.14 2.05.14 5.52 0 10-3.58 10-8s-4.48-8-10-8z"/>
+                        <path
+                            d="M12 2c-5.52 0-10 3.58-10 8 0 3.77 3.12 6.93 7.35 7.82-.29 1.02-.93 3.01-1.06 3.47-.17.59.21.58.45.42.19-.12 2.99-2.03 4.21-2.85.7.09 1.38.14 2.05.14 5.52 0 10-3.58 10-8s-4.48-8-10-8z" />
                     </svg>
                     <span style="white-space: nowrap;">加入LINE通知</span>
                 </a>
@@ -200,35 +225,83 @@
                 <!-- Dashboard -->
                 <div id="view-dashboard">
                     <!-- LINE 通知橫幅 (RWD: 手機端在最上方，電腦端在重要行事後) -->
-                    <a href="https://lin.ee/76AKi0Q" target="_blank" rel="noopener noreferrer" id="line-banner" class="flex mb-4 rounded-xl shadow-lg" style="background: linear-gradient(135deg, #00B900 0%, #00D900 50%, #00B900 100%); background-size: 200% 200%; animation: gradientMove 3s ease infinite; text-decoration: none; transition: all 0.3s ease; padding: 12px 16px; height: auto; align-items: center;">
+                    <a href="https://lin.ee/76AKi0Q" target="_blank" rel="noopener noreferrer" id="line-banner"
+                        class="flex mb-4 rounded-xl shadow-lg"
+                        style="background: linear-gradient(135deg, #00B900 0%, #00D900 50%, #00B900 100%); background-size: 200% 200%; animation: gradientMove 3s ease infinite; text-decoration: none; transition: all 0.3s ease; padding: 12px 16px; height: auto; align-items: center;">
                         <style>
-                            @keyframes gradientMove { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
-                            #line-banner:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0, 185, 0, 0.35); }
-                            #line-banner { display: flex !important; height: auto !important; min-height: 0 !important; flex-shrink: 0; }
+                            @keyframes gradientMove {
+                                0% {
+                                    background-position: 0% 50%;
+                                }
+
+                                50% {
+                                    background-position: 100% 50%;
+                                }
+
+                                100% {
+                                    background-position: 0% 50%;
+                                }
+                            }
+
+                            #line-banner:hover {
+                                transform: translateY(-2px);
+                                box-shadow: 0 8px 25px rgba(0, 185, 0, 0.35);
+                            }
+
+                            #line-banner {
+                                display: flex !important;
+                                height: auto !important;
+                                min-height: 0 !important;
+                                flex-shrink: 0;
+                            }
+
                             /* RWD 位置控制 */
-                            #view-dashboard { display: flex; flex-direction: column; }
+                            #view-dashboard {
+                                display: flex;
+                                flex-direction: column;
+                            }
+
                             /* 手機端: LINE 橫幅在最上方 */
                             @media (max-width: 767px) {
-                                #line-banner { order: -1; }
+                                #line-banner {
+                                    order: -1;
+                                }
                             }
+
                             /* 電腦端: LINE 橫幅在重要行事後 */
                             @media (min-width: 768px) {
-                                #line-banner { order: 10; margin-top: 16px; margin-bottom: 0; }
+                                #line-banner {
+                                    order: 10;
+                                    margin-top: 16px;
+                                    margin-bottom: 0;
+                                }
                             }
                         </style>
                         <div class="flex items-center justify-between gap-4 w-full">
                             <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-md flex-shrink-0">
-                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="#00B900"><path d="M12 2c-5.52 0-10 3.58-10 8 0 3.77 3.12 6.93 7.35 7.82-.29 1.02-.93 3.01-1.06 3.47-.17.59.21.58.45.42.19-.12 2.99-2.03 4.21-2.85.7.09 1.38.14 2.05.14 5.52 0 10-3.58 10-8s-4.48-8-10-8z"/></svg>
+                                <div
+                                    class="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-md flex-shrink-0">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="#00B900">
+                                        <path
+                                            d="M12 2c-5.52 0-10 3.58-10 8 0 3.77 3.12 6.93 7.35 7.82-.29 1.02-.93 3.01-1.06 3.47-.17.59.21.58.45.42.19-.12 2.99-2.03 4.21-2.85.7.09 1.38.14 2.05.14 5.52 0 10-3.58 10-8s-4.48-8-10-8z" />
+                                    </svg>
                                 </div>
                                 <div>
-                                    <p style="font-family: 'VT323', monospace; font-size: 18px; color: #ffffff; text-shadow: 1px 1px 2px rgba(0,0,0,0.3); margin: 0; line-height: 1.2;">📱 加入 LINE 官方帳號</p>
-                                    <p style="font-family: 'VT323', monospace; font-size: 14px; color: #e0ffe0; margin: 0;">即時接收行程通知、提醒、@提及</p>
+                                    <p
+                                        style="font-family: 'VT323', monospace; font-size: 18px; color: #ffffff; text-shadow: 1px 1px 2px rgba(0,0,0,0.3); margin: 0; line-height: 1.2;">
+                                        📱 加入 LINE 官方帳號</p>
+                                    <p
+                                        style="font-family: 'VT323', monospace; font-size: 14px; color: #e0ffe0; margin: 0;">
+                                        即時接收行程通知、提醒、@提及</p>
                                 </div>
                             </div>
-                            <div class="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg shadow-md flex-shrink-0">
-                                <span style="font-family: 'VT323', monospace; font-size: 16px; color: #00B900; font-weight: bold;">立即加入</span>
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="#00B900"><path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/></svg>
+                            <div
+                                class="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg shadow-md flex-shrink-0">
+                                <span
+                                    style="font-family: 'VT323', monospace; font-size: 16px; color: #00B900; font-weight: bold;">立即加入</span>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="#00B900">
+                                    <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z" />
+                                </svg>
                             </div>
                         </div>
                     </a>
@@ -252,8 +325,15 @@
                         <!-- 日曆標題區 (RWD優化) -->
                         <style>
                             @media (max-width: 480px) {
-                                #calendar-nav-container { flex-direction: column; gap: 8px; }
-                                #calendar-month-year { font-size: 18px !important; min-width: 90px !important; }
+                                #calendar-nav-container {
+                                    flex-direction: column;
+                                    gap: 8px;
+                                }
+
+                                #calendar-month-year {
+                                    font-size: 18px !important;
+                                    min-width: 90px !important;
+                                }
                             }
                         </style>
                         <div class="flex flex-wrap justify-between items-center gap-3 mb-4" id="calendar-nav-container">
@@ -373,8 +453,10 @@
                                         class="pixel-input"></div>
                             </div>
                             <div class="mb-4">
-                                <label class="flex items-center gap-2 mb-2" style="font-family: 'VT323', monospace; font-size: 18px;">
-                                    <input type="checkbox" id="evt-multi-day" class="w-5 h-5" onchange="toggleEndDate()">
+                                <label class="flex items-center gap-2 mb-2"
+                                    style="font-family: 'VT323', monospace; font-size: 18px;">
+                                    <input type="checkbox" id="evt-multi-day" class="w-5 h-5"
+                                        onchange="toggleEndDate()">
                                     📆 跨日行程（多天）
                                 </label>
                                 <div id="end-date-container" class="hidden-section">
