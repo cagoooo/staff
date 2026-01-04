@@ -52,8 +52,12 @@ function injectNotificationUI() {
         <div class="flex items-center justify-between flex-wrap gap-3 mb-4 pb-4" style="border-bottom: 2px dashed #dfe6e9;">
             <div>
                 <h3 style="font-family: 'VT323', monospace; font-size: 22px;">📲 LINE 提醒同步</h3>
-                <p style="font-family: 'VT323', monospace; font-size: 18px; color: #636e72;">
-                    行程提醒時同步發送 LINE 訊息
+                <p style="font-family: 'VT323', monospace; font-size: 16px; color: #636e72; line-height: 1.5;">
+                    當瀏覽器推播行程提醒時，<br>
+                    <span style="color: #6c5ce7;">同時發送 LINE 訊息到您的手機</span>
+                </p>
+                <p style="font-family: 'VT323', monospace; font-size: 14px; color: #999; margin-top: 6px;">
+                    💡 需先在個人設定中綁定 LINE 帳號
                 </p>
             </div>
             <label class="flex items-center gap-2 cursor-pointer">
@@ -61,8 +65,8 @@ function injectNotificationUI() {
                     ${lineSyncEnabled ? 'checked' : ''} 
                     onchange="toggleLineSync(this.checked)"
                     class="w-5 h-5 accent-green-500">
-                <span style="font-family: 'VT323', monospace; font-size: 18px; color: ${lineSyncEnabled ? '#00b894' : '#636e72'};">
-                    ${lineSyncEnabled ? '已開啟' : '已關閉'}
+                <span id="line-sync-status" style="font-family: 'VT323', monospace; font-size: 18px; color: ${lineSyncEnabled ? '#00b894' : '#636e72'};">
+                    ${lineSyncEnabled ? '✅ 已開啟' : '已關閉'}
                 </span>
             </label>
         </div>
@@ -201,15 +205,74 @@ export function triggerTestNotification() {
 export function toggleLineSync(enabled) {
     localStorage.setItem('smes_line_sync', enabled ? 'true' : 'false');
 
-    // Update UI
-    const toggle = document.getElementById('line-sync-toggle');
-    const label = toggle?.nextElementSibling;
-    if (label) {
-        label.style.color = enabled ? '#00b894' : '#636e72';
-        label.textContent = enabled ? '已開啟' : '已關閉';
+    // Update UI with visual feedback
+    const statusEl = document.getElementById('line-sync-status');
+    if (statusEl) {
+        statusEl.style.color = enabled ? '#00b894' : '#636e72';
+        statusEl.textContent = enabled ? '✅ 已開啟' : '已關閉';
+
+        // 短暫高亮效果
+        statusEl.style.transition = 'all 0.3s';
+        statusEl.style.transform = 'scale(1.1)';
+        setTimeout(() => {
+            statusEl.style.transform = 'scale(1)';
+        }, 300);
     }
 
+    // 顯示狀態變更提示
+    const message = enabled
+        ? '📲 LINE 提醒同步已開啟！瀏覽器提醒時將同步發送 LINE 訊息'
+        : '📴 LINE 提醒同步已關閉';
+
+    // 建立簡易 Toast 通知
+    showToast(message, enabled ? '#00b894' : '#636e72');
+
     console.log('[Notifications] LINE sync:', enabled ? 'enabled' : 'disabled');
+}
+
+// 簡易 Toast 通知
+function showToast(message, bgColor = '#333') {
+    // 移除舊的 toast
+    const oldToast = document.getElementById('line-sync-toast');
+    if (oldToast) oldToast.remove();
+
+    const toast = document.createElement('div');
+    toast.id = 'line-sync-toast';
+    toast.style.cssText = `
+        position: fixed;
+        bottom: 80px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: ${bgColor};
+        color: white;
+        padding: 12px 24px;
+        border-radius: 8px;
+        font-family: 'VT323', monospace;
+        font-size: 18px;
+        z-index: 9999;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        animation: toastIn 0.3s ease;
+    `;
+    toast.textContent = message;
+
+    // 加入動畫樣式
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes toastIn {
+            from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+            to { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+    `;
+    document.head.appendChild(style);
+
+    document.body.appendChild(toast);
+
+    // 3 秒後移除
+    setTimeout(() => {
+        toast.style.animation = 'toastOut 0.3s ease forwards';
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
 }
 
 // Send LINE reminder for an event (called when browser reminder triggers)
