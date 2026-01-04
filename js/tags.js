@@ -356,6 +356,19 @@ window.confirmDeleteTag = function (tagId, tagName) {
             // 從已選標籤中移除
             window._selectedEventTags = window._selectedEventTags.filter(t => t !== tagName);
             updateSelectedTagsDisplay();
+
+            // 重新渲染整個標籤選擇器 (等待 Firestore 監聽器同步)
+            setTimeout(() => {
+                const tagSelectorContainer = document.getElementById('event-tags-container');
+                if (tagSelectorContainer) {
+                    renderTagSelector('event-tags-container', window._selectedEventTags);
+                }
+                // 也重新渲染新增行程的標籤選擇器
+                const addTagContainer = document.getElementById('add-event-tags');
+                if (addTagContainer) {
+                    renderTagSelector('add-event-tags', window._selectedEventTags);
+                }
+            }, 500);
         }
     });
 };
