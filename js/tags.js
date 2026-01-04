@@ -315,8 +315,33 @@ window.removeTagFromSelection = function (tagName) {
 window.createAndAddTag = async function (tagName) {
     const newTag = await addTag(tagName);
     if (newTag) {
+        // Immediately add to local cache if not already there (for instant UI update)
+        if (!_globalTags.find(t => t.id === newTag.id)) {
+            _globalTags.push(newTag);
+        }
         window.addTagToSelection(newTag.name);
+        // Force re-render the selected tags display with correct color
+        updateSelectedTagsDisplay();
         document.getElementById('tag-search-input').value = '';
+
+        // Also update the dropdown list to include the new tag
+        const dropdown = document.getElementById('tag-dropdown-list');
+        if (dropdown) {
+            // Re-render dropdown with all tags including the new one
+            const tags = getAllTags();
+            dropdown.innerHTML = tags.map(tag => `
+                <div class="tag-option" style="padding: 8px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 8px;"
+                    onmouseover="this.style.background='#f0f0f0'" onmouseout="this.style.background='white'">
+                    <div onclick="addTagToSelection('${tag.name}')" style="flex: 1; display: flex; align-items: center; gap: 8px;">
+                        <span style="width: 12px; height: 12px; border-radius: 50%; background: ${tag.color};"></span>
+                        ${tag.name}
+                    </div>
+                    <button type="button" onclick="event.stopPropagation(); confirmDeleteTag('${tag.id}', '${tag.name}')" 
+                        style="background: none; border: none; color: #d63031; cursor: pointer; padding: 2px 6px; font-size: 12px;"
+                        title="刪除此標籤">🗑️</button>
+                </div>
+            `).join('');
+        }
     }
 };
 
