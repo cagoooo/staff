@@ -35,6 +35,10 @@ export function initEventModal() {
                             <p id="event-detail-time" style="font-family: 'VT323', monospace; font-size: 20px;"></p>
                         </div>
                     </div>
+                    <div class="mb-3 hidden-section" id="event-end-date-row">
+                        <span class="text-gray-500" style="font-family: 'VT323', monospace; font-size: 16px;">📆 結束日期 (跨日行程)</span>
+                        <p id="event-detail-end-date" style="font-family: 'VT323', monospace; font-size: 20px; color: #6c5ce7;"></p>
+                    </div>
                     <div class="mb-3">
                         <span class="text-gray-500" style="font-family: 'VT323', monospace; font-size: 16px;">建立者</span>
                         <p id="event-detail-author" style="font-family: 'VT323', monospace; font-size: 20px;"></p>
@@ -135,6 +139,16 @@ export function openEventModal(eventId) {
     document.getElementById('event-detail-date').innerText = event.date || '';
     document.getElementById('event-detail-time').innerText = event.time || '--:--';
     document.getElementById('event-detail-author').innerText = event.authorName || '未知';
+
+    // Show end date for multi-day events
+    const endDateRow = document.getElementById('event-end-date-row');
+    const endDateField = document.getElementById('event-detail-end-date');
+    if (event.endDate) {
+        endDateRow.classList.remove('hidden-section');
+        endDateField.innerText = event.endDate;
+    } else {
+        endDateRow.classList.add('hidden-section');
+    }
 
     // Render targets
     const targetsContainer = document.getElementById('event-detail-targets');

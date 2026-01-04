@@ -81,11 +81,15 @@ export function renderCalendar() {
     const firstDay = new Date(year, month, 1).getDay();
     const totalDays = new Date(year, month + 1, 0).getDate();
 
-    // Get events for this month
+    // Get events for this month (including multi-day events)
     const events = globalEvents();
     const monthEvents = events.filter(e => {
-        const d = new Date(e.date);
-        return d.getFullYear() === year && d.getMonth() === month;
+        const startDate = new Date(e.date);
+        const endDate = e.endDate ? new Date(e.endDate) : startDate;
+        const monthStart = new Date(year, month, 1);
+        const monthEnd = new Date(year, month + 1, 0);
+        // Check if event overlaps with this month
+        return startDate <= monthEnd && endDate >= monthStart;
     });
 
     // Build calendar grid
@@ -101,7 +105,14 @@ export function renderCalendar() {
     // Days
     for (let day = 1; day <= totalDays; day++) {
         const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-        const dayEvents = monthEvents.filter(e => e.date === dateStr);
+        const currentDate = new Date(dateStr);
+
+        // Get events for this day (including multi-day events)
+        const dayEvents = monthEvents.filter(e => {
+            const eventStart = new Date(e.date);
+            const eventEnd = e.endDate ? new Date(e.endDate) : eventStart;
+            return currentDate >= eventStart && currentDate <= eventEnd;
+        });
 
         // Filter by department if needed
         let filteredEvents = dayEvents;
@@ -140,13 +151,19 @@ export function renderCalendar() {
                 const color = getDepartmentColor(author?.department);
                 const isImportant = evt.isPublic;
                 const isPinned = evt.pinned;
+                const isMultiDay = !!evt.endDate;
 
                 // Truncate title for display
                 const shortTitle = evt.title.length > 8 ? evt.title.substring(0, 8) + '…' : evt.title;
-                const prefix = isPinned ? '📌' : (isImportant ? '⭐' : '');
+                const prefix = isPinned ? '📌' : (isImportant ? '⭐' : (isMultiDay ? '📆' : ''));
+
+                // Multi-day events have a gradient background
+                const bgStyle = isMultiDay
+                    ? `background: linear-gradient(90deg, ${color}33 0%, ${color}11 100%);`
+                    : `background: ${color}22;`;
 
                 html += `<div class="calendar-event-bar" style="
-                    background: ${color}22;
+                    ${bgStyle}
                     border-left: 3px solid ${color};
                     padding: 1px 4px;
                     font-family: 'VT323', monospace;
@@ -156,7 +173,8 @@ export function renderCalendar() {
                     overflow: hidden;
                     text-overflow: ellipsis;
                     border-radius: 2px;
-                " title="${evt.title} - ${evt.time || '整天'}">${prefix}${shortTitle}</div>`;
+                    ${isMultiDay ? 'font-weight: bold;' : ''}
+                " title="${evt.title} - ${evt.time || '整天'}${isMultiDay ? ' (跨日至 ' + evt.endDate + ')' : ''}">${prefix}${shortTitle}</div>`;
             });
 
             if (filteredEvents.length > 3) {
