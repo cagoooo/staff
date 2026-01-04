@@ -159,13 +159,17 @@ export function renderTagSelector(containerId, selectedTags = []) {
             </div>
             <div class="tag-dropdown">
                 <input type="text" id="tag-search-input" class="pixel-input" placeholder="搜尋或新增標籤..." style="font-size: 14px; padding: 6px;">
-                <div id="tag-dropdown-list" class="hidden-section" style="position: absolute; background: white; border: 2px solid #2d3436; max-height: 150px; overflow-y: auto; z-index: 100; width: 100%;">
+                <div id="tag-dropdown-list" class="hidden-section" style="position: absolute; background: white; border: 2px solid #2d3436; max-height: 200px; overflow-y: auto; z-index: 100; width: 100%;">
                     ${tags.map(tag => `
-                        <div class="tag-option" onclick="addTagToSelection('${tag.name}')" 
-                            style="padding: 8px; cursor: pointer; display: flex; align-items: center; gap: 8px;"
+                        <div class="tag-option" style="padding: 8px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 8px;"
                             onmouseover="this.style.background='#f0f0f0'" onmouseout="this.style.background='white'">
-                            <span style="width: 12px; height: 12px; border-radius: 50%; background: ${tag.color};"></span>
-                            ${tag.name}
+                            <div onclick="addTagToSelection('${tag.name}')" style="flex: 1; display: flex; align-items: center; gap: 8px;">
+                                <span style="width: 12px; height: 12px; border-radius: 50%; background: ${tag.color};"></span>
+                                ${tag.name}
+                            </div>
+                            <button type="button" onclick="event.stopPropagation(); confirmDeleteTag('${tag.id}', '${tag.name}')" 
+                                style="background: none; border: none; color: #d63031; cursor: pointer; padding: 2px 6px; font-size: 12px;"
+                                title="刪除此標籤">🗑️</button>
                         </div>
                     `).join('')}
                 </div>
@@ -190,11 +194,15 @@ export function renderTagSelector(containerId, selectedTags = []) {
         const filtered = tags.filter(t => t.name.toLowerCase().includes(search));
 
         dropdown.innerHTML = filtered.map(tag => `
-            <div class="tag-option" onclick="addTagToSelection('${tag.name}')" 
-                style="padding: 8px; cursor: pointer; display: flex; align-items: center; gap: 8px;"
+            <div class="tag-option" style="padding: 8px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 8px;"
                 onmouseover="this.style.background='#f0f0f0'" onmouseout="this.style.background='white'">
-                <span style="width: 12px; height: 12px; border-radius: 50%; background: ${tag.color};"></span>
-                ${tag.name}
+                <div onclick="addTagToSelection('${tag.name}')" style="flex: 1; display: flex; align-items: center; gap: 8px;">
+                    <span style="width: 12px; height: 12px; border-radius: 50%; background: ${tag.color};"></span>
+                    ${tag.name}
+                </div>
+                <button type="button" onclick="event.stopPropagation(); confirmDeleteTag('${tag.id}', '${tag.name}')" 
+                    style="background: none; border: none; color: #d63031; cursor: pointer; padding: 2px 6px; font-size: 12px;"
+                    title="刪除此標籤">🗑️</button>
             </div>
         `).join('');
 
@@ -338,3 +346,16 @@ function updateSelectedTagsDisplay() {
         `;
     }).join('');
 }
+
+// 確認刪除標籤
+window.confirmDeleteTag = function (tagId, tagName) {
+    showConfirm(`確定要刪除標籤「${tagName}」嗎？\n此操作無法復原。`, async () => {
+        const success = await deleteTag(tagId);
+        if (success) {
+            showAlert(`標籤「${tagName}」已刪除`);
+            // 從已選標籤中移除
+            window._selectedEventTags = window._selectedEventTags.filter(t => t !== tagName);
+            updateSelectedTagsDisplay();
+        }
+    });
+};
