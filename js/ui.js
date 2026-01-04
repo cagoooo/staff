@@ -205,7 +205,12 @@ export function renderDayEvents(dateStr) {
     titleEl.innerText = `📋 ${month}月${parseInt(day)}日 行程`;
 
     const events = globalEvents();
-    let dayEvents = events.filter(e => e.date === dateStr);
+    // Include multi-day events that span this date
+    let dayEvents = events.filter(e => {
+        const eventStart = e.date;  // YYYY-MM-DD format
+        const eventEnd = e.endDate || e.date;  // YYYY-MM-DD format
+        return dateStr >= eventStart && dateStr <= eventEnd;
+    });
 
     // Apply department filter
     if (calendarDeptFilter !== 'all') {
@@ -222,7 +227,7 @@ export function renderDayEvents(dateStr) {
     }
 
     listEl.innerHTML = '';
-    dayEvents.sort((a, b) => a.time.localeCompare(b.time));
+    dayEvents.sort((a, b) => (a.time || '00:00').localeCompare(b.time || '00:00'));
 
     dayEvents.forEach(evt => {
         const users = globalUsers();
@@ -230,18 +235,24 @@ export function renderDayEvents(dateStr) {
         const deptColor = getDepartmentColor(author?.department);
         const deptName = getDepartmentName(author?.department);
 
+        // Check if this is a multi-day event
+        const isMultiDay = !!evt.endDate;
+        const multiDayBadge = isMultiDay ? `<span class="ml-2 px-2 py-0.5 rounded text-white text-xs" style="background: #6c5ce7;">📆 跨日至 ${evt.endDate}</span>` : '';
+
         const div = document.createElement('div');
-        div.className = 'p-3 border-l-4 bg-white mb-2';
+        div.className = 'p-3 border-l-4 bg-white mb-2 cursor-pointer hover:bg-gray-50';
         div.style.borderColor = deptColor;
         div.style.fontFamily = "'VT323', monospace";
+        div.onclick = () => window.openEventModal(evt.id);
         div.innerHTML = `
             <div class="flex justify-between items-start">
                 <div>
-                    <h4 class="font-bold text-lg">${evt.title}</h4>
-                    <p class="text-sm text-gray-600">🕐 ${evt.time} | 👤 ${evt.authorName}</p>
+                    <h4 class="font-bold text-lg">${evt.title}${multiDayBadge}</h4>
+                    <p class="text-sm text-gray-600">🕐 ${evt.time || '全天'} | 👤 ${evt.authorName}</p>
                     <span style="font-size: 14px; color: ${deptColor};">${deptName}</span>
                 </div>
                 ${evt.isPublic ? '<span class="text-yellow-500">⭐</span>' : ''}
+                ${isMultiDay ? '<span class="text-purple-500 text-xl">📆</span>' : ''}
             </div>
         `;
         listEl.appendChild(div);
