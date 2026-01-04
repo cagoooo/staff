@@ -1020,6 +1020,142 @@ function createEventUpdateFlexMessage(eventData, changedFields) {
 }
 
 /**
+ * 行程刪除通知 - Flex Message
+ */
+function createEventDeleteFlexMessage(eventData) {
+    return {
+        type: "flex",
+        altText: `🗑️ 行程已刪除：${eventData.title}`,
+        contents: {
+            type: "bubble",
+            size: "kilo",
+            header: {
+                type: "box",
+                layout: "vertical",
+                backgroundColor: "#d63031",
+                paddingAll: "15px",
+                contents: [
+                    {
+                        type: "box",
+                        layout: "horizontal",
+                        contents: [
+                            {
+                                type: "text",
+                                text: "🗑️",
+                                size: "xl",
+                                color: "#ffffff",
+                                flex: 0
+                            },
+                            {
+                                type: "text",
+                                text: "行程已刪除",
+                                color: "#ffffff",
+                                size: "lg",
+                                weight: "bold",
+                                margin: "md",
+                                flex: 1
+                            }
+                        ],
+                        alignItems: "center"
+                    }
+                ]
+            },
+            body: {
+                type: "box",
+                layout: "vertical",
+                paddingAll: "15px",
+                spacing: "md",
+                contents: [
+                    {
+                        type: "text",
+                        text: eventData.title,
+                        weight: "bold",
+                        size: "md",
+                        color: "#d63031",
+                        decoration: "line-through",
+                        wrap: true
+                    },
+                    {
+                        type: "box",
+                        layout: "vertical",
+                        backgroundColor: "#fff5f5",
+                        cornerRadius: "8px",
+                        paddingAll: "12px",
+                        contents: [
+                            {
+                                type: "box",
+                                layout: "horizontal",
+                                contents: [
+                                    {
+                                        type: "text",
+                                        text: "📅 日期",
+                                        size: "sm",
+                                        color: "#888888",
+                                        flex: 2
+                                    },
+                                    {
+                                        type: "text",
+                                        text: eventData.date,
+                                        size: "sm",
+                                        color: "#999999",
+                                        flex: 3,
+                                        decoration: "line-through"
+                                    }
+                                ]
+                            },
+                            {
+                                type: "box",
+                                layout: "horizontal",
+                                margin: "sm",
+                                contents: [
+                                    {
+                                        type: "text",
+                                        text: "⏰ 時間",
+                                        size: "sm",
+                                        color: "#888888",
+                                        flex: 2
+                                    },
+                                    {
+                                        type: "text",
+                                        text: eventData.time || "--:--",
+                                        size: "sm",
+                                        color: "#999999",
+                                        flex: 3,
+                                        decoration: "line-through"
+                                    }
+                                ]
+                            },
+                            {
+                                type: "box",
+                                layout: "horizontal",
+                                margin: "sm",
+                                contents: [
+                                    {
+                                        type: "text",
+                                        text: "👤 刪除者",
+                                        size: "sm",
+                                        color: "#888888",
+                                        flex: 2
+                                    },
+                                    {
+                                        type: "text",
+                                        text: eventData.authorName || "未知",
+                                        size: "sm",
+                                        color: "#d63031",
+                                        flex: 3,
+                                        weight: "bold"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+    };
+}
+
+/**
  * LINE Webhook - 處理用戶訊息和加入好友事件
  */
 exports.lineWebhook = onRequest(
@@ -2252,8 +2388,12 @@ exports.onEventUpdate = onDocumentUpdated(
             return;
         }
 
-        // 取得被指派的用戶（包含更新前後的目標）
-        const allTargets = [...new Set([...(beforeData.targets || []), ...(afterData.targets || [])])];
+        // 取得被指派的用戶（包含更新前後的目標）+ 建立者
+        const allTargets = [...new Set([
+            ...(beforeData.targets || []),
+            ...(afterData.targets || []),
+            afterData.authorId  // 同時通知建立者
+        ].filter(Boolean))];
         if (allTargets.length === 0) return;
 
         // 查詢這些用戶的 LINE ID
@@ -2275,6 +2415,56 @@ exports.onEventUpdate = onDocumentUpdated(
 
                 await client.pushMessage(lineUserId, message);
                 console.log(`LINE update notification sent to ${targetId}`);
+            } catch (err) {
+                console.error(`Failed to notify ${targetId}:`, err);
+            }
+        }
+    }
+);
+
+/**
+ * 行程刪除時通知建立者和被指派的用戶
+ */
+exports.onEventDelete = onDocumentDeleted(
+    {
+        document: `artifacts/${APP_ID}/public/data/school_events/{eventId}`,
+        region: "asia-east1",
+        secrets: ["LINE_CHANNEL_ACCESS_TOKEN", "LINE_CHANNEL_SECRET"]
+    },
+    async (event) => {
+        const eventData = event.data.data();
+        const eventId = event.params.eventId;
+        const client = getLineClient();
+
+        console.log(`Event deleted: ${eventId}`, eventData);
+
+        // 取得被指派的用戶 + 建立者
+        const allTargets = [...new Set([
+            ...(eventData.targets || []),
+            eventData.authorId
+        ].filter(Boolean))];
+
+        if (allTargets.length === 0) return;
+
+        // 查詢這些用戶的 LINE ID
+        const usersRef = db.collection(`artifacts/${APP_ID}/public/data/users`);
+
+        for (const targetId of allTargets) {
+            try {
+                const userDoc = await usersRef.doc(targetId).get();
+                if (!userDoc.exists) continue;
+
+                const userData = userDoc.data();
+                const lineUserId = userData.lineUserId;
+                const lineNotifyEnabled = userData.lineNotifyEnabled;
+
+                if (!lineUserId || !lineNotifyEnabled) continue;
+
+                // 發送 LINE 通知 (使用行程刪除的 Flex Message)
+                const message = createEventDeleteFlexMessage(eventData);
+
+                await client.pushMessage(lineUserId, message);
+                console.log(`LINE delete notification sent to ${targetId}`);
             } catch (err) {
                 console.error(`Failed to notify ${targetId}:`, err);
             }
