@@ -12,7 +12,7 @@ let attachmentsToDelete = []; // Track attachments to delete
 // Create and inject the modal HTML into the DOM
 export function initEventModal() {
     const modalHTML = `
-    <div id="event-modal" class="fixed inset-0 z-[60] bg-black bg-opacity-60 hidden-section flex items-start justify-center p-2 sm:p-4 overflow-y-auto">
+    <div id="event-modal" class="fixed inset-0 z-[50] bg-black bg-opacity-60 hidden-section flex items-start justify-center p-2 sm:p-4 overflow-y-auto">
         <div class="bg-white w-full max-w-md border-4 border-gray-800 my-4 sm:my-8" style="box-shadow: 6px 6px 0 #2d3436;">
             <div class="p-3 sm:p-4 border-b-4 border-gray-800 flex justify-between items-center sticky top-0 z-10" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
                 <h3 id="event-modal-title" class="text-white" style="font-family: 'VT323', monospace; font-size: 24px;">📅 行程詳情</h3>
