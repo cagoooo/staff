@@ -449,8 +449,15 @@
                             <div class="grid grid-cols-2 gap-4 mb-2">
                                 <div><label class="pixel-label">開始日期</label><input type="date" id="evt-date" required
                                         class="pixel-input"></div>
-                                <div><label class="pixel-label">時間</label><input type="time" id="evt-time" required
-                                        class="pixel-input"></div>
+                                <div id="time-field-container"><label class="pixel-label">時間</label><input type="time"
+                                        id="evt-time" class="pixel-input"></div>
+                            </div>
+                            <div class="mb-2">
+                                <label class="flex items-center gap-2"
+                                    style="font-family: 'VT323', monospace; font-size: 18px;">
+                                    <input type="checkbox" id="evt-all-day" class="w-5 h-5" onchange="toggleAllDay()">
+                                    🌅 全天行程（不指定時間）
+                                </label>
                             </div>
                             <div class="mb-4">
                                 <label class="flex items-center gap-2 mb-2"
@@ -521,6 +528,14 @@
         }
         function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); document.getElementById('sidebar-overlay').classList.toggle('active'); }
         function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebar-overlay').classList.remove('active'); }
+        function toggleAllDay() {
+            const allDay = document.getElementById('evt-all-day')?.checked;
+            const timeContainer = document.getElementById('time-field-container');
+            if (timeContainer) {
+                timeContainer.style.display = allDay ? 'none' : 'block';
+                if (allDay) document.getElementById('evt-time').value = '';
+            }
+        }
     </script>
 </body>
 

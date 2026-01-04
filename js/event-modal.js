@@ -75,10 +75,14 @@ export function initEventModal() {
                             <label class="pixel-label">日期</label>
                             <input type="date" id="edit-evt-date" required class="pixel-input">
                         </div>
-                        <div>
+                        <div id="edit-time-field-container">
                             <label class="pixel-label">時間</label>
-                            <input type="time" id="edit-evt-time" required class="pixel-input">
+                            <input type="time" id="edit-evt-time" class="pixel-input">
                         </div>
+                    </div>
+                    <div class="flex items-center gap-3 mb-3" style="font-family: 'VT323', monospace; font-size: 20px;">
+                        <input type="checkbox" id="edit-evt-all-day" class="w-5 h-5" onchange="toggleEditAllDay()">
+                        <label for="edit-evt-all-day">🌅 全天行程（不指定時間）</label>
                     </div>
                     <div class="flex items-center gap-3 mb-3" style="font-family: 'VT323', monospace; font-size: 20px;">
                         <input type="checkbox" id="edit-evt-is-public" class="w-5 h-5">
@@ -137,7 +141,7 @@ export function openEventModal(eventId) {
     // Populate view mode
     document.getElementById('event-detail-title').innerText = event.title || '';
     document.getElementById('event-detail-date').innerText = event.date || '';
-    document.getElementById('event-detail-time').innerText = event.time || '--:--';
+    document.getElementById('event-detail-time').innerText = event.isAllDay ? '🌅 全天' : (event.time || '--:--');
     document.getElementById('event-detail-author').innerText = event.authorName || '未知';
 
     // Show end date for multi-day events
@@ -257,9 +261,16 @@ export function toggleEventEditMode() {
     document.getElementById('edit-evt-title').value = event.title || '';
     document.getElementById('edit-evt-date').value = event.date || '';
     document.getElementById('edit-evt-time').value = event.time || '';
+    document.getElementById('edit-evt-all-day').checked = event.isAllDay || false;
     document.getElementById('edit-evt-is-public').checked = event.isPublic || false;
     document.getElementById('edit-evt-type').value = event.announcementType || 'normal';
     document.getElementById('edit-evt-pinned').checked = event.pinned || false;
+
+    // Toggle time field visibility based on all-day setting
+    const timeContainer = document.getElementById('edit-time-field-container');
+    if (timeContainer) {
+        timeContainer.style.display = event.isAllDay ? 'none' : 'block';
+    }
 
     // Initialize tag selector with existing tags
     setSelectedTags(event.tags || []);
@@ -337,10 +348,13 @@ export async function saveEventEdit() {
         console.log('[EventModal] Removed', attachmentsToDelete.length, 'attachments');
     }
 
+    const isAllDay = document.getElementById('edit-evt-all-day')?.checked || false;
+
     const data = {
         title: document.getElementById('edit-evt-title').value,
         date: document.getElementById('edit-evt-date').value,
-        time: document.getElementById('edit-evt-time').value,
+        time: isAllDay ? '' : document.getElementById('edit-evt-time').value,
+        isAllDay: isAllDay,
         isPublic: document.getElementById('edit-evt-is-public').checked,
         announcementType: document.getElementById('edit-evt-type').value,
         pinned: document.getElementById('edit-evt-pinned').checked,
@@ -385,6 +399,16 @@ window.toggleEventEditMode = toggleEventEditMode;
 window.cancelEventEdit = cancelEventEdit;
 window.saveEventEdit = saveEventEdit;
 window.confirmDeleteEvent = confirmDeleteEvent;
+
+// Toggle time field visibility in edit mode when all-day is checked
+window.toggleEditAllDay = function () {
+    const allDay = document.getElementById('edit-evt-all-day')?.checked;
+    const timeContainer = document.getElementById('edit-time-field-container');
+    if (timeContainer) {
+        timeContainer.style.display = allDay ? 'none' : 'block';
+        if (allDay) document.getElementById('edit-evt-time').value = '';
+    }
+};
 
 // Mark attachment for deletion
 window.markAttachmentForDeletion = function (index, name) {

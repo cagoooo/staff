@@ -130,6 +130,7 @@ export async function handleFirebaseAddEvent(e) {
     const title = document.getElementById('evt-title').value;
     const date = document.getElementById('evt-date').value;
     const time = document.getElementById('evt-time').value;
+    const isAllDay = document.getElementById('evt-all-day')?.checked || false;
     const isPublic = document.getElementById('evt-is-public').checked;
     const lineNotifyEnabled = document.getElementById('evt-line-notify')?.checked ?? true;
     const targets = [..._currentSelectedTargets];
@@ -166,7 +167,8 @@ export async function handleFirebaseAddEvent(e) {
             date,
             endDate: endDate || null, // 結束日期（跨日行程）
             isMultiDay: isMultiDay, // 是否跨日
-            time,
+            isAllDay: isAllDay, // 是否全天行程（不指定時間）
+            time: isAllDay ? '' : time, // 全天行程不需要時間
             targets,
             isPublic,
             announcementType,
