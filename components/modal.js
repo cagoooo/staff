@@ -7,6 +7,10 @@ export function showAlert(message) {
     document.getElementById('modal-message').innerText = message;
     document.getElementById('modal-btn-cancel').classList.add('hidden-section');
     modalConfirmCallback = () => { modal.classList.add('hidden-section'); };
+
+    // 確保 modal 在最上層
+    document.body.appendChild(modal); // 移到 body 最後面
+    modal.style.zIndex = '99999'; // 設定最高 z-index
     modal.classList.remove('hidden-section');
 }
 
@@ -19,6 +23,10 @@ export function showConfirm(message, onConfirm) {
         modal.classList.add('hidden-section');
         if (onConfirm) onConfirm();
     };
+
+    // 確保 modal 在最上層
+    document.body.appendChild(modal); // 移到 body 最後面
+    modal.style.zIndex = '99999'; // 設定最高 z-index
     modal.classList.remove('hidden-section');
 }
 
