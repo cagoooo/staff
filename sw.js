@@ -1,7 +1,6 @@
 // Service Worker for Offline Support
-const CACHE_NAME = 'smes-v2.1.0';
+const CACHE_NAME = 'smes-v3.5.0';
 const STATIC_ASSETS = [
-    '/',
     '/index.html',
     '/css/pixel-style.css',
     '/js/app.js',
@@ -14,14 +13,29 @@ const STATIC_ASSETS = [
     '/components/modal.js'
 ];
 
-// Install - cache static assets
+// Install - cache static assets (graceful failure)
 self.addEventListener('install', (event) => {
     console.log('[SW] Installing...');
     event.waitUntil(
         caches.open(CACHE_NAME)
             .then((cache) => {
                 console.log('[SW] Caching static assets');
-                return cache.addAll(STATIC_ASSETS);
+                // Cache each file individually to avoid single failure breaking all caching
+                return Promise.allSettled(
+                    STATIC_ASSETS.map(async (url) => {
+                        try {
+                            const response = await fetch(url);
+                            if (response.ok) {
+                                await cache.put(url, response);
+                                console.log('[SW] Cached:', url);
+                            } else {
+                                console.warn('[SW] Failed to cache (not ok):', url);
+                            }
+                        } catch (err) {
+                            console.warn('[SW] Failed to cache:', url, err.message);
+                        }
+                    })
+                );
             })
             .then(() => self.skipWaiting())
     );
