@@ -1938,6 +1938,71 @@ exports.onCommentCreate = onDocumentCreated(
 );
 
 /**
+ * 評論更新時通知新增的 @提及用戶
+ */
+exports.onCommentUpdate = onDocumentUpdated(
+    {
+        document: `artifacts/${APP_ID}/public/data/school_events/{eventId}/comments/{commentId}`,
+        region: "asia-east1",
+        secrets: ["LINE_CHANNEL_ACCESS_TOKEN", "LINE_CHANNEL_SECRET"]
+    },
+    async (event) => {
+        const beforeData = event.data.before.data();
+        const afterData = event.data.after.data();
+        const eventId = event.params.eventId;
+        const client = getLineClient();
+
+        console.log(`Comment updated on event ${eventId}`);
+
+        // 取得更新前後的 mentions
+        const beforeMentions = beforeData.mentions || [];
+        const afterMentions = afterData.mentions || [];
+
+        // 找出新增的 mentions (在 after 但不在 before 中)
+        const newMentions = afterMentions.filter(id => !beforeMentions.includes(id));
+
+        if (newMentions.length === 0) {
+            console.log('No new mentions in comment update');
+            return;
+        }
+
+        console.log(`New mentions found:`, newMentions);
+
+        // 取得事件標題
+        const eventDoc = await db.doc(`artifacts/${APP_ID}/public/data/school_events/${eventId}`).get();
+        const eventTitle = eventDoc.exists ? eventDoc.data().title : "未知行程";
+
+        // 查詢這些用戶的 LINE ID
+        const usersRef = db.collection(`artifacts/${APP_ID}/public/data/users`);
+
+        for (const mentionedId of newMentions) {
+            // 允許使用者 @自己也能收到 LINE 通知
+            // if (mentionedId === afterData.authorId) continue;
+
+            try {
+                const userDoc = await usersRef.doc(mentionedId).get();
+                if (!userDoc.exists) continue;
+
+                const userData = userDoc.data();
+                const lineUserId = userData.lineUserId;
+                const lineNotifyEnabled = userData.lineNotifyEnabled;
+
+                if (!lineUserId || !lineNotifyEnabled) continue;
+
+                // 發送 LINE 通知 (使用精美 Flex Message)
+                const contentPreview = afterData.content.substring(0, 50) + (afterData.content.length > 50 ? "..." : "");
+                const message = createMentionFlexMessage(afterData.authorName, eventTitle, contentPreview);
+
+                await client.pushMessage(lineUserId, message);
+                console.log(`LINE mention notification sent to ${mentionedId} (comment update)`);
+            } catch (err) {
+                console.error(`Failed to notify mention ${mentionedId}:`, err);
+            }
+        }
+    }
+);
+
+/**
  * 定時檢查提醒並發送 LINE 通知 (每分鐘執行)
  */
 exports.checkReminders = onSchedule(
