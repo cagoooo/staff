@@ -448,34 +448,34 @@ async function showEditUserModal(userId) {
     modal.innerHTML = `
         <div class="content-card p-6" style="width: 90%; max-width: 450px; max-height: 90vh; overflow-y: auto;">
             <h3 style="font-family: 'VT323', monospace; font-size: 24px; margin-bottom: 16px;">✏️ 編輯使用者</h3>
-            <form id="edit-user-form" data-user-id="${userId}">
+            <form id="admin-edit-user-form" data-user-id="${userId}">
                 <div class="mb-3">
                     <label class="pixel-label">帳號</label>
                     <input type="text" class="pixel-input opacity-50" value="${user.username || user.email || ''}" disabled>
                 </div>
                 <div class="mb-3">
                     <label class="pixel-label">姓名 *</label>
-                    <input type="text" id="edit-name" class="pixel-input" required value="${user.name || ''}">
+                    <input type="text" id="admin-edit-name" class="pixel-input" required value="${user.name || ''}">
                 </div>
                 <div class="mb-3">
                     <label class="pixel-label">處室</label>
-                    <select id="edit-department" class="pixel-input" onchange="updateEditUserPositions()">
+                    <select id="admin-edit-department" class="pixel-input" onchange="updateEditUserPositions()">
                         ${renderDepartmentOptions(user.department)}
                     </select>
                 </div>
                 <div class="mb-3">
                     <label class="pixel-label">職稱</label>
-                    <select id="edit-jobtitle" class="pixel-input">
+                    <select id="admin-edit-jobtitle" class="pixel-input">
                         ${renderPositionOptions(user.department, user.jobTitle)}
                     </select>
                 </div>
                 <div class="mb-3">
                     <label class="pixel-label">新密碼（留空不修改）</label>
-                    <input type="password" id="edit-password" class="pixel-input" placeholder="不修改請留空">
+                    <input type="password" id="admin-edit-password" class="pixel-input" placeholder="不修改請留空">
                 </div>
                 <div class="mb-4">
                     <label style="font-family: 'VT323', monospace; font-size: 18px;">
-                        <input type="checkbox" id="edit-is-admin" ${user.role === 'admin' ? 'checked' : ''}> 管理員權限
+                        <input type="checkbox" id="admin-edit-is-admin" ${user.role === 'admin' ? 'checked' : ''}> 管理員權限
                     </label>
                 </div>
                 <div style="display: flex; gap: 8px;">
@@ -487,7 +487,7 @@ async function showEditUserModal(userId) {
     `;
 
     document.body.appendChild(modal);
-    modal.querySelector('#edit-user-form').onsubmit = updateUserDetails;
+    modal.querySelector('#admin-edit-user-form').onsubmit = updateUserDetails;
 
     // Store renderPositionOptions for later use
     window._renderPositionOptions = renderPositionOptions;
@@ -495,8 +495,8 @@ async function showEditUserModal(userId) {
 
 // Update position options when department changes (for edit user modal)
 function updateEditUserPositions() {
-    const deptSelect = document.getElementById('edit-department');
-    const posSelect = document.getElementById('edit-jobtitle');
+    const deptSelect = document.getElementById('admin-edit-department');
+    const posSelect = document.getElementById('admin-edit-jobtitle');
     if (!deptSelect || !posSelect) return;
 
     const deptId = deptSelect.value;
@@ -511,11 +511,11 @@ async function updateUserDetails(e) {
     e.preventDefault();
 
     const userId = e.target.dataset.userId;
-    const name = document.getElementById('edit-name').value.trim();
-    const department = document.getElementById('edit-department').value;
-    const jobTitle = document.getElementById('edit-jobtitle').value.trim();
-    const password = document.getElementById('edit-password').value;
-    const isAdmin = document.getElementById('edit-is-admin').checked;
+    const name = document.getElementById('admin-edit-name').value.trim();
+    const department = document.getElementById('admin-edit-department').value;
+    const jobTitle = document.getElementById('admin-edit-jobtitle').value.trim();
+    const password = document.getElementById('admin-edit-password').value;
+    const isAdmin = document.getElementById('admin-edit-is-admin').checked;
 
     if (!name) {
         showAlert('請填寫姓名');
