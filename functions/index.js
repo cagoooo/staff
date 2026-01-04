@@ -1005,6 +1005,7 @@ function createEventUpdateFlexMessage(eventData, changedFields) {
     if (changedFields.includes('date')) changesList.push('日期');
     if (changedFields.includes('time')) changesList.push('時間');
     if (changedFields.includes('targets')) changesList.push('指派對象');
+    if (changedFields.includes('attachments')) changesList.push('附件');
 
     const changesText = changesList.length > 0
         ? `📝 已更新：${changesList.join('、')}`
@@ -2525,9 +2526,10 @@ exports.onEventUpdate = onDocumentUpdated(
         if (beforeData.date !== afterData.date) changedFields.push('date');
         if (beforeData.time !== afterData.time) changedFields.push('time');
         if (JSON.stringify(beforeData.targets) !== JSON.stringify(afterData.targets)) changedFields.push('targets');
+        if (JSON.stringify(beforeData.attachments) !== JSON.stringify(afterData.attachments)) changedFields.push('attachments');
 
         // 如果只是更新 completedBy, readBy, updatedAt 等狀態欄位，不發送通知
-        const importantFields = ['title', 'date', 'time', 'targets', 'isPublic', 'announcementType', 'pinned'];
+        const importantFields = ['title', 'date', 'time', 'targets', 'isPublic', 'announcementType', 'pinned', 'attachments'];
         const hasImportantChanges = importantFields.some(field =>
             JSON.stringify(beforeData[field]) !== JSON.stringify(afterData[field])
         );
