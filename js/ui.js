@@ -83,13 +83,15 @@ export function renderCalendar() {
 
     // Get events for this month (including multi-day events)
     const events = globalEvents();
+    const monthStartStr = `${year}-${String(month + 1).padStart(2, '0')}-01`;
+    const lastDay = new Date(year, month + 1, 0).getDate();
+    const monthEndStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+
     const monthEvents = events.filter(e => {
-        const startDate = new Date(e.date);
-        const endDate = e.endDate ? new Date(e.endDate) : startDate;
-        const monthStart = new Date(year, month, 1);
-        const monthEnd = new Date(year, month + 1, 0);
+        const eventStart = e.date;  // YYYY-MM-DD format
+        const eventEnd = e.endDate || e.date;  // YYYY-MM-DD format
         // Check if event overlaps with this month
-        return startDate <= monthEnd && endDate >= monthStart;
+        return eventStart <= monthEndStr && eventEnd >= monthStartStr;
     });
 
     // Build calendar grid
@@ -105,13 +107,13 @@ export function renderCalendar() {
     // Days
     for (let day = 1; day <= totalDays; day++) {
         const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-        const currentDate = new Date(dateStr);
 
         // Get events for this day (including multi-day events)
+        // Use string comparison to avoid timezone issues
         const dayEvents = monthEvents.filter(e => {
-            const eventStart = new Date(e.date);
-            const eventEnd = e.endDate ? new Date(e.endDate) : eventStart;
-            return currentDate >= eventStart && currentDate <= eventEnd;
+            const eventStart = e.date;  // YYYY-MM-DD format
+            const eventEnd = e.endDate || e.date;  // YYYY-MM-DD format
+            return dateStr >= eventStart && dateStr <= eventEnd;
         });
 
         // Filter by department if needed
