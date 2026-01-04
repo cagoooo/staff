@@ -352,23 +352,25 @@ window.confirmDeleteTag = function (tagId, tagName) {
     showConfirm(`確定要刪除標籤「${tagName}」嗎？\n此操作無法復原。`, async () => {
         const success = await deleteTag(tagId);
         if (success) {
-            showAlert(`標籤「${tagName}」已刪除`);
             // 從已選標籤中移除
             window._selectedEventTags = window._selectedEventTags.filter(t => t !== tagName);
             updateSelectedTagsDisplay();
 
-            // 重新渲染整個標籤選擇器 (等待 Firestore 監聽器同步)
-            setTimeout(() => {
-                const tagSelectorContainer = document.getElementById('event-tags-container');
-                if (tagSelectorContainer) {
-                    renderTagSelector('event-tags-container', window._selectedEventTags);
+            // 直接從 DOM 移除該標籤選項 (透過 data-tag-id 屬性)
+            document.querySelectorAll(`[data-tag-id="${tagId}"]`).forEach(el => el.remove());
+
+            // 備用：透過 tag name 移除
+            document.querySelectorAll('.tag-option').forEach(option => {
+                const nameDiv = option.querySelector('div');
+                if (nameDiv && nameDiv.textContent.trim() === tagName) {
+                    option.remove();
                 }
-                // 也重新渲染新增行程的標籤選擇器
-                const addTagContainer = document.getElementById('add-event-tags');
-                if (addTagContainer) {
-                    renderTagSelector('add-event-tags', window._selectedEventTags);
-                }
-            }, 500);
+            });
+
+            showAlert(`標籤「${tagName}」已刪除`);
         }
     });
 };
+
+// 將 renderTagSelector 導出到 window
+window.renderTagSelector = renderTagSelector;
