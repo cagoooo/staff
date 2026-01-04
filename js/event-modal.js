@@ -207,10 +207,12 @@ export function openEventModal(eventId) {
         tagsViewSection.style.display = 'none';
     }
 
-    // Show/hide edit button based on ownership
+    // Show/hide edit button based on ownership or admin role
     const isOwner = event.authorId === currentUser?.id;
-    document.getElementById('btn-edit-event').style.display = isOwner ? 'block' : 'none';
-    document.getElementById('btn-delete-event').style.display = isOwner ? 'block' : 'none';
+    const isAdmin = currentUser?.role === 'admin';
+    const canEditDelete = isOwner || isAdmin;
+    document.getElementById('btn-edit-event').style.display = canEditDelete ? 'block' : 'none';
+    document.getElementById('btn-delete-event').style.display = canEditDelete ? 'block' : 'none';
 
     // Reset to view mode
     document.getElementById('event-view-mode').classList.remove('hidden-section');
