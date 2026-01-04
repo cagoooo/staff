@@ -118,25 +118,49 @@ export function renderCalendar() {
         const hasEvents = filteredEvents.length > 0;
 
         let cellClass = 'calendar-day';
-        let cellStyle = 'background: white; min-height: 60px; padding: 4px; cursor: pointer; position: relative;';
+        let cellStyle = 'background: white; min-height: 80px; padding: 4px; cursor: pointer; position: relative; overflow: hidden;';
 
-        if (isToday) cellStyle += 'border: 3px solid #6c5ce7;';
+        if (isToday) cellStyle += 'border: 3px solid #6c5ce7; background: #f8f7ff;';
         if (isSelected) cellStyle += 'background: #dfe6e9;';
+        if (hasEvents) cellStyle += 'background: linear-gradient(to bottom, white 30%, #f8f9fa 100%);';
 
         html += `<div class="${cellClass}" style="${cellStyle}" onclick="selectCalendarDate('${dateStr}')">`;
         html += `<div style="font-family: 'VT323', monospace; font-size: 18px; ${isToday ? 'color: #6c5ce7; font-weight: bold;' : ''}">${day}</div>`;
 
-        // Event dots
+        // Event bars (more visible than dots)
         if (hasEvents) {
-            html += '<div style="display: flex; flex-wrap: wrap; gap: 2px; margin-top: 2px;">';
-            filteredEvents.slice(0, 3).forEach(evt => {
+            html += '<div class="calendar-events" style="display: flex; flex-direction: column; gap: 2px; margin-top: 4px; max-height: 52px; overflow: hidden;">';
+
+            // Sort events by time
+            const sortedDayEvents = [...filteredEvents].sort((a, b) => (a.time || '00:00').localeCompare(b.time || '00:00'));
+
+            sortedDayEvents.slice(0, 3).forEach(evt => {
                 const users = globalUsers();
                 const author = users.find(u => u.id === evt.authorId);
                 const color = getDepartmentColor(author?.department);
-                html += `<div style="width: 8px; height: 8px; border-radius: 50%; background: ${color};" title="${evt.title}"></div>`;
+                const isImportant = evt.isPublic;
+                const isPinned = evt.pinned;
+
+                // Truncate title for display
+                const shortTitle = evt.title.length > 8 ? evt.title.substring(0, 8) + '…' : evt.title;
+                const prefix = isPinned ? '📌' : (isImportant ? '⭐' : '');
+
+                html += `<div class="calendar-event-bar" style="
+                    background: ${color}22;
+                    border-left: 3px solid ${color};
+                    padding: 1px 4px;
+                    font-family: 'VT323', monospace;
+                    font-size: 12px;
+                    color: ${color};
+                    white-space: nowrap;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    border-radius: 2px;
+                " title="${evt.title} - ${evt.time || '整天'}">${prefix}${shortTitle}</div>`;
             });
+
             if (filteredEvents.length > 3) {
-                html += `<span style="font-size: 10px;">+${filteredEvents.length - 3}</span>`;
+                html += `<div style="font-family: 'VT323', monospace; font-size: 11px; color: #636e72; text-align: center;">+${filteredEvents.length - 3} 更多</div>`;
             }
             html += '</div>';
         }
@@ -471,7 +495,10 @@ export function renderDashboard() {
         listAnnounce.appendChild(div);
     });
 
-    const publicEvents = sortedEvents.filter(e => e.isPublic);
+    // Get public events (important events) and sort by date
+    const publicEvents = sortedEvents
+        .filter(e => e.isPublic)
+        .sort((a, b) => a.date.localeCompare(b.date));
     if (publicEvents.length === 0) {
         listImportant.innerHTML = '<p class="text-gray-400 text-center">無重要行事</p>';
     }
@@ -583,6 +610,14 @@ export function updateNotificationBadge() {
 
 export function switchTab(tabName) {
     const currentUser = getAppCurrentUser();
+
+    // Scroll to top of page (smooth animation)
+    const contentArea = document.getElementById('content-area');
+    if (contentArea) {
+        contentArea.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    // Also scroll main window for mobile
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 
     // Hide all views including admin
     ['dashboard', 'calendar', 'account', 'notifications', 'editor', 'stats', 'admin'].forEach(v => {

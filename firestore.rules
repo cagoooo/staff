@@ -92,10 +92,10 @@ service cloud.firestore {
       // REMINDERS COLLECTION
       // ========================================
       
-      // User can read their own reminders
+      // User can read their own reminders, admin can read all (for backup)
       allow read: if isAuthenticated() 
         && collection == 'reminders'
-        && resource.data.userId == request.auth.uid;
+        && (resource.data.userId == request.auth.uid || isAdmin());
       
       // User can create reminders for themselves
       allow create: if isAuthenticated() 

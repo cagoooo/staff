@@ -67,11 +67,16 @@ export function renderStats() {
     const pendingEvents = totalEvents - completedEvents;
     const completionRate = totalEvents > 0 ? Math.round((completedEvents / totalEvents) * 100) : 0;
 
-    // Upcoming events (next 7 days)
+    // Upcoming events (next 7 days) - sorted by date and time
     const next7Days = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
     const upcomingEvents = events.filter(e => {
         const eventDate = new Date(e.date);
         return eventDate >= now && eventDate <= next7Days;
+    }).sort((a, b) => {
+        // Sort by date first, then by time
+        const dateCompare = a.date.localeCompare(b.date);
+        if (dateCompare !== 0) return dateCompare;
+        return (a.time || '00:00').localeCompare(b.time || '00:00');
     });
 
     // Overdue events (past but not completed)
@@ -102,20 +107,28 @@ export function renderStats() {
         }
     });
 
-    // Weekly trend (last 4 weeks)
+    // Weekly trend (2 weeks ago, last week, current week, next week)
     const weeklyData = [];
-    for (let i = 3; i >= 0; i--) {
-        const weekStart = new Date(now);
-        weekStart.setDate(now.getDate() - (i * 7) - now.getDay());
+    const weekLabels = ['兩週前', '上週', '本週', '下週'];
+
+    // Get the start of current week (Sunday)
+    const currentWeekStart = new Date(now);
+    currentWeekStart.setDate(now.getDate() - now.getDay());
+    currentWeekStart.setHours(0, 0, 0, 0);
+
+    for (let i = -2; i <= 1; i++) {
+        const weekStart = new Date(currentWeekStart);
+        weekStart.setDate(currentWeekStart.getDate() + (i * 7));
         const weekEnd = new Date(weekStart);
         weekEnd.setDate(weekStart.getDate() + 6);
+        weekEnd.setHours(23, 59, 59, 999);
 
         const weekEvents = events.filter(e => {
             const eventDate = new Date(e.date);
             return eventDate >= weekStart && eventDate <= weekEnd;
         });
         weeklyData.push({
-            label: `第${4 - i}週`,
+            label: weekLabels[i + 2],
             count: weekEvents.length
         });
     }
@@ -139,7 +152,10 @@ export function renderStats() {
         .slice(0, 5)
         .map(([userId, count]) => {
             const user = users.find(u => u.id === userId);
-            return { name: user?.name || '未知', count };
+            // Use authorName from any event as fallback
+            const eventByUser = monthEvents.find(e => e.authorId === userId);
+            const displayName = user?.name || eventByUser?.authorName || userId;
+            return { name: displayName, count };
         });
 
     // Important events count
