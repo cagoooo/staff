@@ -351,16 +351,22 @@ window.addReminderFromSelect = async function (eventId) {
 };
 
 window.deleteReminderConfirm = function (reminderId) {
+    // 先找到 reminder 並保存 eventId，因為刪除後可能無法取得
+    const reminder = _userReminders.find(r => r.id === reminderId);
+    const eventId = reminder?.eventId;
+
     showConfirm('確定要刪除這個提醒嗎？', async () => {
         await deleteReminder(reminderId);
 
-        // Find the eventId from the reminder
-        const reminder = _userReminders.find(r => r.id === reminderId);
-        if (reminder) {
-            const container = document.querySelector('#event-reminders-section');
-            if (container) {
-                container.innerHTML = renderReminderSettings(reminder.eventId);
-            }
+        // 使用保存的 eventId 重新渲染提醒設定區塊
+        if (eventId) {
+            // 等待一小段時間讓 Firestore 監聽器更新 _userReminders
+            setTimeout(() => {
+                const container = document.querySelector('#event-reminders-section');
+                if (container) {
+                    container.innerHTML = renderReminderSettings(eventId);
+                }
+            }, 500);
         }
     });
 };
