@@ -422,6 +422,104 @@ function createCommentEditFlexMessage(authorName, eventTitle, contentPreview) {
 }
 
 /**
+ * 評論刪除通知 - Flex Message
+ */
+function createCommentDeleteFlexMessage(authorName, eventTitle, contentPreview) {
+    return {
+        type: "flex",
+        altText: `🗑️ ${authorName} 刪除了提及您的評論`,
+        contents: {
+            type: "bubble",
+            size: "kilo",
+            header: {
+                type: "box",
+                layout: "vertical",
+                backgroundColor: "#d63031",
+                paddingAll: "15px",
+                contents: [
+                    {
+                        type: "box",
+                        layout: "horizontal",
+                        contents: [
+                            {
+                                type: "text",
+                                text: "🗑️",
+                                size: "xl",
+                                color: "#ffffff",
+                                flex: 0
+                            },
+                            {
+                                type: "text",
+                                text: "評論已刪除",
+                                color: "#ffffff",
+                                size: "lg",
+                                weight: "bold",
+                                margin: "md",
+                                flex: 1
+                            }
+                        ],
+                        alignItems: "center"
+                    }
+                ]
+            },
+            body: {
+                type: "box",
+                layout: "vertical",
+                paddingAll: "15px",
+                spacing: "md",
+                contents: [
+                    {
+                        type: "box",
+                        layout: "horizontal",
+                        contents: [
+                            {
+                                type: "text",
+                                text: authorName,
+                                weight: "bold",
+                                size: "md",
+                                color: "#d63031"
+                            },
+                            {
+                                type: "text",
+                                text: " 刪除了提及您的評論",
+                                size: "md",
+                                color: "#333333"
+                            }
+                        ]
+                    },
+                    {
+                        type: "box",
+                        layout: "vertical",
+                        backgroundColor: "#fff5f5",
+                        cornerRadius: "8px",
+                        paddingAll: "12px",
+                        margin: "md",
+                        contents: [
+                            {
+                                type: "text",
+                                text: `📋 ${eventTitle}`,
+                                size: "sm",
+                                color: "#667eea",
+                                weight: "bold"
+                            },
+                            {
+                                type: "text",
+                                text: `「${contentPreview}」`,
+                                size: "sm",
+                                color: "#999999",
+                                wrap: true,
+                                margin: "sm",
+                                decoration: "line-through"
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+    };
+}
+
+/**
  * 提醒通知 - Flex Message
  */
 function createReminderFlexMessage(eventTitle, eventDate, eventTime) {
@@ -2292,6 +2390,57 @@ exports.onCommentUpdate = onDocumentUpdated(
 
                 await client.pushMessage(lineUserId, message);
                 console.log(`LINE comment edit notification sent to ${mentionedId}`);
+            } catch (err) {
+                console.error(`Failed to notify mention ${mentionedId}:`, err);
+            }
+        }
+    }
+);
+
+/**
+ * 評論刪除時通知被 @提及的用戶
+ */
+exports.onCommentDelete = onDocumentDeleted(
+    {
+        document: `artifacts/${APP_ID}/public/data/school_events/{eventId}/comments/{commentId}`,
+        region: "asia-east1",
+        secrets: ["LINE_CHANNEL_ACCESS_TOKEN", "LINE_CHANNEL_SECRET"]
+    },
+    async (event) => {
+        const commentData = event.data.data();
+        const eventId = event.params.eventId;
+        const client = getLineClient();
+
+        console.log(`Comment deleted on event ${eventId}:`, commentData);
+
+        // 取得被 @提及的用戶
+        const mentions = commentData.mentions || [];
+        if (mentions.length === 0) return;
+
+        // 取得事件標題
+        const eventDoc = await db.doc(`artifacts/${APP_ID}/public/data/school_events/${eventId}`).get();
+        const eventTitle = eventDoc.exists ? eventDoc.data().title : "未知行程";
+
+        // 查詢這些用戶的 LINE ID
+        const usersRef = db.collection(`artifacts/${APP_ID}/public/data/users`);
+
+        for (const mentionedId of mentions) {
+            try {
+                const userDoc = await usersRef.doc(mentionedId).get();
+                if (!userDoc.exists) continue;
+
+                const userData = userDoc.data();
+                const lineUserId = userData.lineUserId;
+                const lineNotifyEnabled = userData.lineNotifyEnabled;
+
+                if (!lineUserId || !lineNotifyEnabled) continue;
+
+                // 發送 LINE 通知 (使用評論刪除的 Flex Message)
+                const contentPreview = commentData.content.substring(0, 50) + (commentData.content.length > 50 ? "..." : "");
+                const message = createCommentDeleteFlexMessage(commentData.authorName, eventTitle, contentPreview);
+
+                await client.pushMessage(lineUserId, message);
+                console.log(`LINE comment delete notification sent to ${mentionedId}`);
             } catch (err) {
                 console.error(`Failed to notify mention ${mentionedId}:`, err);
             }
