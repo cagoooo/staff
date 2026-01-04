@@ -38,19 +38,145 @@ function getLineClient() {
 const LINK_URL = "https://cagoooo.github.io/staff/";
 
 /**
- * 新行程通知 - Flex Message
+ * 公告類型設定
+ */
+const ANNOUNCEMENT_TYPES = {
+    'normal': { icon: '📋', label: '一般', color: '#667eea', headerBg: '#667eea' },
+    'important': { icon: '⚡', label: '重要', color: '#e17055', headerBg: '#e17055' },
+    'urgent': { icon: '🚨', label: '緊急', color: '#d63031', headerBg: '#d63031' }
+};
+
+/**
+ * 新行程通知 - Flex Message (支援公告類型和附件)
  */
 function createEventFlexMessage(eventData) {
+    // 取得公告類型設定
+    const typeConfig = ANNOUNCEMENT_TYPES[eventData.announcementType] || ANNOUNCEMENT_TYPES['normal'];
+
+    // 附件資訊
+    const attachments = eventData.attachments || [];
+    const hasAttachments = attachments.length > 0;
+
+    // 判斷是否為跨日行程
+    const isMultiDay = !!eventData.endDate;
+    const dateDisplay = isMultiDay
+        ? `${eventData.date} ~ ${eventData.endDate}`
+        : eventData.date;
+    const dateLabel = isMultiDay ? "📆 期程" : "📆 日期";
+
+    // 建立 body 內容的 info box
+    const infoContents = [
+        {
+            type: "box",
+            layout: "horizontal",
+            contents: [
+                { type: "text", text: dateLabel, size: "sm", color: "#888888", flex: 2 },
+                { type: "text", text: dateDisplay, size: "sm", color: isMultiDay ? "#6c5ce7" : "#333333", flex: 3, weight: "bold" }
+            ]
+        }
+    ];
+
+    // 如果是跨日行程，加入跨日標記
+    if (isMultiDay) {
+        infoContents.push({
+            type: "box",
+            layout: "horizontal",
+            contents: [
+                { type: "text", text: "", size: "sm", color: "#888888", flex: 2 },
+                { type: "text", text: "📅 跨日行程", size: "xs", color: "#6c5ce7", flex: 3 }
+            ]
+        });
+    }
+
+    // 加入其他資訊
+    infoContents.push(
+        {
+            type: "box",
+            layout: "horizontal",
+            contents: [
+                { type: "text", text: "⏰ 時間", size: "sm", color: "#888888", flex: 2 },
+                { type: "text", text: eventData.time || "--:--", size: "sm", color: "#333333", flex: 3, weight: "bold" }
+            ]
+        },
+        {
+            type: "box",
+            layout: "horizontal",
+            contents: [
+                { type: "text", text: "👤 發起人", size: "sm", color: "#888888", flex: 2 },
+                { type: "text", text: eventData.authorName, size: "sm", color: "#333333", flex: 3, weight: "bold" }
+            ]
+        },
+        {
+            type: "box",
+            layout: "horizontal",
+            contents: [
+                { type: "text", text: "🏷️ 類型", size: "sm", color: "#888888", flex: 2 },
+                { type: "text", text: `${typeConfig.icon} ${typeConfig.label}`, size: "sm", color: typeConfig.color, flex: 3, weight: "bold" }
+            ]
+        }
+    );
+
+    const bodyContents = [
+        {
+            type: "text",
+            text: eventData.title,
+            weight: "bold",
+            size: "lg",
+            wrap: true,
+            color: "#333333"
+        },
+        {
+            type: "separator",
+            margin: "md"
+        },
+        {
+            type: "box",
+            layout: "vertical",
+            spacing: "sm",
+            margin: "md",
+            contents: infoContents
+        }
+    ];
+
+    // 如果有附件，加入附件資訊
+    if (hasAttachments) {
+        bodyContents.push({
+            type: "box",
+            layout: "vertical",
+            margin: "lg",
+            backgroundColor: "#f0f8ff",
+            cornerRadius: "8px",
+            paddingAll: "10px",
+            contents: [
+                {
+                    type: "text",
+                    text: `📎 附件 (${attachments.length} 個)`,
+                    size: "sm",
+                    color: "#3498db",
+                    weight: "bold"
+                },
+                {
+                    type: "text",
+                    text: attachments.slice(0, 3).map(a => a.name).join('、') + (attachments.length > 3 ? '...' : ''),
+                    size: "xs",
+                    color: "#666666",
+                    wrap: true,
+                    margin: "sm"
+                }
+            ]
+        });
+    }
+
     return {
         type: "flex",
-        altText: `📅 新行程：${eventData.title}`,
+        altText: `${typeConfig.icon} ${typeConfig.label}行程：${eventData.title}`,
         contents: {
             type: "bubble",
             size: "kilo",
             header: {
                 type: "box",
                 layout: "vertical",
-                backgroundColor: "#667eea",
+                backgroundColor: typeConfig.headerBg,
                 paddingAll: "15px",
                 contents: [
                     {
@@ -59,14 +185,14 @@ function createEventFlexMessage(eventData) {
                         contents: [
                             {
                                 type: "text",
-                                text: "📅",
+                                text: typeConfig.icon,
                                 size: "xl",
                                 color: "#ffffff",
                                 flex: 0
                             },
                             {
                                 type: "text",
-                                text: "新行程通知",
+                                text: `${typeConfig.label === '一般' ? '新' : typeConfig.label}行程通知`,
                                 color: "#ffffff",
                                 size: "lg",
                                 weight: "bold",
@@ -83,91 +209,7 @@ function createEventFlexMessage(eventData) {
                 layout: "vertical",
                 paddingAll: "15px",
                 spacing: "md",
-                contents: [
-                    {
-                        type: "text",
-                        text: eventData.title,
-                        weight: "bold",
-                        size: "lg",
-                        wrap: true,
-                        color: "#333333"
-                    },
-                    {
-                        type: "separator",
-                        margin: "md"
-                    },
-                    {
-                        type: "box",
-                        layout: "vertical",
-                        spacing: "sm",
-                        margin: "md",
-                        contents: [
-                            {
-                                type: "box",
-                                layout: "horizontal",
-                                contents: [
-                                    {
-                                        type: "text",
-                                        text: "📆 日期",
-                                        size: "sm",
-                                        color: "#888888",
-                                        flex: 2
-                                    },
-                                    {
-                                        type: "text",
-                                        text: eventData.date,
-                                        size: "sm",
-                                        color: "#333333",
-                                        flex: 3,
-                                        weight: "bold"
-                                    }
-                                ]
-                            },
-                            {
-                                type: "box",
-                                layout: "horizontal",
-                                contents: [
-                                    {
-                                        type: "text",
-                                        text: "⏰ 時間",
-                                        size: "sm",
-                                        color: "#888888",
-                                        flex: 2
-                                    },
-                                    {
-                                        type: "text",
-                                        text: eventData.time || "--:--",
-                                        size: "sm",
-                                        color: "#333333",
-                                        flex: 3,
-                                        weight: "bold"
-                                    }
-                                ]
-                            },
-                            {
-                                type: "box",
-                                layout: "horizontal",
-                                contents: [
-                                    {
-                                        type: "text",
-                                        text: "👤 發起人",
-                                        size: "sm",
-                                        color: "#888888",
-                                        flex: 2
-                                    },
-                                    {
-                                        type: "text",
-                                        text: eventData.authorName,
-                                        size: "sm",
-                                        color: "#333333",
-                                        flex: 3,
-                                        weight: "bold"
-                                    }
-                                ]
-                            }
-                        ]
-                    }
-                ]
+                contents: bodyContents
             },
             footer: {
                 type: "box",
@@ -182,7 +224,7 @@ function createEventFlexMessage(eventData) {
                             uri: LINK_URL
                         },
                         style: "primary",
-                        color: "#667eea",
+                        color: typeConfig.color,
                         height: "sm"
                     }
                 ]
