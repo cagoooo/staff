@@ -287,8 +287,8 @@ export function renderReminderSettings(eventId) {
                 </div>
                 
                 <!-- Add Reminder -->
-                <div class="flex gap-2">
-                    <select id="reminder-preset" class="pixel-input flex-1" style="font-size: 14px; padding: 6px;">
+                <div class="flex gap-2" style="position: relative; z-index: 100;">
+                    <select id="reminder-preset" class="pixel-input flex-1" style="font-size: 14px; padding: 6px; position: relative; z-index: 100;">
                         <option value="">選擇提醒時間...</option>
                         ${REMINDER_PRESETS.map(p => {
         const reminderTime = new Date(eventDateTime.getTime() - (p.value * 60 * 1000));

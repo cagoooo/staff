@@ -18,7 +18,7 @@ export function initEventModal() {
                 <h3 id="event-modal-title" class="text-white" style="font-family: 'VT323', monospace; font-size: 24px;">📅 行程詳情</h3>
                 <button onclick="closeEventModal()" class="text-white text-2xl hover:text-gray-300">&times;</button>
             </div>
-            <div class="p-3 sm:p-4 max-h-[70vh] overflow-y-auto" id="event-modal-content">
+            <div class="p-3 sm:p-4 max-h-[70vh] overflow-y-auto overflow-x-visible" id="event-modal-content" style="overflow: auto;">
                 <!-- View Mode -->
                 <div id="event-view-mode">
                     <div class="mb-3">
