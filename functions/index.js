@@ -1954,19 +1954,15 @@ exports.onCommentUpdate = onDocumentUpdated(
 
         console.log(`Comment updated on event ${eventId}`);
 
-        // 取得更新前後的 mentions
-        const beforeMentions = beforeData.mentions || [];
-        const afterMentions = afterData.mentions || [];
+        // 取得更新後的 mentions (通知所有被提及的用戶)
+        const mentions = afterData.mentions || [];
 
-        // 找出新增的 mentions (在 after 但不在 before 中)
-        const newMentions = afterMentions.filter(id => !beforeMentions.includes(id));
-
-        if (newMentions.length === 0) {
-            console.log('No new mentions in comment update');
+        if (mentions.length === 0) {
+            console.log('No mentions in updated comment');
             return;
         }
 
-        console.log(`New mentions found:`, newMentions);
+        console.log(`Mentions in updated comment:`, mentions);
 
         // 取得事件標題
         const eventDoc = await db.doc(`artifacts/${APP_ID}/public/data/school_events/${eventId}`).get();
@@ -1975,7 +1971,7 @@ exports.onCommentUpdate = onDocumentUpdated(
         // 查詢這些用戶的 LINE ID
         const usersRef = db.collection(`artifacts/${APP_ID}/public/data/users`);
 
-        for (const mentionedId of newMentions) {
+        for (const mentionedId of mentions) {
             // 允許使用者 @自己也能收到 LINE 通知
             // if (mentionedId === afterData.authorId) continue;
 
