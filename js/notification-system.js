@@ -233,7 +233,7 @@ export async function toggleLineSync(enabled) {
     const currentUser = getAppCurrentUser();
     if (currentUser?.lineUserId && currentUser?.lineNotifyEnabled) {
         try {
-            const response = await fetch('https://notifysyncstatus-adbqeupora-de.a.run.app', {
+            const response = await fetch('https://asia-east1-smes-e1dc3.cloudfunctions.net/notifySyncStatus', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
