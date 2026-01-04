@@ -248,6 +248,30 @@ export function toggleEventEditMode() {
     setSelectedTags(event.tags || []);
     renderTagSelector('edit-event-tags-container', event.tags || []);
 
+    // Clear file input to prevent re-uploading
+    const fileInput = document.getElementById('edit-evt-file');
+    if (fileInput) {
+        fileInput.value = '';
+    }
+
+    // Show existing attachments
+    const attachmentsList = document.getElementById('edit-attachments-list');
+    if (attachmentsList) {
+        if (event.attachments && event.attachments.length > 0) {
+            attachmentsList.innerHTML = `
+                <div style="font-family: 'VT323', monospace; font-size: 14px; color: #636e72; margin-bottom: 4px;">現有附件：</div>
+                ${event.attachments.map(att => `
+                    <div style="background: #e8f5e9; padding: 4px 8px; border-radius: 4px; font-family: 'VT323', monospace; font-size: 16px; color: #2e7d32; display: flex; align-items: center; gap: 4px;">
+                        <span>✅</span>
+                        <span>${att.name}</span>
+                    </div>
+                `).join('')}
+            `;
+        } else {
+            attachmentsList.innerHTML = '';
+        }
+    }
+
     // Switch UI
     document.getElementById('event-view-mode').classList.add('hidden-section');
     document.getElementById('event-edit-mode').classList.remove('hidden-section');

@@ -210,6 +210,10 @@ export async function handleFirebaseAddEvent(e) {
         }
 
         e.target.reset();
+        // Explicitly clear file input to prevent re-upload on next event
+        const fileInputEl = document.getElementById('evt-file');
+        if (fileInputEl) fileInputEl.value = '';
+
         _currentSelectedTargets = [];
         if (window.renderEditorOptions) window.renderEditorOptions();
         if (window.switchTab) window.switchTab('dashboard');
