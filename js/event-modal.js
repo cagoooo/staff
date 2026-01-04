@@ -7,6 +7,7 @@ import { renderReminderSettings } from './reminders.js';
 
 let currentEditingEventId = null;
 let isEditMode = false;
+let attachmentsToDelete = []; // Track attachments to delete
 
 // Create and inject the modal HTML into the DOM
 export function initEventModal() {
@@ -254,16 +255,26 @@ export function toggleEventEditMode() {
         fileInput.value = '';
     }
 
-    // Show existing attachments
+    // Reset attachments to delete list
+    attachmentsToDelete = [];
+
+    // Show existing attachments with delete buttons
     const attachmentsList = document.getElementById('edit-attachments-list');
     if (attachmentsList) {
         if (event.attachments && event.attachments.length > 0) {
             attachmentsList.innerHTML = `
                 <div style="font-family: 'VT323', monospace; font-size: 14px; color: #636e72; margin-bottom: 4px;">現有附件：</div>
-                ${event.attachments.map(att => `
-                    <div style="background: #e8f5e9; padding: 4px 8px; border-radius: 4px; font-family: 'VT323', monospace; font-size: 16px; color: #2e7d32; display: flex; align-items: center; gap: 4px;">
-                        <span>✅</span>
-                        <span>${att.name}</span>
+                ${event.attachments.map((att, index) => `
+                    <div id="attachment-item-${index}" style="background: #e8f5e9; padding: 6px 10px; border-radius: 6px; font-family: 'VT323', monospace; font-size: 16px; color: #2e7d32; display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 4px;">
+                        <div style="display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0;">
+                            <span>✅</span>
+                            <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${att.name}</span>
+                        </div>
+                        <button type="button" onclick="markAttachmentForDeletion(${index}, '${att.name}')" 
+                            style="background: #e17055; color: white; border: none; border-radius: 4px; padding: 4px 8px; font-family: 'VT323', monospace; font-size: 14px; cursor: pointer; flex-shrink: 0;"
+                            title="刪除此附件">
+                            🗑️ 刪除
+                        </button>
                     </div>
                 `).join('')}
             `;
@@ -301,6 +312,15 @@ export function cancelEventEdit() {
 export async function saveEventEdit() {
     if (!currentEditingEventId) return;
 
+    const event = getEventById(currentEditingEventId);
+    let currentAttachments = event?.attachments || [];
+
+    // Remove attachments marked for deletion
+    if (attachmentsToDelete.length > 0) {
+        currentAttachments = currentAttachments.filter((_, index) => !attachmentsToDelete.includes(index));
+        console.log('[EventModal] Removed', attachmentsToDelete.length, 'attachments');
+    }
+
     const data = {
         title: document.getElementById('edit-evt-title').value,
         date: document.getElementById('edit-evt-date').value,
@@ -308,7 +328,8 @@ export async function saveEventEdit() {
         isPublic: document.getElementById('edit-evt-is-public').checked,
         announcementType: document.getElementById('edit-evt-type').value,
         pinned: document.getElementById('edit-evt-pinned').checked,
-        tags: getSelectedTags()
+        tags: getSelectedTags(),
+        attachments: currentAttachments
     };
 
     // Handle file upload if selected
@@ -318,16 +339,15 @@ export async function saveEventEdit() {
         if (window.uploadAttachment) {
             const attachment = await window.uploadAttachment(file, currentEditingEventId);
             if (attachment) {
-                // Get existing attachments and add new one
-                const event = getEventById(currentEditingEventId);
-                const existingAttachments = event?.attachments || [];
-                data.attachments = [...existingAttachments, attachment];
+                // Add new attachment to the list
+                data.attachments = [...data.attachments, attachment];
             }
         }
     }
 
     const success = await updateEvent(currentEditingEventId, data);
     if (success) {
+        attachmentsToDelete = []; // Reset
         closeEventModal();
     }
 }
@@ -349,3 +369,60 @@ window.toggleEventEditMode = toggleEventEditMode;
 window.cancelEventEdit = cancelEventEdit;
 window.saveEventEdit = saveEventEdit;
 window.confirmDeleteEvent = confirmDeleteEvent;
+
+// Mark attachment for deletion
+window.markAttachmentForDeletion = function (index, name) {
+    if (!attachmentsToDelete.includes(index)) {
+        attachmentsToDelete.push(index);
+
+        // Update UI to show deleted state
+        const item = document.getElementById(`attachment-item-${index}`);
+        if (item) {
+            item.style.background = '#ffebee';
+            item.style.color = '#c62828';
+            item.style.textDecoration = 'line-through';
+            item.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0;">
+                    <span>❌</span>
+                    <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${name}</span>
+                </div>
+                <button type="button" onclick="undoAttachmentDeletion(${index}, '${name}')" 
+                    style="background: #00b894; color: white; border: none; border-radius: 4px; padding: 4px 8px; font-family: 'VT323', monospace; font-size: 14px; cursor: pointer; flex-shrink: 0;"
+                    title="復原此附件">
+                    ↩️ 復原
+                </button>
+            `;
+        }
+
+        console.log('[EventModal] Marked for deletion:', name);
+    }
+};
+
+// Undo attachment deletion
+window.undoAttachmentDeletion = function (index, name) {
+    const idx = attachmentsToDelete.indexOf(index);
+    if (idx > -1) {
+        attachmentsToDelete.splice(idx, 1);
+
+        // Update UI to show restored state
+        const item = document.getElementById(`attachment-item-${index}`);
+        if (item) {
+            item.style.background = '#e8f5e9';
+            item.style.color = '#2e7d32';
+            item.style.textDecoration = 'none';
+            item.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0;">
+                    <span>✅</span>
+                    <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${name}</span>
+                </div>
+                <button type="button" onclick="markAttachmentForDeletion(${index}, '${name}')" 
+                    style="background: #e17055; color: white; border: none; border-radius: 4px; padding: 4px 8px; font-family: 'VT323', monospace; font-size: 14px; cursor: pointer; flex-shrink: 0;"
+                    title="刪除此附件">
+                    🗑️ 刪除
+                </button>
+            `;
+        }
+
+        console.log('[EventModal] Restored:', name);
+    }
+};
