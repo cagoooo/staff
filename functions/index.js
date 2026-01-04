@@ -307,6 +307,121 @@ function createMentionFlexMessage(authorName, eventTitle, contentPreview) {
 }
 
 /**
+ * 評論編輯通知 - Flex Message
+ */
+function createCommentEditFlexMessage(authorName, eventTitle, contentPreview) {
+    return {
+        type: "flex",
+        altText: `✏️ ${authorName} 編輯了提及您的評論`,
+        contents: {
+            type: "bubble",
+            size: "kilo",
+            header: {
+                type: "box",
+                layout: "vertical",
+                backgroundColor: "#e17055",
+                paddingAll: "15px",
+                contents: [
+                    {
+                        type: "box",
+                        layout: "horizontal",
+                        contents: [
+                            {
+                                type: "text",
+                                text: "✏️",
+                                size: "xl",
+                                color: "#ffffff",
+                                flex: 0
+                            },
+                            {
+                                type: "text",
+                                text: "評論已編輯",
+                                color: "#ffffff",
+                                size: "lg",
+                                weight: "bold",
+                                margin: "md",
+                                flex: 1
+                            }
+                        ],
+                        alignItems: "center"
+                    }
+                ]
+            },
+            body: {
+                type: "box",
+                layout: "vertical",
+                paddingAll: "15px",
+                spacing: "md",
+                contents: [
+                    {
+                        type: "box",
+                        layout: "horizontal",
+                        contents: [
+                            {
+                                type: "text",
+                                text: authorName,
+                                weight: "bold",
+                                size: "md",
+                                color: "#e17055"
+                            },
+                            {
+                                type: "text",
+                                text: " 編輯了提及您的評論",
+                                size: "md",
+                                color: "#333333"
+                            }
+                        ]
+                    },
+                    {
+                        type: "box",
+                        layout: "vertical",
+                        backgroundColor: "#fff5f3",
+                        cornerRadius: "8px",
+                        paddingAll: "12px",
+                        margin: "md",
+                        contents: [
+                            {
+                                type: "text",
+                                text: `📋 ${eventTitle}`,
+                                size: "sm",
+                                color: "#667eea",
+                                weight: "bold"
+                            },
+                            {
+                                type: "text",
+                                text: `「${contentPreview}」`,
+                                size: "sm",
+                                color: "#666666",
+                                wrap: true,
+                                margin: "sm"
+                            }
+                        ]
+                    }
+                ]
+            },
+            footer: {
+                type: "box",
+                layout: "vertical",
+                paddingAll: "12px",
+                contents: [
+                    {
+                        type: "button",
+                        action: {
+                            type: "uri",
+                            label: "💬 查看更新內容",
+                            uri: LINK_URL
+                        },
+                        style: "primary",
+                        color: "#e17055",
+                        height: "sm"
+                    }
+                ]
+            }
+        }
+    };
+}
+
+/**
  * 提醒通知 - Flex Message
  */
 function createReminderFlexMessage(eventTitle, eventDate, eventTime) {
@@ -1985,12 +2100,12 @@ exports.onCommentUpdate = onDocumentUpdated(
 
                 if (!lineUserId || !lineNotifyEnabled) continue;
 
-                // 發送 LINE 通知 (使用精美 Flex Message)
+                // 發送 LINE 通知 (使用評論編輯的 Flex Message)
                 const contentPreview = afterData.content.substring(0, 50) + (afterData.content.length > 50 ? "..." : "");
-                const message = createMentionFlexMessage(afterData.authorName, eventTitle, contentPreview);
+                const message = createCommentEditFlexMessage(afterData.authorName, eventTitle, contentPreview);
 
                 await client.pushMessage(lineUserId, message);
-                console.log(`LINE mention notification sent to ${mentionedId} (comment update)`);
+                console.log(`LINE comment edit notification sent to ${mentionedId}`);
             } catch (err) {
                 console.error(`Failed to notify mention ${mentionedId}:`, err);
             }
