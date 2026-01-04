@@ -1911,8 +1911,8 @@ exports.onCommentCreate = onDocumentCreated(
         const usersRef = db.collection(`artifacts/${APP_ID}/public/data/users`);
 
         for (const mentionedId of mentions) {
-            // 不要通知評論作者自己
-            if (mentionedId === commentData.authorId) continue;
+            // 允許使用者 @自己也能收到 LINE 通知（方便測試和自我提醒）
+            // if (mentionedId === commentData.authorId) continue;
 
             try {
                 const userDoc = await usersRef.doc(mentionedId).get();
