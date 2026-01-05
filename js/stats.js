@@ -171,6 +171,17 @@ export function renderStats() {
                 padding: 16px; 
                 box-shadow: 0 2px 8px rgba(0,0,0,0.1);
             }
+            .stats-card-clickable {
+                cursor: pointer;
+                transition: transform 0.2s, box-shadow 0.2s;
+            }
+            .stats-card-clickable:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            }
+            .stats-card-clickable:active {
+                transform: translateY(0);
+            }
             .stats-number { 
                 font-family: 'VT323', monospace; 
                 font-size: 36px; 
@@ -192,26 +203,127 @@ export function renderStats() {
                 .stats-number { font-size: 28px; }
                 .stats-icon { font-size: 28px; }
             }
+            /* Stats Detail Modal */
+            .stats-detail-modal {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0,0,0,0.5);
+                z-index: 9999;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 16px;
+            }
+            .stats-detail-content {
+                background: white;
+                border-radius: 16px;
+                max-width: 600px;
+                width: 100%;
+                max-height: 80vh;
+                overflow: hidden;
+                display: flex;
+                flex-direction: column;
+            }
+            .stats-detail-header {
+                padding: 16px 20px;
+                border-bottom: 1px solid #eee;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+            }
+            .stats-detail-title {
+                font-family: 'VT323', monospace;
+                font-size: 24px;
+                font-weight: bold;
+            }
+            .stats-detail-close {
+                background: none;
+                border: none;
+                font-size: 24px;
+                cursor: pointer;
+                padding: 4px 8px;
+                border-radius: 8px;
+            }
+            .stats-detail-close:hover {
+                background: #f0f0f0;
+            }
+            .stats-detail-body {
+                padding: 16px 20px;
+                overflow-y: auto;
+                flex: 1;
+            }
+            .stats-event-item {
+                padding: 12px;
+                border-radius: 8px;
+                margin-bottom: 8px;
+                border-left: 4px solid #6c5ce7;
+                background: #f8f9fa;
+                cursor: pointer;
+                transition: background 0.2s;
+            }
+            .stats-event-item:hover {
+                background: #e9ecef;
+            }
+            .stats-event-title {
+                font-family: 'VT323', monospace;
+                font-size: 18px;
+                font-weight: bold;
+                margin-bottom: 4px;
+            }
+            .stats-event-meta {
+                font-size: 14px;
+                color: #636e72;
+            }
+            .stats-empty {
+                text-align: center;
+                padding: 40px;
+                color: #636e72;
+                font-family: 'VT323', monospace;
+                font-size: 18px;
+            }
+            /* Dark mode support */
+            [data-theme="dark"] .stats-detail-content {
+                background: #1f1f3d;
+                color: #f0f0f0;
+            }
+            [data-theme="dark"] .stats-detail-header {
+                border-color: #4d4d7a;
+            }
+            [data-theme="dark"] .stats-detail-close:hover {
+                background: #3a3a5a;
+            }
+            [data-theme="dark"] .stats-event-item {
+                background: #2a2a4a;
+            }
+            [data-theme="dark"] .stats-event-item:hover {
+                background: #3a3a5a;
+            }
+            [data-theme="dark"] .stats-event-meta {
+                color: #b0b0d0;
+            }
         </style>
         
         <!-- Overview Cards -->
         <div class="stats-grid stats-grid-4 mb-4">
-            <div class="stats-card text-center">
+            <div class="stats-card stats-card-clickable text-center" data-type="total" title="點擊查看詳細">
                 <div class="stats-icon" style="color: #6c5ce7;">📋</div>
                 <div class="stats-number">${totalEvents}</div>
                 <div class="stats-label">本月行程總數</div>
             </div>
-            <div class="stats-card text-center">
+            <div class="stats-card stats-card-clickable text-center" data-type="completed" title="點擊查看詳細">
                 <div class="stats-icon" style="color: #00b894;">✅</div>
                 <div class="stats-number">${completedEvents}</div>
                 <div class="stats-label">已完成</div>
             </div>
-            <div class="stats-card text-center">
+            <div class="stats-card stats-card-clickable text-center" data-type="pending" title="點擊查看詳細">
                 <div class="stats-icon" style="color: #fdcb6e;">⏳</div>
                 <div class="stats-number">${pendingEvents}</div>
                 <div class="stats-label">待處理</div>
             </div>
-            <div class="stats-card text-center">
+            <div class="stats-card stats-card-clickable text-center" data-type="important" title="點擊查看詳細">
                 <div class="stats-icon" style="color: #e74c3c;">⭐</div>
                 <div class="stats-number">${importantEvents}</div>
                 <div class="stats-label">重要行事</div>
@@ -298,11 +410,25 @@ export function renderStats() {
         </div>
     `;
 
+    // Store event data for click handlers
+    window._statsEventData = {
+        monthEvents: monthEvents,
+        completedEventsList: monthEvents.filter(e => e.completedBy?.includes(currentUser?.id)),
+        pendingEventsList: monthEvents.filter(e => !e.completedBy?.includes(currentUser?.id)),
+        importantEventsList: monthEvents.filter(e => e.isPublic),
+        currentUser: currentUser
+    };
+
     // Render charts with delay to ensure canvas is ready
     setTimeout(() => {
         renderDeptChart(deptCounts);
         renderTrendChart(weeklyData);
     }, 100);
+
+    // Bind click events for stats cards
+    setTimeout(() => {
+        bindStatsCardClickEvents();
+    }, 50);
 }
 
 // Render department distribution chart
@@ -418,6 +544,103 @@ function renderTrendChart(weeklyData) {
         }
     });
 }
+
+// Bind click events for stats cards
+function bindStatsCardClickEvents() {
+    const clickableCards = document.querySelectorAll('.stats-card-clickable');
+    clickableCards.forEach(card => {
+        card.addEventListener('click', () => {
+            const type = card.dataset.type;
+            if (type) {
+                showStatsDetailModal(type);
+            }
+        });
+    });
+}
+
+// Show stats detail modal
+function showStatsDetailModal(type) {
+    const data = window._statsEventData;
+    if (!data) return;
+
+    let events = [];
+    let title = '';
+    let icon = '';
+    let borderColor = '#6c5ce7';
+
+    switch (type) {
+        case 'total':
+            events = data.monthEvents;
+            title = '📋 本月行程總數';
+            borderColor = '#6c5ce7';
+            break;
+        case 'completed':
+            events = data.completedEventsList;
+            title = '✅ 已完成行程';
+            borderColor = '#00b894';
+            break;
+        case 'pending':
+            events = data.pendingEventsList;
+            title = '⏳ 待處理行程';
+            borderColor = '#fdcb6e';
+            break;
+        case 'important':
+            events = data.importantEventsList;
+            title = '⭐ 重要行事';
+            borderColor = '#e74c3c';
+            break;
+    }
+
+    // Sort events by date
+    events = [...events].sort((a, b) => a.date.localeCompare(b.date));
+
+    // Generate event list HTML
+    const eventsHtml = events.length > 0 ? events.map(e => `
+        <div class="stats-event-item" style="border-left-color: ${borderColor};" data-event-id="${e.id}" onclick="window.openEventModal && window.openEventModal('${e.id}'); closeStatsDetailModal();">
+            <div class="stats-event-title">${e.title}</div>
+            <div class="stats-event-meta">
+                📅 ${e.date} ${e.time ? '⏰ ' + e.time : '🌅 全天'} 
+                ${e.authorName ? '| 👤 ' + e.authorName : ''}
+            </div>
+        </div>
+    `).join('') : `<div class="stats-empty">📭 沒有符合的行程</div>`;
+
+    // Create modal HTML
+    const modalHtml = `
+        <div class="stats-detail-modal" id="stats-detail-modal" onclick="if(event.target === this) closeStatsDetailModal();">
+            <div class="stats-detail-content">
+                <div class="stats-detail-header">
+                    <div class="stats-detail-title">${title} (${events.length})</div>
+                    <button class="stats-detail-close" onclick="closeStatsDetailModal();">✕</button>
+                </div>
+                <div class="stats-detail-body">
+                    ${eventsHtml}
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Remove existing modal if any
+    closeStatsDetailModal();
+
+    // Add modal to body
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+    // Prevent body scroll
+    document.body.style.overflow = 'hidden';
+}
+
+// Close stats detail modal
+function closeStatsDetailModal() {
+    const modal = document.getElementById('stats-detail-modal');
+    if (modal) {
+        modal.remove();
+        document.body.style.overflow = '';
+    }
+}
+
+// Export closeStatsDetailModal to window for onclick handlers
+window.closeStatsDetailModal = closeStatsDetailModal;
 
 // Export to window
 window.renderStats = renderStats;
