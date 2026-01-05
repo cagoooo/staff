@@ -275,9 +275,10 @@ function setupMentionAutocomplete() {
     const suggestions = document.getElementById('mention-suggestions');
     if (!input || !suggestions) return;
 
-    const users = globalUsers();
-
     input.addEventListener('input', (e) => {
+        // 每次輸入時動態獲取最新的用戶列表
+        const users = globalUsers();
+
         const text = e.target.value;
         const cursorPos = e.target.selectionStart;
 
@@ -288,9 +289,11 @@ function setupMentionAutocomplete() {
         if (mentionMatch) {
             const searchTerm = mentionMatch[1].toLowerCase();
             const filtered = users.filter(u =>
-                u.name.toLowerCase().includes(searchTerm) ||
-                (u.username && u.username.toLowerCase().includes(searchTerm))
-            ).slice(0, 5);
+                u.name && (
+                    u.name.toLowerCase().includes(searchTerm) ||
+                    (u.username && u.username.toLowerCase().includes(searchTerm))
+                )
+            ).slice(0, 10); // 增加顯示數量到 10 個
 
             if (filtered.length > 0 || searchTerm === '') {
                 suggestions.classList.remove('hidden-section');

@@ -2829,14 +2829,21 @@ exports.onEventCreate = onDocumentCreated(
 
         console.log(`New event created: ${eventId}`, eventData);
 
-        // 取得被指派的用戶
+        // 取得被指派的用戶 + 建立者本人
         const targets = eventData.targets || [];
-        if (targets.length === 0) return;
+        const authorId = eventData.authorId;
+
+        // 合併 targets 和 authorId（使用 Set 去除重複）
+        const allRecipients = [...new Set([...targets, authorId].filter(Boolean))];
+
+        if (allRecipients.length === 0) return;
+
+        console.log(`[LINE] Will notify ${allRecipients.length} users (including creator)`);
 
         // 查詢這些用戶的 LINE ID
         const usersRef = db.collection(`artifacts/${APP_ID}/public/data/users`);
 
-        for (const targetId of targets) {
+        for (const targetId of allRecipients) {
             try {
                 const userDoc = await usersRef.doc(targetId).get();
                 if (!userDoc.exists) continue;
