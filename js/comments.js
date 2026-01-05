@@ -1,4 +1,4 @@
-// Comments Module - Event Discussion & @Mentions
+﻿// Comments Module - Event Discussion & @Mentions
 import { db, appId } from './firebase-config.js';
 import { collection, doc, addDoc, updateDoc, deleteDoc, onSnapshot, query, orderBy, Timestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { showAlert, showConfirm } from '../components/modal.js';
@@ -53,12 +53,12 @@ export function stopCommentsListener() {
 export async function addComment(eventId, content) {
     const user = getAppCurrentUser();
     if (!user) {
-        showAlert('請先登入');
+        showAlert('隢??餃');
         return null;
     }
 
     if (!content.trim()) {
-        showAlert('請輸入評論內容');
+        showAlert('隢撓?亥?隢摰?);
         return null;
     }
 
@@ -86,7 +86,7 @@ export async function addComment(eventId, content) {
         return docRef.id;
     } catch (err) {
         console.error('[Comments] Add failed:', err);
-        showAlert('新增評論失敗：' + err.message);
+        showAlert('?啣?閰?憭望?嚗? + err.message);
         return null;
     }
 }
@@ -97,7 +97,7 @@ export async function editComment(eventId, commentId, newContent) {
     const comment = _currentEventComments.find(c => c.id === commentId);
 
     if (!comment || comment.authorId !== user?.id) {
-        showAlert('您只能編輯自己的評論');
+        showAlert('?典?賜楊頛航撌梁?閰?');
         return false;
     }
 
@@ -113,7 +113,7 @@ export async function editComment(eventId, commentId, newContent) {
         return true;
     } catch (err) {
         console.error('[Comments] Edit failed:', err);
-        showAlert('編輯評論失敗：' + err.message);
+        showAlert('蝺刻摩閰?憭望?嚗? + err.message);
         return false;
     }
 }
@@ -124,7 +124,7 @@ export async function deleteComment(eventId, commentId) {
     const comment = _currentEventComments.find(c => c.id === commentId);
 
     if (!comment || (comment.authorId !== user?.id && user?.role !== 'admin')) {
-        showAlert('您只能刪除自己的評論');
+        showAlert('?典?賢?方撌梁?閰?');
         return false;
     }
 
@@ -136,7 +136,7 @@ export async function deleteComment(eventId, commentId) {
         return true;
     } catch (err) {
         console.error('[Comments] Delete failed:', err);
-        showAlert('刪除評論失敗：' + err.message);
+        showAlert('?芷閰?憭望?嚗? + err.message);
         return false;
     }
 }
@@ -154,7 +154,7 @@ function extractMentions(content) {
         const mentionName = match[1];
 
         // Check for @all
-        if (mentionName === '全體' || mentionName === 'all') {
+        if (mentionName === '?券?' || mentionName === 'all') {
             return users.map(u => u.id); // Return all user IDs
         }
 
@@ -203,28 +203,28 @@ export function renderCommentsSection() {
     container.innerHTML = `
         <div class="mt-4 pt-4 border-t-2 border-gray-200">
             <h4 style="font-family: 'VT323', monospace; font-size: 20px; margin-bottom: 12px;">
-                💬 評論 (${_currentEventComments.length})
+                ? 閰? (${_currentEventComments.length})
             </h4>
             
             <!-- Comment Input -->
             <div class="mb-4">
                 <div style="position: relative;">
                     <textarea id="comment-input" class="pixel-input" 
-                        placeholder="輸入評論... (輸入 @ 可提及其他人)"
+                        placeholder="頛詨閰?... (頛詨 @ ?舀??隞犖)"
                         style="width: 100%; min-height: 60px; resize: vertical; font-size: 16px;"></textarea>
                     <div id="mention-suggestions" class="hidden-section"
                         style="position: absolute; bottom: 100%; left: 0; right: 0; background: white; border: 2px solid #2d3436; max-height: 150px; overflow-y: auto; z-index: 100;">
                     </div>
                 </div>
                 <button onclick="submitComment()" class="pixel-btn pixel-btn-success mt-2" style="padding: 6px 16px;">
-                    📤 發送
+                    ? ?潮?
                 </button>
             </div>
             
             <!-- Comments List -->
             <div id="comments-list" class="space-y-3">
                 ${_currentEventComments.length === 0 ?
-            '<p class="text-gray-400 text-center py-4" style="font-family: \'VT323\', monospace;">還沒有評論，來說點什麼吧！</p>' :
+            '<p class="text-gray-400 text-center py-4" style="font-family: \'VT323\', monospace;">????隢?靘牧暺?暻澆嚗?/p>' :
             _currentEventComments.map(comment => renderComment(comment, user, users)).join('')
         }
             </div>
@@ -244,7 +244,7 @@ function renderComment(comment, currentUser, users) {
 
     const createdDate = new Date(comment.createdAt);
     const timeStr = createdDate.toLocaleDateString('zh-TW') + ' ' + createdDate.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' });
-    const editedTag = comment.editedAt ? ' (已編輯)' : '';
+    const editedTag = comment.editedAt ? ' (撌脩楊頛?' : '';
 
     // Highlight mentions in content
     let displayContent = escapeHtml(comment.content);
@@ -259,8 +259,8 @@ function renderComment(comment, currentUser, users) {
                 </div>
                 ${(canEdit || canDelete) ? `
                     <div class="flex gap-2">
-                        ${canEdit ? `<button onclick="editCommentPrompt('${comment.id}')" style="font-size: 14px; cursor: pointer; background: none; border: none; color: #0984e3;">✏️</button>` : ''}
-                        ${canDelete ? `<button onclick="deleteCommentConfirm('${comment.id}')" style="font-size: 14px; cursor: pointer; background: none; border: none; color: #e17055;">🗑️</button>` : ''}
+                        ${canEdit ? `<button onclick="editCommentPrompt('${comment.id}')" style="font-size: 14px; cursor: pointer; background: none; border: none; color: #0984e3;">??</button>` : ''}
+                        ${canDelete ? `<button onclick="deleteCommentConfirm('${comment.id}')" style="font-size: 14px; cursor: pointer; background: none; border: none; color: #e17055;">??儭?/button>` : ''}
                     </div>
                 ` : ''}
             </div>
@@ -276,7 +276,7 @@ function setupMentionAutocomplete() {
     if (!input || !suggestions) return;
 
     input.addEventListener('input', (e) => {
-        // 每次輸入時動態獲取最新的用戶列表
+        // 瘥活頛詨??????啁??冽?”
         const users = globalUsers();
 
         const text = e.target.value;
@@ -293,15 +293,15 @@ function setupMentionAutocomplete() {
                     u.name.toLowerCase().includes(searchTerm) ||
                     (u.username && u.username.toLowerCase().includes(searchTerm))
                 )
-            ).slice(0, 10); // 增加顯示數量到 10 個
+            ).slice(0, 10); // 憓?憿舐內?賊???10 ??
 
             if (filtered.length > 0 || searchTerm === '') {
                 suggestions.classList.remove('hidden-section');
                 suggestions.innerHTML = `
-                    <div onclick="insertMention('全體')" 
+                    <div onclick="insertMention('?券?')" 
                         style="padding: 8px 12px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 16px;"
                         onmouseover="this.style.background='#f0f0f0'" onmouseout="this.style.background='white'">
-                        <span style="font-size: 18px;">📢</span> @全體
+                        <span style="font-size: 18px;">?</span> @?券?
                     </div>
                     ${filtered.map(u => `
                         <div onclick="insertMention('${u.name}')" 
@@ -368,11 +368,11 @@ window.insertMention = function (name) {
 window.editCommentPrompt = function (commentId) {
     const comment = _currentEventComments.find(c => c.id === commentId);
     if (!comment) {
-        showAlert('找不到評論');
+        showAlert('?曆??啗?隢?);
         return;
     }
 
-    // 創建編輯 Modal
+    // ?萄遣蝺刻摩 Modal
     const modal = document.createElement('div');
     modal.id = 'edit-comment-modal';
     modal.style.cssText = 'position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 16px;';
@@ -380,7 +380,7 @@ window.editCommentPrompt = function (commentId) {
     modal.innerHTML = `
         <div style="background: white; border-radius: 12px; width: 100%; max-width: 450px; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
             <div style="padding: 16px; border-bottom: 2px solid #dfe6e9;">
-                <h3 style="font-family: 'VT323', monospace; font-size: 24px; margin: 0; color: #2d3436;">✏️ 編輯評論</h3>
+                <h3 style="font-family: 'VT323', monospace; font-size: 24px; margin: 0; color: #2d3436;">?? 蝺刻摩閰?</h3>
             </div>
             <div style="padding: 16px;">
                 <textarea id="edit-comment-content" class="pixel-input" 
@@ -388,10 +388,10 @@ window.editCommentPrompt = function (commentId) {
             </div>
             <div style="padding: 16px; border-top: 2px solid #dfe6e9; display: flex; gap: 12px; justify-content: flex-end;">
                 <button onclick="closeEditCommentModal()" class="pixel-btn pixel-btn-secondary" style="padding: 8px 20px;">
-                    取消
+                    ??
                 </button>
                 <button onclick="saveEditComment('${commentId}')" class="pixel-btn pixel-btn-success" style="padding: 8px 20px;">
-                    💾 儲存
+                    ? ?脣?
                 </button>
             </div>
         </div>
@@ -399,7 +399,7 @@ window.editCommentPrompt = function (commentId) {
 
     document.body.appendChild(modal);
 
-    // 聚焦到文字框並移動游標到最後
+    // ??唳?摮?銝衣宏?虜璅?敺?
     setTimeout(() => {
         const textarea = document.getElementById('edit-comment-content');
         if (textarea) {
@@ -420,24 +420,25 @@ window.saveEditComment = async function (commentId) {
 
     const newContent = textarea.value.trim();
     if (!newContent) {
-        showAlert('評論內容不能為空');
+        showAlert('閰??批捆銝?箇征');
         return;
     }
 
     const success = await editComment(_currentCommentEventId, commentId, newContent);
     if (success) {
         closeEditCommentModal();
-        showAlert('評論已更新！');
+        showAlert('閰?撌脫?堆?');
     }
 };
 
 window.deleteCommentConfirm = function (commentId) {
-    showConfirm('確定要刪除這則評論嗎？', async () => {
+    showConfirm('蝣箏?閬?日?閰???', async () => {
         const success = await deleteComment(_currentCommentEventId, commentId);
         if (success) {
-            showAlert('評論已刪除！');
+            showAlert('閰?撌脣?歹?');
         }
     });
 };
 
 export { _currentEventComments as currentEventComments };
+

@@ -142,7 +142,7 @@ function createReminderQuickReply(eventId) {
 function createMentionQuickReply() {
     return {
         items: [
-            createQuickReplyUriItem("📍 查看評論", LINK_URL)
+            createQuickReplyUriItem("📍 查看留言", LINK_URL)
         ]
     };
 }
@@ -543,7 +543,7 @@ function createMentionFlexMessage(authorName, eventTitle, contentPreview) {
                             },
                             {
                                 type: "text",
-                                text: " 在評論中提及了您",
+                                text: " 在留言中提及了您",
                                 size: "md",
                                 color: "#333333"
                             }
@@ -585,7 +585,7 @@ function createMentionFlexMessage(authorName, eventTitle, contentPreview) {
                         type: "button",
                         action: {
                             type: "uri",
-                            label: "💬 查看評論",
+                            label: "💬 查看留言",
                             uri: LINK_URL
                         },
                         style: "primary",
@@ -601,12 +601,12 @@ function createMentionFlexMessage(authorName, eventTitle, contentPreview) {
 }
 
 /**
- * 評論編輯通知 - Flex Message
+ * 留言編輯通知 - Flex Message
  */
 function createCommentEditFlexMessage(authorName, eventTitle, contentPreview) {
     return {
         type: "flex",
-        altText: `✏️ ${authorName} 編輯了提及您的評論`,
+        altText: `✏️ ${authorName} 編輯了提及您的留言`,
         contents: {
             type: "bubble",
             size: "kilo",
@@ -629,7 +629,7 @@ function createCommentEditFlexMessage(authorName, eventTitle, contentPreview) {
                             },
                             {
                                 type: "text",
-                                text: "評論已編輯",
+                                text: "留言已編輯",
                                 color: "#ffffff",
                                 size: "lg",
                                 weight: "bold",
@@ -660,7 +660,7 @@ function createCommentEditFlexMessage(authorName, eventTitle, contentPreview) {
                             },
                             {
                                 type: "text",
-                                text: " 編輯了提及您的評論",
+                                text: " 編輯了提及您的留言",
                                 size: "md",
                                 color: "#333333"
                             }
@@ -716,12 +716,12 @@ function createCommentEditFlexMessage(authorName, eventTitle, contentPreview) {
 }
 
 /**
- * 評論刪除通知 - Flex Message
+ * 留言刪除通知 - Flex Message
  */
 function createCommentDeleteFlexMessage(authorName, eventTitle, contentPreview) {
     return {
         type: "flex",
-        altText: `🗑️ ${authorName} 刪除了提及您的評論`,
+        altText: `🗑️ ${authorName} 刪除了提及您的留言`,
         contents: {
             type: "bubble",
             size: "kilo",
@@ -744,7 +744,7 @@ function createCommentDeleteFlexMessage(authorName, eventTitle, contentPreview) 
                             },
                             {
                                 type: "text",
-                                text: "評論已刪除",
+                                text: "留言已刪除",
                                 color: "#ffffff",
                                 size: "lg",
                                 weight: "bold",
@@ -775,7 +775,7 @@ function createCommentDeleteFlexMessage(authorName, eventTitle, contentPreview) 
                             },
                             {
                                 type: "text",
-                                text: " 刪除了提及您的評論",
+                                text: " 刪除了提及您的留言",
                                 size: "md",
                                 color: "#333333"
                             }
@@ -2683,7 +2683,7 @@ function createFeaturesFlex() {
                     createFeatureItem("📅", "行程管理", "新增、編輯、刪除行程，設定日期時間"),
                     createFeatureItem("👥", "人員指派", "將行程指派給特定處室或人員"),
                     createFeatureItem("🔔", "LINE 通知", "即時推播新行程、提醒、@提及"),
-                    createFeatureItem("💬", "評論互動", "在行程中留言討論，支援 @提及"),
+                    createFeatureItem("💬", "留言互動", "在行程中留言討論，支援 @提及"),
                     createFeatureItem("⏰", "智慧提醒", "自訂提醒時間，到點自動通知"),
                     createFeatureItem("📊", "統計報表", "查看行程完成率、處室分析"),
                     createFeatureItem("🗓️", "共用日曆", "所有成員共享行程日曆")
@@ -3324,7 +3324,7 @@ exports.onEventDelete = onDocumentDeleted(
 );
 
 /**
- * 新評論建立時通知被 @提及的用戶
+ * 新留言建立時通知被 @提及的用戶
  */
 exports.onCommentCreate = onDocumentCreated(
     {
@@ -3378,7 +3378,7 @@ exports.onCommentCreate = onDocumentCreated(
 );
 
 /**
- * 評論更新時通知新增的 @提及用戶
+ * 留言更新時通知新增的 @提及用戶
  */
 exports.onCommentUpdate = onDocumentUpdated(
     {
@@ -3425,7 +3425,7 @@ exports.onCommentUpdate = onDocumentUpdated(
 
                 if (!lineUserId || !lineNotifyEnabled) continue;
 
-                // 發送 LINE 通知 (使用評論編輯的 Flex Message)
+                // 發送 LINE 通知 (使用留言編輯的 Flex Message)
                 const contentPreview = afterData.content.substring(0, 50) + (afterData.content.length > 50 ? "..." : "");
                 const message = createCommentEditFlexMessage(afterData.authorName, eventTitle, contentPreview);
 
@@ -3439,7 +3439,7 @@ exports.onCommentUpdate = onDocumentUpdated(
 );
 
 /**
- * 評論刪除時通知被 @提及的用戶
+ * 留言刪除時通知被 @提及的用戶
  */
 exports.onCommentDelete = onDocumentDeleted(
     {
@@ -3476,7 +3476,7 @@ exports.onCommentDelete = onDocumentDeleted(
 
                 if (!lineUserId || !lineNotifyEnabled) continue;
 
-                // 發送 LINE 通知 (使用評論刪除的 Flex Message)
+                // 發送 LINE 通知 (使用留言刪除的 Flex Message)
                 const contentPreview = commentData.content.substring(0, 50) + (commentData.content.length > 50 ? "..." : "");
                 const message = createCommentDeleteFlexMessage(commentData.authorName, eventTitle, contentPreview);
 
