@@ -103,14 +103,24 @@ function createEventQuickReply(eventId, attachments = []) {
 
 /**
  * 建立行程更新通知的 Quick Reply
+ * @param {string} eventId - 行程 ID
+ * @param {Array} attachments - 附件陣列 (可選)
  */
-function createEventUpdateQuickReply(eventId) {
-    return {
-        items: [
-            createQuickReplyItem("✅ 收到", `收到 ${eventId}`),
-            createQuickReplyUriItem("📍 查看詳情", LINK_URL)
-        ]
-    };
+function createEventUpdateQuickReply(eventId, attachments = []) {
+    const items = [
+        createQuickReplyItem("✅ 收到", `收到 ${eventId}`),
+        createQuickReplyUriItem("📍 查看詳情", LINK_URL)
+    ];
+
+    // 如果有附件，加入附件連結按鈕
+    if (attachments && attachments.length > 0) {
+        const firstAttachment = attachments[0];
+        if (firstAttachment.url) {
+            items.push(createQuickReplyUriItem("📎 查看附件", firstAttachment.url));
+        }
+    }
+
+    return { items };
 }
 
 /**
@@ -1293,10 +1303,11 @@ function createEventUpdateFlexMessage(eventData, changedFields, eventId = null) 
         }
     };
 
-    // Quick Reply 暫時停用 (調試中)
-    // if (eventId) {
-    //     message.quickReply = createEventUpdateQuickReply(eventId);
-    // }
+    // 加入 Quick Reply 按鈕 (包含附件連結)
+    if (eventId) {
+        const attachments = eventData.attachments || [];
+        message.quickReply = createEventUpdateQuickReply(eventId, attachments);
+    }
 
     return message;
 }
@@ -2881,6 +2892,20 @@ exports.onEventUpdate = onDocumentUpdated(
 
         if (!hasImportantChanges) {
             console.log('No important changes detected, skipping notification');
+            return;
+        }
+
+        // 特殊情況：如果只有附件變更，且是從無附件變成有附件（新建行程後的初始附件上傳）
+        // 這種情況不應該發送「更新通知」，因為 onCreate 已經發送過通知了
+        const onlyAttachmentChanged = changedFields.length === 1 && changedFields[0] === 'attachments';
+        const beforeAttachments = beforeData.attachments || [];
+        const afterAttachments = afterData.attachments || [];
+        const isInitialAttachmentUpload = onlyAttachmentChanged &&
+            beforeAttachments.length === 0 &&
+            afterAttachments.length > 0;
+
+        if (isInitialAttachmentUpload) {
+            console.log('Initial attachment upload detected (new event), skipping update notification');
             return;
         }
 

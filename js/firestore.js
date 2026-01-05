@@ -1,5 +1,5 @@
 // Firestore Database Operations Module - With Offline Caching
-import { collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, setDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { db, appId } from './firebase-config.js';
 import { showAlert } from '../components/modal.js';
 import { cacheUsers, cacheEvents, getCachedUsers, getCachedEvents, isOnline, registerNetworkHandlers } from './cache-manager.js';
@@ -159,7 +159,32 @@ export async function handleFirebaseAddEvent(e) {
     btn.innerText = "傳送中...";
 
     try {
-        // Prepare event data
+        // 預先生成文件 ID（用於附件上傳路徑）
+        const eventsRef = collection(db, 'artifacts', appId, 'public', 'data', 'school_events');
+        const newDocRef = doc(eventsRef); // 自動生成新的文件 ID
+        const newEventId = newDocRef.id;
+
+        // 先處理附件上傳（如果有的話）
+        let attachments = [];
+        const fileInput = document.getElementById('evt-file');
+        if (fileInput && fileInput.files.length > 0 && window.uploadAttachment) {
+            const file = fileInput.files[0];
+            try {
+                btn.innerText = "上傳附件中...";
+                const attachment = await window.uploadAttachment(file, newEventId);
+                if (attachment) {
+                    attachments = [attachment];
+                    console.log('[Firestore] Attachment uploaded for new event:', newEventId);
+                }
+            } catch (uploadErr) {
+                console.error('[Firestore] Attachment upload failed:', uploadErr);
+                // 繼續建立行程，只是沒有附件
+            }
+        }
+
+        btn.innerText = "建立行程中...";
+
+        // 準備行程資料（包含附件）
         const eventData = {
             authorId: _appCurrentUser.id,
             authorName: _appCurrentUser.name,
@@ -177,32 +202,12 @@ export async function handleFirebaseAddEvent(e) {
             lineNotifyEnabled, // LINE 提醒開關
             completedBy: [],
             readBy: [],
+            attachments, // 附件（如果有的話，已經包含在初始資料中）
             createdAt: new Date().toISOString()
         };
 
-        // Add to Firestore first
-        const eventsRef = collection(db, 'artifacts', appId, 'public', 'data', 'school_events');
-        const docRef = await addDoc(eventsRef, eventData);
-
-        // Handle file upload if selected (after we have the event ID)
-        const fileInput = document.getElementById('evt-file');
-        if (fileInput && fileInput.files.length > 0 && window.uploadAttachment) {
-            const file = fileInput.files[0];
-            try {
-                const attachment = await window.uploadAttachment(file, docRef.id);
-                if (attachment) {
-                    // Update event with attachment info
-                    const { updateDoc, doc } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
-                    await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'school_events', docRef.id), {
-                        attachments: [attachment]
-                    });
-                    console.log('[Firestore] Attachment added to event:', docRef.id);
-                }
-            } catch (uploadErr) {
-                console.error('[Firestore] Attachment upload failed:', uploadErr);
-                // Continue anyway, event was already created
-            }
-        }
+        // 使用 setDoc 建立行程（使用預生成的 ID，包含附件資訊）
+        await setDoc(newDocRef, eventData);
 
         // Show success message with LINE notify status
         if (lineNotifyEnabled) {
