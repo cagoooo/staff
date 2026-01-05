@@ -1,44 +1,54 @@
-/* Dark Mode Theme CSS */
+/* Dark Mode Theme CSS - Enhanced Contrast Version */
+/* Supports both manual toggle and auto-detection */
 
-/* Dark theme variables */
-[data-theme="dark"] {
-    --pixel-primary: #a29bfe;
-    --pixel-secondary: #ff7675;
-    --pixel-accent: #55efc4;
-    --pixel-warning: #ffeaa7;
-    --pixel-danger: #fab1a0;
+/* ==============================================
+   DARK MODE SELECTORS
+   - [data-theme="dark"] = Manual dark mode
+   - @media (prefers-color-scheme: dark) :root:not([data-theme="light"]) = Auto dark mode
+   ============================================== */
+
+/* Dark theme CSS variables */
+[data-theme="dark"],
+html:not([data-theme="light"]).dark-auto {
+    --pixel-primary: #b8b0ff;
+    --pixel-secondary: #ff8a8a;
+    --pixel-accent: #6fffd6;
+    --pixel-warning: #fff3b0;
+    --pixel-danger: #ffb8a8;
     --pixel-bg-dark: #1a1a2e;
     --pixel-bg-light: #16213e;
     --pixel-bg-card: #1f1f3d;
-    --pixel-text-dark: #e8e8e8;
-    --pixel-text-muted: #a0a0a0;
-    --pixel-border: 4px solid #3d3d5c;
+    --pixel-text-dark: #f0f0f0;
+    --pixel-text-muted: #c0c0c0;
+    --pixel-border: 4px solid #4d4d7a;
     --pixel-shadow: 4px 4px 0 #0a0a1a;
 }
 
-/* Auto dark mode detection */
 @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
-        --pixel-primary: #a29bfe;
-        --pixel-secondary: #ff7675;
-        --pixel-accent: #55efc4;
-        --pixel-warning: #ffeaa7;
-        --pixel-danger: #fab1a0;
+        --pixel-primary: #b8b0ff;
+        --pixel-secondary: #ff8a8a;
+        --pixel-accent: #6fffd6;
+        --pixel-warning: #fff3b0;
+        --pixel-danger: #ffb8a8;
         --pixel-bg-dark: #1a1a2e;
         --pixel-bg-light: #16213e;
         --pixel-bg-card: #1f1f3d;
-        --pixel-text-dark: #e8e8e8;
-        --pixel-text-muted: #a0a0a0;
-        --pixel-border: 4px solid #3d3d5c;
+        --pixel-text-dark: #f0f0f0;
+        --pixel-text-muted: #c0c0c0;
+        --pixel-border: 4px solid #4d4d7a;
         --pixel-shadow: 4px 4px 0 #0a0a1a;
     }
 }
 
-/* Dark mode body background */
+/* ==============================================
+   BODY & MAIN APP
+   ============================================== */
+
 [data-theme="dark"] body,
 [data-theme="dark"] #main-app {
     background-color: #0f0f23;
-    color: #e8e8e8;
+    color: #f0f0f0;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -46,111 +56,614 @@
     :root:not([data-theme="light"]) body,
     :root:not([data-theme="light"]) #main-app {
         background-color: #0f0f23;
-        color: #e8e8e8;
+        color: #f0f0f0;
     }
 }
 
-/* Dark mode sidebar */
+/* ==============================================
+   SIDEBAR
+   ============================================== */
+
 [data-theme="dark"] #sidebar {
-    background: #1a1a2e;
+    background: linear-gradient(180deg, #1a1a2e 0%, #0f0f23 100%);
 }
 
 @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) #sidebar {
-        background: #1a1a2e;
+        background: linear-gradient(180deg, #1a1a2e 0%, #0f0f23 100%);
     }
 }
 
-/* Dark mode content cards */
+/* ==============================================
+   CONTENT CARDS
+   ============================================== */
+
 [data-theme="dark"] .content-card {
-    background: #1f1f3d;
-    border-color: #3d3d5c;
-    color: #e8e8e8;
+    background: #1f1f3d !important;
+    border-color: #4d4d7a !important;
+    color: #f0f0f0 !important;
+}
+
+[data-theme="dark"] .content-card h2,
+[data-theme="dark"] .content-card h3,
+[data-theme="dark"] .content-card h4 {
+    color: #ffffff !important;
 }
 
 @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) .content-card {
-        background: #1f1f3d;
-        border-color: #3d3d5c;
-        color: #e8e8e8;
+        background: #1f1f3d !important;
+        border-color: #4d4d7a !important;
+        color: #f0f0f0 !important;
+    }
+
+    :root:not([data-theme="light"]) .content-card h2,
+    :root:not([data-theme="light"]) .content-card h3,
+    :root:not([data-theme="light"]) .content-card h4 {
+        color: #ffffff !important;
     }
 }
 
-/* Dark mode inputs */
-[data-theme="dark"] .pixel-input {
-    background: #2d2d4a;
-    color: #e8e8e8;
-    border-color: #4d4d6a;
+/* ==============================================
+   INPUTS & SELECTS
+   ============================================== */
+
+[data-theme="dark"] .pixel-input,
+[data-theme="dark"] select {
+    background: #2d2d4a !important;
+    color: #f0f0f0 !important;
+    border-color: #5d5d8a !important;
+}
+
+[data-theme="dark"] .pixel-input::placeholder {
+    color: #8888aa !important;
+}
+
+[data-theme="dark"] .pixel-label,
+[data-theme="dark"] label {
+    color: #d0d0e8 !important;
 }
 
 @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) .pixel-input {
-        background: #2d2d4a;
-        color: #e8e8e8;
-        border-color: #4d4d6a;
+
+    :root:not([data-theme="light"]) .pixel-input,
+    :root:not([data-theme="light"]) select {
+        background: #2d2d4a !important;
+        color: #f0f0f0 !important;
+        border-color: #5d5d8a !important;
+    }
+
+    :root:not([data-theme="light"]) .pixel-input::placeholder {
+        color: #8888aa !important;
+    }
+
+    :root:not([data-theme="light"]) .pixel-label,
+    :root:not([data-theme="light"]) label {
+        color: #d0d0e8 !important;
     }
 }
 
-/* Dark mode modals */
+/* ==============================================
+   MODALS
+   ============================================== */
+
 [data-theme="dark"] #sys-modal>div,
-[data-theme="dark"] #event-modal>div {
-    background: #1f1f3d;
-    color: #e8e8e8;
+[data-theme="dark"] #event-modal>div,
+[data-theme="dark"] .modal-content {
+    background: #1f1f3d !important;
+    color: #f0f0f0 !important;
+}
+
+[data-theme="dark"] #event-modal {
+    background: rgba(0, 0, 0, 0.8) !important;
+}
+
+[data-theme="dark"] #event-modal h2,
+[data-theme="dark"] #event-modal h3,
+[data-theme="dark"] #event-modal-title {
+    color: #ffffff !important;
+}
+
+[data-theme="dark"] #event-modal p,
+[data-theme="dark"] #event-modal span {
+    color: #d0d0e8 !important;
 }
 
 @media (prefers-color-scheme: dark) {
 
     :root:not([data-theme="light"]) #sys-modal>div,
-    :root:not([data-theme="light"]) #event-modal>div {
-        background: #1f1f3d;
-        color: #e8e8e8;
+    :root:not([data-theme="light"]) #event-modal>div,
+    :root:not([data-theme="light"]) .modal-content {
+        background: #1f1f3d !important;
+        color: #f0f0f0 !important;
+    }
+
+    :root:not([data-theme="light"]) #event-modal {
+        background: rgba(0, 0, 0, 0.8) !important;
+    }
+
+    :root:not([data-theme="light"]) #event-modal h2,
+    :root:not([data-theme="light"]) #event-modal h3,
+    :root:not([data-theme="light"]) #event-modal-title {
+        color: #ffffff !important;
+    }
+
+    :root:not([data-theme="light"]) #event-modal p,
+    :root:not([data-theme="light"]) #event-modal span {
+        color: #d0d0e8 !important;
     }
 }
 
-/* Dark mode header */
+/* ==============================================
+   HEADER
+   ============================================== */
+
 [data-theme="dark"] main>header {
-    background: #2d2d5a;
+    background: #2d2d5a !important;
+    border-color: #4d4d7a !important;
+}
+
+[data-theme="dark"] #page-title {
+    color: #b8b0ff !important;
+}
+
+[data-theme="dark"] #current-date {
+    color: #e0e0f0 !important;
 }
 
 @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) main>header {
-        background: #2d2d5a;
+        background: #2d2d5a !important;
+        border-color: #4d4d7a !important;
+    }
+
+    :root:not([data-theme="light"]) #page-title {
+        color: #b8b0ff !important;
+    }
+
+    :root:not([data-theme="light"]) #current-date {
+        color: #e0e0f0 !important;
     }
 }
 
-/* Dark mode calendar cells */
+/* ==============================================
+   CALENDAR
+   ============================================== */
+
 [data-theme="dark"] .calendar-day {
-    background: #1f1f3d;
-    border-color: #3d3d5c;
+    background: #1f1f3d !important;
+    border-color: #4d4d7a !important;
+    color: #f0f0f0 !important;
+}
+
+[data-theme="dark"] .calendar-day.empty {
+    background: #16163a !important;
+}
+
+[data-theme="dark"] .calendar-grid {
+    background: #3d3d5c !important;
 }
 
 @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) .calendar-day {
-        background: #1f1f3d;
-        border-color: #3d3d5c;
+        background: #1f1f3d !important;
+        border-color: #4d4d7a !important;
+        color: #f0f0f0 !important;
+    }
+
+    :root:not([data-theme="light"]) .calendar-day.empty {
+        background: #16163a !important;
+    }
+
+    :root:not([data-theme="light"]) .calendar-grid {
+        background: #3d3d5c !important;
     }
 }
 
-/* Dark mode navigation buttons */
+/* ==============================================
+   NAVIGATION BUTTONS
+   ============================================== */
+
 [data-theme="dark"] .nav-btn {
-    color: #e8e8e8;
+    color: #e0e0f0 !important;
 }
 
 [data-theme="dark"] .nav-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(184, 176, 255, 0.15) !important;
+    color: #b8b0ff !important;
+}
+
+[data-theme="dark"] .nav-btn.active {
+    background: #4d4d7a !important;
+    color: #ffffff !important;
 }
 
 @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) .nav-btn {
-        color: #e8e8e8;
+        color: #e0e0f0 !important;
     }
 
     :root:not([data-theme="light"]) .nav-btn:hover {
-        background: rgba(255, 255, 255, 0.1);
+        background: rgba(184, 176, 255, 0.15) !important;
+        color: #b8b0ff !important;
+    }
+
+    :root:not([data-theme="light"]) .nav-btn.active {
+        background: #4d4d7a !important;
+        color: #ffffff !important;
     }
 }
 
-/* Theme toggle button style */
+/* ==============================================
+   ANNOUNCEMENT & EVENT LISTS
+   ============================================== */
+
+[data-theme="dark"] #announcement-list>div,
+[data-theme="dark"] #important-events-list>div,
+[data-theme="dark"] #completed-events-list>div,
+[data-theme="dark"] #day-events-list>div {
+    background: #2a2a4a !important;
+}
+
+[data-theme="dark"] #announcement-list>div:hover,
+[data-theme="dark"] #important-events-list>div:hover,
+[data-theme="dark"] #completed-events-list>div:hover,
+[data-theme="dark"] #day-events-list>div:hover {
+    background: #35355a !important;
+}
+
+[data-theme="dark"] #announcement-list h4,
+[data-theme="dark"] #important-events-list .text-lg,
+[data-theme="dark"] #completed-events-list h4,
+[data-theme="dark"] #day-events-list h4 {
+    color: #ffffff !important;
+}
+
+[data-theme="dark"] #announcement-list .bg-purple-200,
+[data-theme="dark"] #completed-events-list .bg-green-200 {
+    background: #6c5ce7 !important;
+    color: #ffffff !important;
+    font-weight: bold !important;
+}
+
+[data-theme="dark"] #completed-events-list .bg-green-200 {
+    background: #00b894 !important;
+}
+
+[data-theme="dark"] #announcement-list .text-gray-600,
+[data-theme="dark"] #announcement-list .text-sm,
+[data-theme="dark"] #important-events-list .text-gray-600,
+[data-theme="dark"] #completed-events-list .text-gray-500,
+[data-theme="dark"] #completed-events-list .text-gray-600,
+[data-theme="dark"] #day-events-list .text-gray-600 {
+    color: #b0b0d0 !important;
+}
+
+[data-theme="dark"] #important-events-list>div>div:first-child {
+    background: #3d3d6a !important;
+    color: #ffffff !important;
+}
+
+@media (prefers-color-scheme: dark) {
+
+    :root:not([data-theme="light"]) #announcement-list>div,
+    :root:not([data-theme="light"]) #important-events-list>div,
+    :root:not([data-theme="light"]) #completed-events-list>div,
+    :root:not([data-theme="light"]) #day-events-list>div {
+        background: #2a2a4a !important;
+    }
+
+    :root:not([data-theme="light"]) #announcement-list>div:hover,
+    :root:not([data-theme="light"]) #important-events-list>div:hover,
+    :root:not([data-theme="light"]) #completed-events-list>div:hover,
+    :root:not([data-theme="light"]) #day-events-list>div:hover {
+        background: #35355a !important;
+    }
+
+    :root:not([data-theme="light"]) #announcement-list h4,
+    :root:not([data-theme="light"]) #important-events-list .text-lg,
+    :root:not([data-theme="light"]) #completed-events-list h4,
+    :root:not([data-theme="light"]) #day-events-list h4 {
+        color: #ffffff !important;
+    }
+
+    :root:not([data-theme="light"]) #announcement-list .bg-purple-200,
+    :root:not([data-theme="light"]) #completed-events-list .bg-green-200 {
+        background: #6c5ce7 !important;
+        color: #ffffff !important;
+        font-weight: bold !important;
+    }
+
+    :root:not([data-theme="light"]) #completed-events-list .bg-green-200 {
+        background: #00b894 !important;
+    }
+
+    :root:not([data-theme="light"]) #announcement-list .text-gray-600,
+    :root:not([data-theme="light"]) #announcement-list .text-sm,
+    :root:not([data-theme="light"]) #important-events-list .text-gray-600,
+    :root:not([data-theme="light"]) #completed-events-list .text-gray-500,
+    :root:not([data-theme="light"]) #completed-events-list .text-gray-600,
+    :root:not([data-theme="light"]) #day-events-list .text-gray-600 {
+        color: #b0b0d0 !important;
+    }
+
+    :root:not([data-theme="light"]) #important-events-list>div>div:first-child {
+        background: #3d3d6a !important;
+        color: #ffffff !important;
+    }
+}
+
+/* ==============================================
+   GRAY TEXT IMPROVEMENTS
+   ============================================== */
+
+[data-theme="dark"] .text-gray-400 {
+    color: #8888aa !important;
+}
+
+[data-theme="dark"] .text-gray-500 {
+    color: #9999bb !important;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .text-gray-400 {
+        color: #8888aa !important;
+    }
+
+    :root:not([data-theme="light"]) .text-gray-500 {
+        color: #9999bb !important;
+    }
+}
+
+/* ==============================================
+   DEPARTMENT FILTER BUTTONS
+   ============================================== */
+
+[data-theme="dark"] .dept-filter-btn,
+[data-theme="dark"] .target-filter-btn {
+    background: #2a2a4a !important;
+    color: #e0e0f0 !important;
+}
+
+[data-theme="dark"] .dept-filter-btn:hover,
+[data-theme="dark"] .target-filter-btn:hover {
+    background: #3a3a5a !important;
+}
+
+[data-theme="dark"] .dept-filter-btn.active,
+[data-theme="dark"] .target-filter-btn.active {
+    background: #4d4d7a !important;
+    color: #ffffff !important;
+}
+
+@media (prefers-color-scheme: dark) {
+
+    :root:not([data-theme="light"]) .dept-filter-btn,
+    :root:not([data-theme="light"]) .target-filter-btn {
+        background: #2a2a4a !important;
+        color: #e0e0f0 !important;
+    }
+
+    :root:not([data-theme="light"]) .dept-filter-btn:hover,
+    :root:not([data-theme="light"]) .target-filter-btn:hover {
+        background: #3a3a5a !important;
+    }
+
+    :root:not([data-theme="light"]) .dept-filter-btn.active,
+    :root:not([data-theme="light"]) .target-filter-btn.active {
+        background: #4d4d7a !important;
+        color: #ffffff !important;
+    }
+}
+
+/* ==============================================
+   NOTIFICATION LIST
+   ============================================== */
+
+[data-theme="dark"] #notification-list>div {
+    background: #2a2a4a !important;
+    color: #f0f0f0 !important;
+}
+
+[data-theme="dark"] #notification-list .text-xl,
+[data-theme="dark"] #notification-list h3 {
+    color: #ffffff !important;
+}
+
+[data-theme="dark"] #notification-list .text-sm {
+    color: #b0b0d0 !important;
+}
+
+[data-theme="dark"] #notification-list .bg-green-50 {
+    background: #1a3a2a !important;
+}
+
+[data-theme="dark"] #notification-list .bg-gray-50 {
+    background: #252540 !important;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) #notification-list>div {
+        background: #2a2a4a !important;
+        color: #f0f0f0 !important;
+    }
+
+    :root:not([data-theme="light"]) #notification-list .text-xl,
+    :root:not([data-theme="light"]) #notification-list h3 {
+        color: #ffffff !important;
+    }
+
+    :root:not([data-theme="light"]) #notification-list .text-sm {
+        color: #b0b0d0 !important;
+    }
+
+    :root:not([data-theme="light"]) #notification-list .bg-green-50 {
+        background: #1a3a2a !important;
+    }
+
+    :root:not([data-theme="light"]) #notification-list .bg-gray-50 {
+        background: #252540 !important;
+    }
+}
+
+/* ==============================================
+   TARGET SELECTION LIST (Editor)
+   ============================================== */
+
+[data-theme="dark"] #target-selection-list {
+    background: #1a1a3a !important;
+    border-color: #4d4d7a !important;
+}
+
+[data-theme="dark"] #target-selection-list>div {
+    color: #e0e0f0 !important;
+}
+
+[data-theme="dark"] #target-selection-list>div:hover {
+    background: #2a2a4a !important;
+}
+
+[data-theme="dark"] #selected-targets-container {
+    background: #1a1a3a !important;
+    border-color: #4d4d7a !important;
+}
+
+[data-theme="dark"] #selected-targets-container>div {
+    background: #2a2a4a !important;
+    color: #e0e0f0 !important;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) #target-selection-list {
+        background: #1a1a3a !important;
+        border-color: #4d4d7a !important;
+    }
+
+    :root:not([data-theme="light"]) #target-selection-list>div {
+        color: #e0e0f0 !important;
+    }
+
+    :root:not([data-theme="light"]) #target-selection-list>div:hover {
+        background: #2a2a4a !important;
+    }
+
+    :root:not([data-theme="light"]) #selected-targets-container {
+        background: #1a1a3a !important;
+        border-color: #4d4d7a !important;
+    }
+
+    :root:not([data-theme="light"]) #selected-targets-container>div {
+        background: #2a2a4a !important;
+        color: #e0e0f0 !important;
+    }
+}
+
+/* ==============================================
+   MISC CONTROLS
+   ============================================== */
+
+[data-theme="dark"] .hamburger-btn {
+    background: #4d4d7a !important;
+    border-color: #6d6d9a !important;
+    color: #ffffff !important;
+}
+
+[data-theme="dark"] #completed-archive-card {
+    background: #1a2a2a !important;
+    border-color: #3d5d5d !important;
+}
+
+[data-theme="dark"] #completed-count-badge {
+    background: #00b894 !important;
+    color: #ffffff !important;
+}
+
+[data-theme="dark"] #archive-toggle-icon {
+    color: #e0e0f0 !important;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .hamburger-btn {
+        background: #4d4d7a !important;
+        border-color: #6d6d9a !important;
+        color: #ffffff !important;
+    }
+
+    :root:not([data-theme="light"]) #completed-archive-card {
+        background: #1a2a2a !important;
+        border-color: #3d5d5d !important;
+    }
+
+    :root:not([data-theme="light"]) #completed-count-badge {
+        background: #00b894 !important;
+        color: #ffffff !important;
+    }
+
+    :root:not([data-theme="light"]) #archive-toggle-icon {
+        color: #e0e0f0 !important;
+    }
+}
+
+/* ==============================================
+   SCROLLBAR
+   ============================================== */
+
+[data-theme="dark"] ::-webkit-scrollbar-track {
+    background: #1a1a2e;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+    background: #4d4d7a;
+    border-color: #3d3d5c;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+    background: #6d6d9a;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) ::-webkit-scrollbar-track {
+        background: #1a1a2e;
+    }
+
+    :root:not([data-theme="light"]) ::-webkit-scrollbar-thumb {
+        background: #4d4d7a;
+        border-color: #3d3d5c;
+    }
+
+    :root:not([data-theme="light"]) ::-webkit-scrollbar-thumb:hover {
+        background: #6d6d9a;
+    }
+}
+
+/* ==============================================
+   BUTTONS
+   ============================================== */
+
+[data-theme="dark"] .pixel-btn {
+    border-color: #5d5d8a !important;
+    box-shadow: 4px 4px 0 #1a1a2e !important;
+}
+
+[data-theme="dark"] .pixel-btn:hover {
+    box-shadow: 2px 2px 0 #1a1a2e !important;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .pixel-btn {
+        border-color: #5d5d8a !important;
+        box-shadow: 4px 4px 0 #1a1a2e !important;
+    }
+
+    :root:not([data-theme="light"]) .pixel-btn:hover {
+        box-shadow: 2px 2px 0 #1a1a2e !important;
+    }
+}
+
+/* ==============================================
+   THEME TOGGLE BUTTON
+   ============================================== */
+
 #theme-toggle {
     position: fixed;
     bottom: 20px;
@@ -173,6 +686,305 @@
 }
 
 [data-theme="dark"] #theme-toggle {
-    border-color: #e8e8e8;
+    border-color: #b8b0ff;
     box-shadow: 3px 3px 0 #0a0a1a;
+    background: #4d4d7a;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) #theme-toggle {
+        border-color: #b8b0ff;
+        box-shadow: 3px 3px 0 #0a0a1a;
+        background: #4d4d7a;
+    }
+}
+
+/* ==============================================
+   TAG BADGES
+   ============================================== */
+
+[data-theme="dark"] .tag-badge {
+    background: #3a3a5a !important;
+    color: #e0e0f0 !important;
+    border-color: #5d5d8a !important;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .tag-badge {
+        background: #3a3a5a !important;
+        color: #e0e0f0 !important;
+        border-color: #5d5d8a !important;
+    }
+}
+
+/* ==============================================
+   TAILWIND BG COLOR OVERRIDES
+   ============================================== */
+
+[data-theme="dark"] .bg-white {
+    background-color: #2a2a4a !important;
+}
+
+[data-theme="dark"] .bg-gray-50 {
+    background-color: #252540 !important;
+}
+
+[data-theme="dark"] .bg-gray-100 {
+    background-color: #2a2a4a !important;
+}
+
+[data-theme="dark"] .bg-yellow-50 {
+    background-color: #2a2a3a !important;
+}
+
+[data-theme="dark"] .bg-red-50 {
+    background-color: #3a2a3a !important;
+}
+
+[data-theme="dark"] .bg-purple-100 {
+    background-color: #3a3a5a !important;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .bg-white {
+        background-color: #2a2a4a !important;
+    }
+
+    :root:not([data-theme="light"]) .bg-gray-50 {
+        background-color: #252540 !important;
+    }
+
+    :root:not([data-theme="light"]) .bg-gray-100 {
+        background-color: #2a2a4a !important;
+    }
+
+    :root:not([data-theme="light"]) .bg-yellow-50 {
+        background-color: #2a2a3a !important;
+    }
+
+    :root:not([data-theme="light"]) .bg-red-50 {
+        background-color: #3a2a3a !important;
+    }
+
+    :root:not([data-theme="light"]) .bg-purple-100 {
+        background-color: #3a3a5a !important;
+    }
+}
+
+/* ==============================================
+   BORDER COLOR OVERRIDES
+   ============================================== */
+
+[data-theme="dark"] .border-b,
+[data-theme="dark"] .border-t,
+[data-theme="dark"] .border {
+    border-color: #4d4d7a !important;
+}
+
+@media (prefers-color-scheme: dark) {
+
+    :root:not([data-theme="light"]) .border-b,
+    :root:not([data-theme="light"]) .border-t,
+    :root:not([data-theme="light"]) .border {
+        border-color: #4d4d7a !important;
+    }
+}
+
+/* ==============================================
+   LOGIN/AUTH CONTAINER
+   ============================================== */
+
+[data-theme="dark"] #auth-container {
+    background: linear-gradient(135deg, #2a2a5a 0%, #1a1a3a 100%);
+}
+
+[data-theme="dark"] .pixel-card {
+    background: #1f1f3d !important;
+    border-color: #4d4d7a !important;
+}
+
+[data-theme="dark"] .login-title {
+    color: #b8b0ff !important;
+}
+
+[data-theme="dark"] .login-subtitle {
+    color: #ff8a8a !important;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) #auth-container {
+        background: linear-gradient(135deg, #2a2a5a 0%, #1a1a3a 100%);
+    }
+
+    :root:not([data-theme="light"]) .pixel-card {
+        background: #1f1f3d !important;
+        border-color: #4d4d7a !important;
+    }
+
+    :root:not([data-theme="light"]) .login-title {
+        color: #b8b0ff !important;
+    }
+
+    :root:not([data-theme="light"]) .login-subtitle {
+        color: #ff8a8a !important;
+    }
+}
+
+/* ==============================================
+   COMMENTS SECTION
+   ============================================== */
+
+[data-theme="dark"] #comments-list>div {
+    background: #2a2a4a !important;
+    border-color: #4d4d7a !important;
+}
+
+[data-theme="dark"] #comments-list .comment-author {
+    color: #b8b0ff !important;
+}
+
+[data-theme="dark"] #comments-list .comment-content {
+    color: #e0e0f0 !important;
+}
+
+[data-theme="dark"] #comments-list .comment-time {
+    color: #8888aa !important;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) #comments-list>div {
+        background: #2a2a4a !important;
+        border-color: #4d4d7a !important;
+    }
+
+    :root:not([data-theme="light"]) #comments-list .comment-author {
+        color: #b8b0ff !important;
+    }
+
+    :root:not([data-theme="light"]) #comments-list .comment-content {
+        color: #e0e0f0 !important;
+    }
+
+    :root:not([data-theme="light"]) #comments-list .comment-time {
+        color: #8888aa !important;
+    }
+}
+
+/* ==============================================
+   STATISTICS DASHBOARD
+   ============================================== */
+
+[data-theme="dark"] #stats-container,
+[data-theme="dark"] #view-stats {
+    color: #f0f0f0 !important;
+}
+
+[data-theme="dark"] .stats-card {
+    background: #1f1f3d !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+    border: 1px solid #4d4d7a !important;
+}
+
+[data-theme="dark"] .stats-number {
+    color: #ffffff !important;
+}
+
+[data-theme="dark"] .stats-label {
+    color: #b0b0d0 !important;
+}
+
+[data-theme="dark"] .stats-card h3,
+[data-theme="dark"] #stats-container h3 {
+    color: #e0e0f0 !important;
+}
+
+[data-theme="dark"] .stats-card p,
+[data-theme="dark"] .stats-card div,
+[data-theme="dark"] .stats-card span {
+    color: #d0d0e8;
+}
+
+[data-theme="dark"] .stats-card div[style*="border-bottom"] {
+    border-color: #4d4d7a !important;
+}
+
+[data-theme="dark"] #dept-chart,
+[data-theme="dark"] #trend-chart {
+    background: transparent !important;
+}
+
+[data-theme="dark"] #stats-container>.stats-card:last-child {
+    background: #2a2a4a !important;
+}
+
+[data-theme="dark"] #stats-container [style*="color: #636e72"],
+[data-theme="dark"] #stats-container [style*="color:#636e72"] {
+    color: #9999bb !important;
+}
+
+[data-theme="dark"] .stats-card div[style*="border-bottom: 1px solid #eee"] {
+    border-bottom-color: #4d4d7a !important;
+}
+
+[data-theme="dark"] .stats-card span[style*="color: #6c5ce7"] {
+    color: #b8b0ff !important;
+}
+
+@media (prefers-color-scheme: dark) {
+
+    :root:not([data-theme="light"]) #stats-container,
+    :root:not([data-theme="light"]) #view-stats {
+        color: #f0f0f0 !important;
+    }
+
+    :root:not([data-theme="light"]) .stats-card {
+        background: #1f1f3d !important;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+        border: 1px solid #4d4d7a !important;
+    }
+
+    :root:not([data-theme="light"]) .stats-number {
+        color: #ffffff !important;
+    }
+
+    :root:not([data-theme="light"]) .stats-label {
+        color: #b0b0d0 !important;
+    }
+
+    :root:not([data-theme="light"]) .stats-card h3,
+    :root:not([data-theme="light"]) #stats-container h3 {
+        color: #e0e0f0 !important;
+    }
+
+    :root:not([data-theme="light"]) .stats-card p,
+    :root:not([data-theme="light"]) .stats-card div,
+    :root:not([data-theme="light"]) .stats-card span {
+        color: #d0d0e8;
+    }
+
+    :root:not([data-theme="light"]) .stats-card div[style*="border-bottom"] {
+        border-color: #4d4d7a !important;
+    }
+
+    :root:not([data-theme="light"]) #dept-chart,
+    :root:not([data-theme="light"]) #trend-chart {
+        background: transparent !important;
+    }
+
+    :root:not([data-theme="light"]) #stats-container>.stats-card:last-child {
+        background: #2a2a4a !important;
+    }
+
+    :root:not([data-theme="light"]) #stats-container [style*="color: #636e72"],
+    :root:not([data-theme="light"]) #stats-container [style*="color:#636e72"] {
+        color: #9999bb !important;
+    }
+
+    :root:not([data-theme="light"]) .stats-card div[style*="border-bottom: 1px solid #eee"] {
+        border-bottom-color: #4d4d7a !important;
+    }
+
+    :root:not([data-theme="light"]) .stats-card span[style*="color: #6c5ce7"] {
+        color: #b8b0ff !important;
+    }
 }
