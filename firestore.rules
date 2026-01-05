@@ -56,10 +56,18 @@ service cloud.firestore {
       allow create: if isAuthenticated() 
         && collection == 'school_events';
       
-      // Event author or admin can update/delete
-      allow update, delete: if isAuthenticated() 
-        && collection == 'school_events' 
-        && (resource.data.authorId == request.auth.uid || isAdmin());
+      // 行程更新規則：
+      // - 任何已認證用戶都可以更新行程（因為自訂帳號用戶使用匿名Auth）
+      // - 這允許作者編輯自己的行程、其他用戶標記已讀/完成
+      // - 注意：前端應控制哪些用戶可以看到編輯按鈕
+      allow update: if isAuthenticated() 
+        && collection == 'school_events';
+      
+      // 刪除規則：需要更嚴格（前端會驗證是否為作者或管理員）
+      // 由於無法在規則中精確驗證自訂帳號用戶，暫時允許已認證用戶刪除
+      // TODO: 未來可改用 Firebase Custom Auth 來精確控制
+      allow delete: if isAuthenticated() 
+        && collection == 'school_events';
       
       // ========================================
       // TAGS COLLECTION
@@ -92,20 +100,18 @@ service cloud.firestore {
       // REMINDERS COLLECTION
       // ========================================
       
-      // User can read their own reminders, admin can read all (for backup)
+      // 任何已認證用戶可以讀取提醒
+      // （因為自訂帳號用戶使用匿名Auth，無法精確匹配 userId）
       allow read: if isAuthenticated() 
-        && collection == 'reminders'
-        && (resource.data.userId == request.auth.uid || isAdmin());
+        && collection == 'reminders';
       
-      // User can create reminders for themselves
+      // 任何已認證用戶可以建立提醒
       allow create: if isAuthenticated() 
-        && collection == 'reminders'
-        && request.resource.data.userId == request.auth.uid;
+        && collection == 'reminders';
       
-      // User can update/delete their own reminders
+      // 任何已認證用戶可以更新/刪除提醒（前端會控制只能管理自己的）
       allow update, delete: if isAuthenticated() 
-        && collection == 'reminders'
-        && resource.data.userId == request.auth.uid;
+        && collection == 'reminders';
     }
     
     // ========================================
