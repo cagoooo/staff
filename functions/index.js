@@ -3792,3 +3792,454 @@ exports.notifySyncStatus = onRequest(
         }
     }
 );
+
+// ============================================
+// 每日行程摘要通知 (Daily Summary)
+// ============================================
+
+/**
+ * 建立每日行程摘要 Flex Message
+ * @param {string} userName - 使用者名稱
+ * @param {string} dateStr - 日期字串
+ * @param {Array} events - 當日行程陣列
+ */
+function createDailySummaryFlexMessage(userName, dateStr, events) {
+    // 將日期轉為易讀格式
+    const date = new Date(dateStr + 'T00:00:00+08:00');
+    const weekDays = ['日', '一', '二', '三', '四', '五', '六'];
+    const displayDate = `${date.getMonth() + 1}/${date.getDate()} (${weekDays[date.getDay()]})`;
+
+    // 排序行程 (全天優先，然後按時間)
+    const sortedEvents = [...events].sort((a, b) => {
+        if (a.isAllDay && !b.isAllDay) return -1;
+        if (!a.isAllDay && b.isAllDay) return 1;
+        return (a.time || '00:00').localeCompare(b.time || '00:00');
+    });
+
+    // 統計
+    const totalCount = events.length;
+    const importantCount = events.filter(e => e.isPublic || e.announcementType === 'important' || e.announcementType === 'urgent').length;
+
+    // 建立行程列表 (最多顯示 5 項)
+    const eventItems = sortedEvents.slice(0, 5).map((event, index) => {
+        const timeDisplay = event.isAllDay ? '🌅 全天' : `⏰ ${event.time || '--:--'}`;
+        const isImportant = event.isPublic || event.announcementType === 'important' || event.announcementType === 'urgent';
+        const titlePrefix = isImportant ? '⭐ ' : '';
+
+        return {
+            type: "box",
+            layout: "horizontal",
+            spacing: "sm",
+            contents: [
+                {
+                    type: "text",
+                    text: timeDisplay,
+                    size: "xs",
+                    color: "#888888",
+                    flex: 2
+                },
+                {
+                    type: "text",
+                    text: titlePrefix + (event.title.length > 18 ? event.title.substring(0, 18) + '...' : event.title),
+                    size: "sm",
+                    color: isImportant ? "#e17055" : "#333333",
+                    flex: 5,
+                    wrap: true,
+                    weight: isImportant ? "bold" : "regular"
+                }
+            ]
+        };
+    });
+
+    // 如果超過 5 項，加入提示
+    if (events.length > 5) {
+        eventItems.push({
+            type: "text",
+            text: `... 還有 ${events.length - 5} 項行程`,
+            size: "xs",
+            color: "#888888",
+            margin: "sm",
+            align: "end"
+        });
+    }
+
+    // 空的行程列表
+    if (events.length === 0) {
+        eventItems.push({
+            type: "text",
+            text: "🎉 今天沒有排定的行程！",
+            size: "sm",
+            color: "#00b894",
+            align: "center"
+        });
+    }
+
+    return {
+        type: "flex",
+        altText: `📅 ${displayDate} 行程摘要 (${totalCount} 項)`,
+        contents: {
+            type: "bubble",
+            size: "mega",
+            header: {
+                type: "box",
+                layout: "vertical",
+                backgroundColor: "#667eea",
+                paddingAll: "15px",
+                contents: [
+                    {
+                        type: "box",
+                        layout: "horizontal",
+                        contents: [
+                            {
+                                type: "text",
+                                text: "☀️",
+                                size: "xl",
+                                flex: 0
+                            },
+                            {
+                                type: "box",
+                                layout: "vertical",
+                                flex: 1,
+                                margin: "md",
+                                contents: [
+                                    {
+                                        type: "text",
+                                        text: "每日行程摘要",
+                                        color: "#ffffff",
+                                        size: "lg",
+                                        weight: "bold"
+                                    },
+                                    {
+                                        type: "text",
+                                        text: `${userName}，早安！`,
+                                        color: "#ffffffcc",
+                                        size: "sm"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            },
+            body: {
+                type: "box",
+                layout: "vertical",
+                paddingAll: "15px",
+                spacing: "lg",
+                contents: [
+                    // 日期與統計
+                    {
+                        type: "box",
+                        layout: "horizontal",
+                        contents: [
+                            {
+                                type: "box",
+                                layout: "vertical",
+                                flex: 1,
+                                contents: [
+                                    {
+                                        type: "text",
+                                        text: displayDate,
+                                        size: "xl",
+                                        weight: "bold",
+                                        color: "#333333"
+                                    }
+                                ]
+                            },
+                            {
+                                type: "box",
+                                layout: "horizontal",
+                                flex: 1,
+                                spacing: "sm",
+                                contents: [
+                                    {
+                                        type: "box",
+                                        layout: "vertical",
+                                        backgroundColor: "#667eea20",
+                                        cornerRadius: "8px",
+                                        paddingAll: "8px",
+                                        alignItems: "center",
+                                        contents: [
+                                            {
+                                                type: "text",
+                                                text: String(totalCount),
+                                                size: "xl",
+                                                weight: "bold",
+                                                color: "#667eea"
+                                            },
+                                            {
+                                                type: "text",
+                                                text: "總計",
+                                                size: "xs",
+                                                color: "#667eea"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        type: "box",
+                                        layout: "vertical",
+                                        backgroundColor: importantCount > 0 ? "#e1705520" : "#00b89420",
+                                        cornerRadius: "8px",
+                                        paddingAll: "8px",
+                                        alignItems: "center",
+                                        contents: [
+                                            {
+                                                type: "text",
+                                                text: String(importantCount),
+                                                size: "xl",
+                                                weight: "bold",
+                                                color: importantCount > 0 ? "#e17055" : "#00b894"
+                                            },
+                                            {
+                                                type: "text",
+                                                text: "重要",
+                                                size: "xs",
+                                                color: importantCount > 0 ? "#e17055" : "#00b894"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    // 分隔線
+                    {
+                        type: "separator"
+                    },
+                    // 行程列表
+                    {
+                        type: "box",
+                        layout: "vertical",
+                        spacing: "sm",
+                        contents: eventItems
+                    }
+                ]
+            },
+            footer: {
+                type: "box",
+                layout: "vertical",
+                paddingAll: "12px",
+                contents: [
+                    {
+                        type: "button",
+                        action: {
+                            type: "uri",
+                            label: "📅 查看完整行程",
+                            uri: LINK_URL
+                        },
+                        style: "primary",
+                        color: "#667eea",
+                        height: "sm"
+                    }
+                ]
+            }
+        },
+        quickReply: {
+            items: [
+                createQuickReplyUriItem("📅 前往查看", LINK_URL)
+            ]
+        }
+    };
+}
+
+/**
+ * 每日行程摘要 - 排程函數
+ * 每天早上 8:00 (台灣時間) 發送當日行程摘要給有行程的使用者
+ */
+exports.dailySummaryNotification = onSchedule(
+    {
+        schedule: "0 8 * * *", // 每天 08:00 執行
+        timeZone: "Asia/Taipei",
+        region: "asia-east1",
+        secrets: ["LINE_CHANNEL_ACCESS_TOKEN", "LINE_CHANNEL_SECRET"]
+    },
+    async (event) => {
+        console.log('[Daily Summary] Starting daily summary notification...');
+
+        const client = getLineClient();
+
+        // 取得今日日期 (台灣時間)
+        const now = new Date();
+        const taiwanTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Taipei' }));
+        const year = taiwanTime.getFullYear();
+        const month = String(taiwanTime.getMonth() + 1).padStart(2, '0');
+        const day = String(taiwanTime.getDate()).padStart(2, '0');
+        const todayStr = `${year}-${month}-${day}`;
+
+        console.log(`[Daily Summary] Date: ${todayStr}`);
+
+        try {
+            // 1. 取得所有使用者
+            const usersSnapshot = await db.collection(`artifacts/${APP_ID}/public/data/users`).get();
+            const users = [];
+            usersSnapshot.forEach(doc => {
+                const data = doc.data();
+                if (data.lineUserId && data.lineNotifyEnabled) {
+                    users.push({ id: doc.id, ...data });
+                }
+            });
+
+            console.log(`[Daily Summary] Found ${users.length} users with LINE notifications enabled`);
+
+            if (users.length === 0) {
+                console.log('[Daily Summary] No users to notify');
+                return;
+            }
+
+            // 2. 取得今日所有行程
+            const eventsSnapshot = await db.collection(`artifacts/${APP_ID}/public/data/events`)
+                .where('date', '==', todayStr)
+                .get();
+
+            const todayEvents = [];
+            eventsSnapshot.forEach(doc => {
+                todayEvents.push({ id: doc.id, ...doc.data() });
+            });
+
+            // 也取得跨日行程 (endDate >= today && date <= today)
+            const multiDaySnapshot = await db.collection(`artifacts/${APP_ID}/public/data/events`)
+                .where('endDate', '>=', todayStr)
+                .get();
+
+            multiDaySnapshot.forEach(doc => {
+                const data = doc.data();
+                // 確保行程開始日期 <= 今天，且尚未被加入
+                if (data.date <= todayStr && !todayEvents.find(e => e.id === doc.id)) {
+                    todayEvents.push({ id: doc.id, ...data });
+                }
+            });
+
+            console.log(`[Daily Summary] Found ${todayEvents.length} events for today`);
+
+            // 3. 對每個使用者，篩選出與他相關的行程並發送通知
+            let sentCount = 0;
+
+            for (const user of users) {
+                try {
+                    // 篩選與此使用者相關的行程
+                    const userEvents = todayEvents.filter(event => {
+                        // 使用者是 target 或是 author
+                        const isTarget = event.targets && event.targets.includes(user.id);
+                        const isAuthor = event.authorId === user.id;
+                        return isTarget || isAuthor;
+                    });
+
+                    // 如果沒有相關行程，跳過此使用者
+                    if (userEvents.length === 0) {
+                        continue;
+                    }
+
+                    console.log(`[Daily Summary] Sending ${userEvents.length} events to user ${user.name || user.id}`);
+
+                    // 建立並發送每日摘要訊息
+                    const message = createDailySummaryFlexMessage(
+                        user.name || '使用者',
+                        todayStr,
+                        userEvents
+                    );
+
+                    await client.pushMessage(user.lineUserId, message);
+                    sentCount++;
+
+                    // 避免 API 限流，每次發送後等待 100ms
+                    await new Promise(resolve => setTimeout(resolve, 100));
+
+                } catch (userErr) {
+                    console.error(`[Daily Summary] Failed to notify user ${user.id}:`, userErr.message);
+                }
+            }
+
+            console.log(`[Daily Summary] Completed! Sent ${sentCount} notifications`);
+
+        } catch (err) {
+            console.error('[Daily Summary] Error:', err);
+            throw err;
+        }
+    }
+);
+
+/**
+ * 手動觸發每日摘要 (用於測試)
+ */
+exports.triggerDailySummary = onRequest(
+    {
+        region: "asia-east1",
+        cors: true,
+        secrets: ["LINE_CHANNEL_ACCESS_TOKEN", "LINE_CHANNEL_SECRET"]
+    },
+    async (req, res) => {
+        console.log('[Daily Summary] Manual trigger started...');
+
+        const client = getLineClient();
+        const { userId, testDate } = req.query;
+
+        // 使用測試日期或今日日期
+        let targetDate;
+        if (testDate) {
+            targetDate = testDate;
+        } else {
+            const now = new Date();
+            const taiwanTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Taipei' }));
+            const year = taiwanTime.getFullYear();
+            const month = String(taiwanTime.getMonth() + 1).padStart(2, '0');
+            const day = String(taiwanTime.getDate()).padStart(2, '0');
+            targetDate = `${year}-${month}-${day}`;
+        }
+
+        console.log(`[Daily Summary] Target date: ${targetDate}`);
+
+        try {
+            // 如果指定了 userId，只發送給該使用者
+            if (userId) {
+                const userDoc = await db.doc(`artifacts/${APP_ID}/public/data/users/${userId}`).get();
+                if (!userDoc.exists) {
+                    return res.status(404).json({ error: 'User not found' });
+                }
+
+                const userData = userDoc.data();
+                if (!userData.lineUserId) {
+                    return res.status(400).json({ error: 'User has not linked LINE account' });
+                }
+
+                // 取得該使用者的今日行程
+                const eventsSnapshot = await db.collection(`artifacts/${APP_ID}/public/data/events`)
+                    .where('date', '==', targetDate)
+                    .get();
+
+                const userEvents = [];
+                eventsSnapshot.forEach(doc => {
+                    const data = doc.data();
+                    const isTarget = data.targets && data.targets.includes(userId);
+                    const isAuthor = data.authorId === userId;
+                    if (isTarget || isAuthor) {
+                        userEvents.push({ id: doc.id, ...data });
+                    }
+                });
+
+                // 發送摘要
+                const message = createDailySummaryFlexMessage(
+                    userData.name || '使用者',
+                    targetDate,
+                    userEvents
+                );
+
+                await client.pushMessage(userData.lineUserId, message);
+
+                return res.status(200).json({
+                    success: true,
+                    date: targetDate,
+                    eventsCount: userEvents.length,
+                    message: `Daily summary sent to ${userData.name || userId}`
+                });
+            } else {
+                return res.status(400).json({
+                    error: 'Please specify userId query parameter for testing',
+                    example: '/triggerDailySummary?userId=xxx&testDate=2026-01-05'
+                });
+            }
+        } catch (err) {
+            console.error('[Daily Summary] Manual trigger error:', err);
+            return res.status(500).json({ error: err.message });
+        }
+    }
+);

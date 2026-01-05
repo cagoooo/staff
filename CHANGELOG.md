@@ -3,11 +3,23 @@
 ## 📋 系統資訊
 
 | 專案名稱 | 行政業務協調系統 |
-| 版本 | v3.9.0 |
+| 版本 | v3.9.1 |
 | 更新日期 | 2026-01-05 |
 | 部署網址 | https://cagoooo.github.io/staff/ |
 | 技術棧 | HTML5, Tailwind CSS, Firebase (Auth, Firestore, Cloud Functions), LINE Messaging API |
 | Firebase 專案 | Blaze 方案 |
+
+---
+
+## 🎉 v3.9.1 更新內容 (2026-01-05)
+
+### ✨ 新功能
+| 功能 | 說明 |
+|------|------|
+| ☀️ 每日行程摘要通知 | 每天早上 8:00 自動 LINE 推送當日行程摘要 |
+| 📅 個人化摘要 | 只發送與該使用者相關的行程 (被指派或發起的) |
+| 📊 智慧統計 | 摘要包含總數、重要行事數量、行程時間排序 |
+| 🧪 測試 API | 新增 `triggerDailySummary` API 可手動測試發送 |
 
 ---
 
