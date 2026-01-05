@@ -1800,6 +1800,7 @@ async function handleMessage(client, event) {
                     });
                 }
 
+                // 回覆用戶確認訊息
                 await client.replyMessage(event.replyToken, {
                     type: "flex",
                     altText: "✅ 已確認收到",
@@ -1817,6 +1818,71 @@ async function handleMessage(client, event) {
                         }
                     }
                 });
+
+                // 通知建立者有人已收到訊息（排除建立者自己）
+                if (eventData.authorId && eventData.authorId !== userData.id) {
+                    try {
+                        const usersRef = db.collection(`artifacts/${APP_ID}/public/data/users`);
+                        const authorDoc = await usersRef.doc(eventData.authorId).get();
+
+                        if (authorDoc.exists) {
+                            const authorData = authorDoc.data();
+                            const authorLineId = authorData.lineUserId;
+                            const authorNotifyEnabled = authorData.lineNotifyEnabled;
+
+                            if (authorLineId && authorNotifyEnabled) {
+                                await client.pushMessage(authorLineId, {
+                                    type: "flex",
+                                    altText: `📬 ${userData.name} 已收到：${eventData.title}`,
+                                    contents: {
+                                        type: "bubble",
+                                        size: "kilo",
+                                        header: {
+                                            type: "box",
+                                            layout: "vertical",
+                                            backgroundColor: "#00cec9",
+                                            paddingAll: "12px",
+                                            contents: [
+                                                { type: "text", text: "📬 已讀回報", color: "#ffffff", weight: "bold", size: "md" }
+                                            ]
+                                        },
+                                        body: {
+                                            type: "box",
+                                            layout: "vertical",
+                                            paddingAll: "15px",
+                                            spacing: "sm",
+                                            contents: [
+                                                { type: "text", text: eventData.title, weight: "bold", size: "md", wrap: true },
+                                                { type: "separator", margin: "md" },
+                                                {
+                                                    type: "box",
+                                                    layout: "horizontal",
+                                                    margin: "md",
+                                                    contents: [
+                                                        { type: "text", text: "👤 收到者", color: "#636e72", size: "sm", flex: 2 },
+                                                        { type: "text", text: userData.name, size: "sm", flex: 3, color: "#00b894", weight: "bold" }
+                                                    ]
+                                                },
+                                                {
+                                                    type: "box",
+                                                    layout: "horizontal",
+                                                    contents: [
+                                                        { type: "text", text: "⏰ 時間", color: "#636e72", size: "sm", flex: 2 },
+                                                        { type: "text", text: new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }), size: "sm", flex: 3 }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    }
+                                });
+                                console.log(`[LINE] Receipt notification sent to author ${eventData.authorId}`);
+                            }
+                        }
+                    } catch (notifyErr) {
+                        console.error('[LINE] Failed to notify author:', notifyErr);
+                        // 不影響主流程，只記錄錯誤
+                    }
+                }
             } else {
                 await client.replyMessage(event.replyToken, { type: "text", text: "❌ 找不到該行程" });
             }
