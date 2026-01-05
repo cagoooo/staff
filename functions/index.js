@@ -3173,11 +3173,12 @@ exports.onEventUpdate = onDocumentUpdated(
                     const completerDoc = await usersRef.doc(completerId).get();
                     const completerName = completerDoc.exists ? completerDoc.data().name : '用戶';
 
-                    // 通知對象：發起人 + 所有被指派的用戶（排除完成者自己）
+                    // 通知對象：發起人 + 所有被指派的用戶 + 完成者自己
                     const notifyTargets = [...new Set([
                         afterData.authorId,
-                        ...(afterData.targets || [])
-                    ].filter(id => id && id !== completerId))];
+                        ...(afterData.targets || []),
+                        completerId  // 完成者自己也收到確認通知
+                    ].filter(Boolean))];
 
                     console.log(`[LINE] Will notify ${notifyTargets.length} users about completion`);
 
