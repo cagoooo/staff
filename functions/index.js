@@ -2945,6 +2945,54 @@ function createTodayEventsFlex(events) {
 }
 
 /**
+ * 用戶資料更新時，同步更新相關行程的 authorName
+ */
+exports.onUserUpdate = onDocumentUpdated(
+    {
+        document: `artifacts/${APP_ID}/public/data/users/{userId}`,
+        region: "asia-east1"
+    },
+    async (event) => {
+        const beforeData = event.data.before.data();
+        const afterData = event.data.after.data();
+        const userId = event.params.userId;
+
+        // 檢查名稱是否有變更
+        if (beforeData.name === afterData.name) {
+            return; // 名稱沒變，不需要更新
+        }
+
+        const newName = afterData.name;
+        console.log(`[UserUpdate] User ${userId} name changed from "${beforeData.name}" to "${newName}"`);
+
+        try {
+            // 查詢該用戶建立的所有行程
+            const eventsRef = db.collection(`artifacts/${APP_ID}/public/data/school_events`);
+            const snapshot = await eventsRef.where('authorId', '==', userId).get();
+
+            if (snapshot.empty) {
+                console.log(`[UserUpdate] No events found for user ${userId}`);
+                return;
+            }
+
+            // 批次更新所有行程的 authorName
+            const batch = db.batch();
+            let updateCount = 0;
+
+            snapshot.docs.forEach(doc => {
+                batch.update(doc.ref, { authorName: newName });
+                updateCount++;
+            });
+
+            await batch.commit();
+            console.log(`[UserUpdate] Updated ${updateCount} events with new author name`);
+        } catch (err) {
+            console.error(`[UserUpdate] Failed to update events for user ${userId}:`, err);
+        }
+    }
+);
+
+/**
  * 新行程建立時通知被指派的用戶
  */
 exports.onEventCreate = onDocumentCreated(
