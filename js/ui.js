@@ -473,15 +473,29 @@ const ANNOUNCEMENT_TYPES = {
 export function renderDashboard() {
     const listAnnounce = document.getElementById('announcement-list');
     const listImportant = document.getElementById('important-events-list');
+    const listCompleted = document.getElementById('completed-events-list');
+    const completedBadge = document.getElementById('completed-count-badge');
     const events = globalEvents();
     const users = globalUsers();
     const currentUser = getAppCurrentUser();
 
     listAnnounce.innerHTML = '';
     listImportant.innerHTML = '';
+    if (listCompleted) listCompleted.innerHTML = '';
+
+    // 分離已完成和未完成的行程
+    const completedEvents = events.filter(evt => {
+        // 如果當前用戶已標記完成
+        return evt.completedBy && evt.completedBy.includes(currentUser?.id);
+    });
+
+    const pendingEvents = events.filter(evt => {
+        // 當前用戶尚未標記完成
+        return !evt.completedBy || !evt.completedBy.includes(currentUser?.id);
+    });
 
     // Sort events: pinned first, then by urgency, then by date
-    const sortedEvents = [...events].sort((a, b) => {
+    const sortedEvents = [...pendingEvents].sort((a, b) => {
         // Pinned events first
         if (a.pinned && !b.pinned) return -1;
         if (!a.pinned && b.pinned) return 1;
@@ -537,7 +551,7 @@ export function renderDashboard() {
         listAnnounce.appendChild(div);
     });
 
-    // Get public events (important events) and sort by date
+    // Get public events (important events) and sort by date - 只顯示未完成的
     const publicEvents = sortedEvents
         .filter(e => e.isPublic)
         .sort((a, b) => a.date.localeCompare(b.date));
@@ -558,6 +572,43 @@ export function renderDashboard() {
             evt.date.split('-')[1] + '/' + evt.date.split('-')[2] + '</div><div class="text-lg">' + evt.title + '</div>';
         listImportant.appendChild(div);
     });
+
+    // 渲染已完成歸檔區塊
+    if (listCompleted && completedBadge) {
+        completedBadge.textContent = completedEvents.length;
+
+        if (completedEvents.length === 0) {
+            listCompleted.innerHTML = '<p class="text-gray-400 text-center py-4">目前沒有已完成的行程</p>';
+        } else {
+            // Sort completed events by date (newest first)
+            const sortedCompleted = [...completedEvents].sort((a, b) =>
+                new Date(b.date) - new Date(a.date)
+            );
+
+            sortedCompleted.forEach(evt => {
+                const author = users.find(u => u.id === evt.authorId);
+                const deptColor = getDepartmentColor(author?.department);
+
+                const div = document.createElement('div');
+                div.className = "p-3 border-l-4 bg-gray-50 opacity-70 hover:opacity-100 transition cursor-pointer";
+                div.style.fontFamily = "'VT323', monospace";
+                div.style.borderColor = '#00b894';
+                div.dataset.eventId = evt.id;
+                div.onclick = () => window.openEventModal && window.openEventModal(evt.id);
+                div.innerHTML = `
+                    <div class="flex justify-between items-start gap-2">
+                        <h4 class="text-lg flex items-center gap-1">
+                            <span style="color: #00b894;">✅</span>
+                            <span class="line-through text-gray-500">${evt.title}</span>
+                        </h4>
+                        <span class="text-sm bg-green-200 px-2 py-1 shrink-0 whitespace-nowrap">${evt.date}</span>
+                    </div>
+                    <p class="text-sm text-gray-500 mt-1">發起人：${evt.authorName} | 完成時間：已完成</p>
+                `;
+                listCompleted.appendChild(div);
+            });
+        }
+    }
 }
 
 // Mark event as read

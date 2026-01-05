@@ -95,7 +95,14 @@ export function enterBatchMode() {
         const checkbox = document.createElement('input');
         checkbox.type = 'checkbox';
         checkbox.className = 'batch-checkbox';
-        checkbox.style.cssText = 'width: 20px; height: 20px; margin-right: 10px; cursor: pointer;';
+        checkbox.style.cssText = 'width: 20px; height: 20px; min-width: 20px; margin-right: 10px; cursor: pointer; z-index: 100; position: relative; pointer-events: auto;';
+
+        // 直接處理 checkbox 的點擊事件
+        checkbox.onclick = (e) => {
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+        };
+
         checkbox.onchange = (e) => {
             e.stopPropagation();
             const eventId = item.dataset.eventId;
@@ -111,12 +118,21 @@ export function enterBatchMode() {
         item.style.alignItems = 'flex-start';
         item.insertBefore(checkbox, item.firstChild);
 
-        // Prevent modal from opening in batch mode
+        // 保存原本的 onclick 事件
+        const originalOnClick = item.onclick;
+
+        // 點擊非 checkbox 區域時切換 checkbox
         item.onclick = (e) => {
             if (batchMode) {
-                e.stopPropagation();
-                checkbox.checked = !checkbox.checked;
-                checkbox.dispatchEvent(new Event('change'));
+                // 如果點擊的不是 checkbox 本身
+                if (e.target !== checkbox && !e.target.classList.contains('batch-checkbox')) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    checkbox.checked = !checkbox.checked;
+                    checkbox.dispatchEvent(new Event('change'));
+                }
+            } else if (originalOnClick) {
+                originalOnClick.call(item, e);
             }
         };
     });
