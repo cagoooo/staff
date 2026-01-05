@@ -3008,19 +3008,36 @@ exports.onEventCreate = onDocumentCreated(
 
         console.log(`New event created: ${eventId}`, eventData);
 
-        // 取得被指派的用戶 + 建立者本人
-        const targets = eventData.targets || [];
-        const authorId = eventData.authorId;
+        // 查詢這些用戶的 LINE ID
+        const usersRef = db.collection(`artifacts/${APP_ID}/public/data/users`);
 
-        // 合併 targets 和 authorId（使用 Set 去除重複）
-        const allRecipients = [...new Set([...targets, authorId].filter(Boolean))];
+        let allRecipients = [];
+
+        // 判斷是否為公開行程
+        if (eventData.isPublic) {
+            // 公開行程：通知所有用戶
+            console.log(`[LINE] Public event detected, will notify all users`);
+
+            try {
+                const allUsersSnapshot = await usersRef.get();
+                allRecipients = allUsersSnapshot.docs.map(doc => doc.id);
+                console.log(`[LINE] Found ${allRecipients.length} total users`);
+            } catch (err) {
+                console.error('[LINE] Failed to get all users:', err);
+                return;
+            }
+        } else {
+            // 非公開行程：通知被指派的用戶 + 建立者本人
+            const targets = eventData.targets || [];
+            const authorId = eventData.authorId;
+
+            // 合併 targets 和 authorId（使用 Set 去除重複）
+            allRecipients = [...new Set([...targets, authorId].filter(Boolean))];
+        }
 
         if (allRecipients.length === 0) return;
 
-        console.log(`[LINE] Will notify ${allRecipients.length} users (including creator)`);
-
-        // 查詢這些用戶的 LINE ID
-        const usersRef = db.collection(`artifacts/${APP_ID}/public/data/users`);
+        console.log(`[LINE] Will notify ${allRecipients.length} users`);
 
         for (const targetId of allRecipients) {
             try {
