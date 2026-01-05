@@ -46,10 +46,103 @@ const ANNOUNCEMENT_TYPES = {
     'urgent': { icon: '🚨', label: '緊急', color: '#d63031', headerBg: '#d63031' }
 };
 
+// ============================================
+// Quick Reply 工具函數
+// ============================================
+
+/**
+ * 建立 Quick Reply 按鈕 (發送訊息類型)
+ */
+function createQuickReplyItem(label, text) {
+    return {
+        type: "action",
+        action: {
+            type: "message",
+            label: label,
+            text: text
+        }
+    };
+}
+
+/**
+ * 建立 Quick Reply 按鈕 (URI 類型)
+ */
+function createQuickReplyUriItem(label, uri) {
+    return {
+        type: "action",
+        action: {
+            type: "uri",
+            label: label,
+            uri: uri
+        }
+    };
+}
+
+/**
+ * 建立新行程通知的 Quick Reply
+ * @param {string} eventId - 行程 ID
+ * @param {Array} attachments - 附件陣列 (可選)
+ */
+function createEventQuickReply(eventId, attachments = []) {
+    const items = [
+        createQuickReplyItem("✅ 收到", `收到 ${eventId}`),
+        createQuickReplyItem("⏰ 設定提醒", `提醒 ${eventId}`),
+        createQuickReplyUriItem("📍 前往查看", LINK_URL)
+    ];
+
+    // 如果有附件，加入附件連結按鈕 (最多顯示第一個附件)
+    if (attachments && attachments.length > 0) {
+        const firstAttachment = attachments[0];
+        if (firstAttachment.url) {
+            items.push(createQuickReplyUriItem("📎 查看附件", firstAttachment.url));
+        }
+    }
+
+    return { items };
+}
+
+/**
+ * 建立行程更新通知的 Quick Reply
+ */
+function createEventUpdateQuickReply(eventId) {
+    return {
+        items: [
+            createQuickReplyItem("✅ 收到", `收到 ${eventId}`),
+            createQuickReplyUriItem("📍 查看詳情", LINK_URL)
+        ]
+    };
+}
+
+/**
+ * 建立提醒通知的 Quick Reply
+ */
+function createReminderQuickReply(eventId) {
+    return {
+        items: [
+            createQuickReplyItem("✅ 標記完成", `完成 ${eventId}`),
+            createQuickReplyItem("🔔 延後30分鐘", `延後 ${eventId}`),
+            createQuickReplyUriItem("📍 查看詳情", LINK_URL)
+        ]
+    };
+}
+
+/**
+ * 建立 @提及通知的 Quick Reply
+ */
+function createMentionQuickReply() {
+    return {
+        items: [
+            createQuickReplyUriItem("📍 查看評論", LINK_URL)
+        ]
+    };
+}
+
 /**
  * 新行程通知 - Flex Message (支援公告類型和附件)
+ * @param {Object} eventData - 行程資料
+ * @param {string} eventId - 行程 ID (用於 Quick Reply)
  */
-function createEventFlexMessage(eventData) {
+function createEventFlexMessage(eventData, eventId = null) {
     // 取得公告類型設定
     const typeConfig = ANNOUNCEMENT_TYPES[eventData.announcementType] || ANNOUNCEMENT_TYPES['normal'];
 
@@ -57,12 +150,20 @@ function createEventFlexMessage(eventData) {
     const attachments = eventData.attachments || [];
     const hasAttachments = attachments.length > 0;
 
-    // 判斷是否為跨日行程
-    const isMultiDay = !!eventData.endDate;
-    const dateDisplay = isMultiDay
-        ? `${eventData.date} ~ ${eventData.endDate}`
-        : eventData.date;
-    const dateLabel = isMultiDay ? "📆 期程" : "📆 日期";
+    // 判斷是否為跨日行程 (確保 endDate 不是空字串)
+    const isMultiDay = eventData.endDate && eventData.endDate.trim() !== '' && eventData.endDate !== eventData.date;
+
+    // 建立日期顯示
+    let dateDisplay = eventData.date || '未指定';
+    let dateLabel = "📆 日期";
+
+    if (isMultiDay) {
+        // 跨日行程顯示區間
+        dateLabel = "📆 期程";
+        dateDisplay = `${eventData.date} → ${eventData.endDate}`;
+    }
+
+    console.log('[LINE] Event date info:', { date: eventData.date, endDate: eventData.endDate, isMultiDay });
 
     // 建立 body 內容的 info box
     const infoContents = [
@@ -71,7 +172,7 @@ function createEventFlexMessage(eventData) {
             layout: "horizontal",
             contents: [
                 { type: "text", text: dateLabel, size: "sm", color: "#888888", flex: 2 },
-                { type: "text", text: dateDisplay, size: "sm", color: isMultiDay ? "#6c5ce7" : "#333333", flex: 3, weight: "bold" }
+                { type: "text", text: dateDisplay, size: "sm", color: isMultiDay ? "#6c5ce7" : "#333333", flex: 3, weight: "bold", wrap: true }
             ]
         }
     ];
@@ -82,20 +183,21 @@ function createEventFlexMessage(eventData) {
             type: "box",
             layout: "horizontal",
             contents: [
-                { type: "text", text: "", size: "sm", color: "#888888", flex: 2 },
+                { type: "filler" },
                 { type: "text", text: "📅 跨日行程", size: "xs", color: "#6c5ce7", flex: 3 }
             ]
         });
     }
 
-    // 加入其他資訊
+    // 加入其他資訊 (處理全天行程)
+    const timeDisplay = eventData.isAllDay ? "🌅 全天" : (eventData.time || "--:--");
     infoContents.push(
         {
             type: "box",
             layout: "horizontal",
             contents: [
                 { type: "text", text: "⏰ 時間", size: "sm", color: "#888888", flex: 2 },
-                { type: "text", text: eventData.time || "--:--", size: "sm", color: "#333333", flex: 3, weight: "bold" }
+                { type: "text", text: timeDisplay, size: "sm", color: "#333333", flex: 3, weight: "bold" }
             ]
         },
         {
@@ -167,7 +269,7 @@ function createEventFlexMessage(eventData) {
         });
     }
 
-    return {
+    const message = {
         type: "flex",
         altText: `${typeConfig.icon} ${typeConfig.label}行程：${eventData.title}`,
         contents: {
@@ -231,6 +333,13 @@ function createEventFlexMessage(eventData) {
             }
         }
     };
+
+    // 加入 Quick Reply 按鈕 (包含附件連結)
+    if (eventId) {
+        message.quickReply = createEventQuickReply(eventId, attachments);
+    }
+
+    return message;
 }
 
 /**
@@ -345,6 +454,8 @@ function createMentionFlexMessage(authorName, eventTitle, contentPreview) {
                 ]
             }
         }
+        // Quick Reply 暫時停用 (調試中)
+        // quickReply: createMentionQuickReply()
     };
 }
 
@@ -563,9 +674,13 @@ function createCommentDeleteFlexMessage(authorName, eventTitle, contentPreview) 
 
 /**
  * 提醒通知 - Flex Message
+ * @param {string} eventTitle - 行程標題
+ * @param {string} eventDate - 行程日期
+ * @param {string} eventTime - 行程時間
+ * @param {string} eventId - 行程 ID (用於 Quick Reply)
  */
-function createReminderFlexMessage(eventTitle, eventDate, eventTime) {
-    return {
+function createReminderFlexMessage(eventTitle, eventDate, eventTime, eventId = null) {
+    const message = {
         type: "flex",
         altText: `⏰ 提醒：${eventTitle}`,
         contents: {
@@ -700,6 +815,13 @@ function createReminderFlexMessage(eventTitle, eventDate, eventTime) {
             }
         }
     };
+
+    // Quick Reply 暫時停用 (調試中)
+    // if (eventId) {
+    //     message.quickReply = createReminderQuickReply(eventId);
+    // }
+
+    return message;
 }
 
 /**
@@ -997,8 +1119,11 @@ function createSyncStatusFlexMessage(enabled) {
 
 /**
  * 行程更新通知 - Flex Message
+ * @param {Object} eventData - 行程資料
+ * @param {Array} changedFields - 變更的欄位
+ * @param {string} eventId - 行程 ID (用於 Quick Reply)
  */
-function createEventUpdateFlexMessage(eventData, changedFields) {
+function createEventUpdateFlexMessage(eventData, changedFields, eventId = null) {
     // 生成變更摘要
     const changesList = [];
     if (changedFields.includes('title')) changesList.push('標題');
@@ -1011,7 +1136,7 @@ function createEventUpdateFlexMessage(eventData, changedFields) {
         ? `📝 已更新：${changesList.join('、')}`
         : '📝 內容已更新';
 
-    return {
+    const message = {
         type: "flex",
         altText: `✏️ 行程更新：${eventData.title}`,
         contents: {
@@ -1167,6 +1292,13 @@ function createEventUpdateFlexMessage(eventData, changedFields) {
             }
         }
     };
+
+    // Quick Reply 暫時停用 (調試中)
+    // if (eventId) {
+    //     message.quickReply = createEventUpdateQuickReply(eventId);
+    // }
+
+    return message;
 }
 
 /**
@@ -1499,6 +1631,219 @@ async function handleMessage(client, event) {
         }
         return null;
     };
+
+    // ================== Quick Reply 指令處理 ==================
+
+    // 收到 {eventId} - 確認收到行程通知
+    if (originalText.startsWith('收到 ')) {
+        const eventId = originalText.substring(3).trim();
+        const userData = await getUserData();
+
+        if (!userData) {
+            await client.replyMessage(event.replyToken, createNotBoundFlex());
+            return;
+        }
+
+        try {
+            // 更新行程的已讀狀態
+            const eventRef = db.doc(`artifacts/${APP_ID}/public/data/school_events/${eventId}`);
+            const eventDoc = await eventRef.get();
+
+            if (eventDoc.exists) {
+                const eventData = eventDoc.data();
+                const readBy = eventData.readBy || [];
+                if (!readBy.includes(userData.id)) {
+                    await eventRef.update({
+                        readBy: [...readBy, userData.id]
+                    });
+                }
+
+                await client.replyMessage(event.replyToken, {
+                    type: "flex",
+                    altText: "✅ 已確認收到",
+                    contents: {
+                        type: "bubble",
+                        size: "kilo",
+                        body: {
+                            type: "box",
+                            layout: "vertical",
+                            paddingAll: "20px",
+                            contents: [
+                                { type: "text", text: "✅ 已確認收到", weight: "bold", size: "lg", color: "#00b894", align: "center" },
+                                { type: "text", text: `行程：${eventData.title}`, size: "sm", color: "#666666", align: "center", margin: "md", wrap: true }
+                            ]
+                        }
+                    }
+                });
+            } else {
+                await client.replyMessage(event.replyToken, { type: "text", text: "❌ 找不到該行程" });
+            }
+        } catch (e) {
+            console.error('[LINE] 收到指令處理失敗:', e);
+            await client.replyMessage(event.replyToken, { type: "text", text: "❌ 處理失敗，請稍後再試" });
+        }
+        return;
+    }
+
+    // 提醒 {eventId} - 設定 15 分鐘前提醒
+    if (originalText.startsWith('提醒 ')) {
+        const eventId = originalText.substring(3).trim();
+        const userData = await getUserData();
+
+        if (!userData) {
+            await client.replyMessage(event.replyToken, createNotBoundFlex());
+            return;
+        }
+
+        try {
+            const eventRef = db.doc(`artifacts/${APP_ID}/public/data/school_events/${eventId}`);
+            const eventDoc = await eventRef.get();
+
+            if (eventDoc.exists) {
+                const eventData = eventDoc.data();
+                const eventDateTime = new Date(`${eventData.date}T${eventData.time || '09:00'}:00`);
+                const reminderTime = new Date(eventDateTime.getTime() - 15 * 60 * 1000); // 15 分鐘前
+
+                // 建立提醒
+                await db.collection(`artifacts/${APP_ID}/public/data/reminders`).add({
+                    userId: userData.id,
+                    eventId: eventId,
+                    eventTitle: eventData.title,
+                    eventDate: eventData.date,
+                    eventTime: eventData.time || '09:00',
+                    reminderTime: reminderTime.toISOString(),
+                    minutesBefore: 15,
+                    triggered: false,
+                    createdAt: new Date().toISOString()
+                });
+
+                await client.replyMessage(event.replyToken, createReminderSetFlexMessage(
+                    eventData.title,
+                    eventData.date,
+                    eventData.time || '09:00',
+                    15
+                ));
+            } else {
+                await client.replyMessage(event.replyToken, { type: "text", text: "❌ 找不到該行程" });
+            }
+        } catch (e) {
+            console.error('[LINE] 提醒指令處理失敗:', e);
+            await client.replyMessage(event.replyToken, { type: "text", text: "❌ 設定提醒失敗，請稍後再試" });
+        }
+        return;
+    }
+
+    // 完成 {eventId} - 標記行程完成
+    if (originalText.startsWith('完成 ')) {
+        const eventId = originalText.substring(3).trim();
+        const userData = await getUserData();
+
+        if (!userData) {
+            await client.replyMessage(event.replyToken, createNotBoundFlex());
+            return;
+        }
+
+        try {
+            const eventRef = db.doc(`artifacts/${APP_ID}/public/data/school_events/${eventId}`);
+            const eventDoc = await eventRef.get();
+
+            if (eventDoc.exists) {
+                const eventData = eventDoc.data();
+                const completedBy = eventData.completedBy || [];
+                if (!completedBy.includes(userData.id)) {
+                    await eventRef.update({
+                        completedBy: [...completedBy, userData.id]
+                    });
+                }
+
+                await client.replyMessage(event.replyToken, {
+                    type: "flex",
+                    altText: "✅ 已標記完成",
+                    contents: {
+                        type: "bubble",
+                        size: "kilo",
+                        body: {
+                            type: "box",
+                            layout: "vertical",
+                            paddingAll: "20px",
+                            contents: [
+                                { type: "text", text: "✅ 已標記完成", weight: "bold", size: "lg", color: "#00b894", align: "center" },
+                                { type: "text", text: `行程：${eventData.title}`, size: "sm", color: "#666666", align: "center", margin: "md", wrap: true },
+                                { type: "text", text: "🎉 做得好！", size: "sm", color: "#888888", align: "center", margin: "sm" }
+                            ]
+                        }
+                    }
+                });
+            } else {
+                await client.replyMessage(event.replyToken, { type: "text", text: "❌ 找不到該行程" });
+            }
+        } catch (e) {
+            console.error('[LINE] 完成指令處理失敗:', e);
+            await client.replyMessage(event.replyToken, { type: "text", text: "❌ 標記完成失敗，請稍後再試" });
+        }
+        return;
+    }
+
+    // 延後 {eventId} - 延後 30 分鐘提醒
+    if (originalText.startsWith('延後 ')) {
+        const eventId = originalText.substring(3).trim();
+        const userData = await getUserData();
+
+        if (!userData) {
+            await client.replyMessage(event.replyToken, createNotBoundFlex());
+            return;
+        }
+
+        try {
+            const eventRef = db.doc(`artifacts/${APP_ID}/public/data/school_events/${eventId}`);
+            const eventDoc = await eventRef.get();
+
+            if (eventDoc.exists) {
+                const eventData = eventDoc.data();
+                const now = new Date();
+                const reminderTime = new Date(now.getTime() + 30 * 60 * 1000); // 30 分鐘後
+
+                // 建立延後提醒
+                await db.collection(`artifacts/${APP_ID}/public/data/reminders`).add({
+                    userId: userData.id,
+                    eventId: eventId,
+                    eventTitle: eventData.title,
+                    eventDate: eventData.date,
+                    eventTime: eventData.time || '09:00',
+                    reminderTime: reminderTime.toISOString(),
+                    minutesBefore: -30, // 負數表示已過期但延後
+                    triggered: false,
+                    isDelayed: true,
+                    createdAt: new Date().toISOString()
+                });
+
+                await client.replyMessage(event.replyToken, {
+                    type: "flex",
+                    altText: "🔔 已延後提醒",
+                    contents: {
+                        type: "bubble",
+                        size: "kilo",
+                        body: {
+                            type: "box",
+                            layout: "vertical",
+                            paddingAll: "20px",
+                            contents: [
+                                { type: "text", text: "🔔 已延後提醒", weight: "bold", size: "lg", color: "#fdcb6e", align: "center" },
+                                { type: "text", text: `行程：${eventData.title}`, size: "sm", color: "#666666", align: "center", margin: "md", wrap: true },
+                                { type: "text", text: "將於 30 分鐘後再次提醒您", size: "sm", color: "#888888", align: "center", margin: "sm" }
+                            ]
+                        }
+                    }
+                });
+            } else {
+                await client.replyMessage(event.replyToken, { type: "text", text: "❌ 找不到該行程" });
+            }
+        } catch (e) {
+            console.error('[LINE] 延後指令處理失敗:', e);
+            await client.replyMessage(event.replyToken, { type: "text", text: "❌ 延後提醒失敗，請稍後再試" });
+        }
+        return;
+    }
 
     // ================== 選單 ==================
     if (cmdMenu.includes(text)) {
@@ -2491,8 +2836,8 @@ exports.onEventCreate = onDocumentCreated(
 
                 if (!lineUserId || !lineNotifyEnabled) continue;
 
-                // 發送 LINE 通知 (使用精美 Flex Message)
-                const message = createEventFlexMessage(eventData);
+                // 發送 LINE 通知 (使用精美 Flex Message 含 Quick Reply)
+                const message = createEventFlexMessage(eventData, eventId);
 
                 await client.pushMessage(lineUserId, message);
                 console.log(`LINE notification sent to ${targetId}`);
@@ -2561,8 +2906,8 @@ exports.onEventUpdate = onDocumentUpdated(
 
                 if (!lineUserId || !lineNotifyEnabled) continue;
 
-                // 發送 LINE 通知 (使用精美 Flex Message)
-                const message = createEventUpdateFlexMessage(afterData, changedFields);
+                // 發送 LINE 通知 (使用精美 Flex Message 含 Quick Reply)
+                const message = createEventUpdateFlexMessage(afterData, changedFields, eventId);
 
                 await client.pushMessage(lineUserId, message);
                 console.log(`LINE update notification sent to ${targetId}`);
@@ -2828,8 +3173,8 @@ exports.checkReminders = onSchedule(
                 const lineNotifyEnabled = userData.lineNotifyEnabled;
 
                 if (lineUserId && lineNotifyEnabled) {
-                    // 發送 LINE 通知 (使用精美 Flex Message)
-                    const message = createReminderFlexMessage(reminder.eventTitle, reminder.eventDate, reminder.eventTime);
+                    // 發送 LINE 通知 (使用精美 Flex Message 含 Quick Reply)
+                    const message = createReminderFlexMessage(reminder.eventTitle, reminder.eventDate, reminder.eventTime, reminder.eventId);
 
                     await client.pushMessage(lineUserId, message);
                     console.log(`LINE reminder sent to ${reminder.userId}`);

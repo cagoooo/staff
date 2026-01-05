@@ -3,8 +3,8 @@
 ## 📋 系統資訊
 
 | 專案名稱 | 行政業務協調系統 |
-| 版本 | v3.6.0 |
-| 更新日期 | 2026-01-04 |
+| 版本 | v3.7.0 |
+| 更新日期 | 2026-01-05 |
 | 部署網址 | https://cagoooo.github.io/staff/ |
 | 技術棧 | HTML5, Tailwind CSS, Firebase (Auth, Firestore, Cloud Functions), LINE Messaging API |
 | Firebase 專案 | Blaze 方案 |
@@ -25,6 +25,8 @@
 | ⏰ 提醒自訂 | 自訂提醒時間、瀏覽器通知 | `reminders.js` |
 | 📱 **LINE 通知整合** | LINE Messaging API 即時推播通知 | `functions/index.js`, `line-connect.js` |
 | 🌅 **全天行程** | 不指定時間的全天行程支援 | `firestore.js`, `event-modal.js` |
+| 📅 **跨日行程** | 跨日行程日期區間顯示 | `functions/index.js` |
+| ⚡ **LINE Quick Reply** | LINE 通知快速回覆按鈕 | `functions/index.js` |
 
 ### 📊 P1 - 進階功能
 
@@ -95,10 +97,22 @@ smes/
 │   ├── recurring-events.js # 行程重複
 │   └── line-connect.js     # LINE 連接功能
 ├── functions/
-│   └── index.js            # Cloud Functions (LINE Bot)
+│   └── index.js            # Cloud Functions (LINE Bot, Quick Reply)
 └── components/
     └── modal.js            # Modal 元件
 ```
+
+---
+
+## 📝 Git Commits 紀錄 (2026-01-05 - v3.7.0)
+
+| Commit | 說明 |
+|--------|------|
+| ⚡ **LINE Quick Reply** | 新增 LINE 通知快速回覆按鈕功能 |
+| ✅ **收到/設定提醒** | Quick Reply「收到」標記已讀、「設定提醒」建立提醒 |
+| 📎 **附件按鈕** | 有附件時自動顯示「查看附件」Quick Reply 按鈕 |
+| 📅 **跨日行程修正** | 修正跨日行程 LINE 通知失敗問題（空字串修正） |
+| 🗓️ **日期區間顯示** | 跨日行程顯示「開始日期 → 結束日期」清晰區間 |
 
 ---
 
