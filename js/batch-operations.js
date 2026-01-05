@@ -92,10 +92,31 @@ export function enterBatchMode() {
     items.forEach(item => {
         if (item.querySelector('.batch-checkbox')) return;
 
+        // 保存原本的內容
+        const originalContent = item.innerHTML;
+
+        // 創建 wrapper 容器
+        const wrapper = document.createElement('div');
+        wrapper.className = 'batch-item-wrapper';
+        wrapper.style.cssText = 'display: flex; align-items: flex-start; width: 100%;';
+
+        // 創建 checkbox
         const checkbox = document.createElement('input');
         checkbox.type = 'checkbox';
         checkbox.className = 'batch-checkbox';
-        checkbox.style.cssText = 'width: 20px; height: 20px; min-width: 20px; margin-right: 10px; cursor: pointer; z-index: 100; position: relative; pointer-events: auto;';
+        checkbox.style.cssText = `
+            width: 24px; 
+            height: 24px; 
+            min-width: 24px; 
+            margin-right: 12px; 
+            margin-top: 4px;
+            cursor: pointer; 
+            z-index: 100; 
+            position: relative; 
+            pointer-events: auto;
+            flex-shrink: 0;
+            accent-color: #6c5ce7;
+        `;
 
         // 直接處理 checkbox 的點擊事件
         checkbox.onclick = (e) => {
@@ -108,15 +129,25 @@ export function enterBatchMode() {
             const eventId = item.dataset.eventId;
             if (checkbox.checked) {
                 selectedEvents.add(eventId);
+                item.style.background = '#f0f0f0';
             } else {
                 selectedEvents.delete(eventId);
+                item.style.background = '';
             }
             updateSelectedCount();
         };
 
-        item.style.display = 'flex';
-        item.style.alignItems = 'flex-start';
-        item.insertBefore(checkbox, item.firstChild);
+        // 創建內容容器
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'batch-content';
+        contentDiv.style.cssText = 'flex: 1; min-width: 0; overflow: hidden;';
+        contentDiv.innerHTML = originalContent;
+
+        // 清空原本的內容並重新組織
+        item.innerHTML = '';
+        wrapper.appendChild(checkbox);
+        wrapper.appendChild(contentDiv);
+        item.appendChild(wrapper);
 
         // 保存原本的 onclick 事件
         const originalOnClick = item.onclick;
