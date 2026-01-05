@@ -148,6 +148,137 @@ function createMentionQuickReply() {
 }
 
 /**
+ * 行程完成通知 - Flex Message
+ * @param {Object} eventData - 行程資料
+ * @param {string} completedByName - 完成者名稱
+ */
+function createCompletionFlexMessage(eventData, completedByName) {
+    return {
+        type: "flex",
+        altText: `✅ 行程已完成：${eventData.title}`,
+        contents: {
+            type: "bubble",
+            size: "kilo",
+            header: {
+                type: "box",
+                layout: "vertical",
+                backgroundColor: "#00b894",
+                paddingAll: "15px",
+                contents: [
+                    {
+                        type: "text",
+                        text: "✅ 行程已完成",
+                        color: "#ffffff",
+                        weight: "bold",
+                        size: "lg"
+                    }
+                ]
+            },
+            body: {
+                type: "box",
+                layout: "vertical",
+                paddingAll: "15px",
+                spacing: "md",
+                contents: [
+                    {
+                        type: "text",
+                        text: eventData.title,
+                        weight: "bold",
+                        size: "lg",
+                        wrap: true
+                    },
+                    {
+                        type: "separator",
+                        margin: "md"
+                    },
+                    {
+                        type: "box",
+                        layout: "horizontal",
+                        spacing: "sm",
+                        contents: [
+                            {
+                                type: "text",
+                                text: "📅 日期",
+                                color: "#636e72",
+                                size: "sm",
+                                flex: 2
+                            },
+                            {
+                                type: "text",
+                                text: eventData.date || "未指定",
+                                size: "sm",
+                                flex: 4,
+                                wrap: true
+                            }
+                        ]
+                    },
+                    {
+                        type: "box",
+                        layout: "horizontal",
+                        spacing: "sm",
+                        contents: [
+                            {
+                                type: "text",
+                                text: "👤 完成者",
+                                color: "#636e72",
+                                size: "sm",
+                                flex: 2
+                            },
+                            {
+                                type: "text",
+                                text: completedByName,
+                                size: "sm",
+                                flex: 4,
+                                color: "#00b894",
+                                weight: "bold"
+                            }
+                        ]
+                    },
+                    {
+                        type: "box",
+                        layout: "horizontal",
+                        spacing: "sm",
+                        contents: [
+                            {
+                                type: "text",
+                                text: "⏰ 完成時間",
+                                color: "#636e72",
+                                size: "sm",
+                                flex: 2
+                            },
+                            {
+                                type: "text",
+                                text: new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }),
+                                size: "sm",
+                                flex: 4
+                            }
+                        ]
+                    }
+                ]
+            },
+            footer: {
+                type: "box",
+                layout: "vertical",
+                paddingAll: "10px",
+                contents: [
+                    {
+                        type: "button",
+                        action: {
+                            type: "uri",
+                            label: "🔗 查看詳情",
+                            uri: LINK_URL
+                        },
+                        style: "primary",
+                        color: "#00b894",
+                        height: "sm"
+                    }
+                ]
+            }
+        }
+    };
+}
+
+/**
  * 新行程通知 - Flex Message (支援公告類型和附件)
  * @param {Object} eventData - 行程資料
  * @param {string} eventId - 行程 ID (用於 Quick Reply)
@@ -2890,6 +3021,66 @@ exports.onEventUpdate = onDocumentUpdated(
         if (beforeData.time !== afterData.time) changedFields.push('time');
         if (JSON.stringify(beforeData.targets) !== JSON.stringify(afterData.targets)) changedFields.push('targets');
         if (JSON.stringify(beforeData.attachments) !== JSON.stringify(afterData.attachments)) changedFields.push('attachments');
+        if (JSON.stringify(beforeData.completedBy) !== JSON.stringify(afterData.completedBy)) changedFields.push('completedBy');
+
+        // ====================
+        // 完成通知邏輯：檢測是否有新用戶標記完成
+        // ====================
+        const beforeCompletedBy = beforeData.completedBy || [];
+        const afterCompletedBy = afterData.completedBy || [];
+        const newlyCompleted = afterCompletedBy.filter(id => !beforeCompletedBy.includes(id));
+
+        if (newlyCompleted.length > 0) {
+            console.log(`[LINE] Completion detected by: ${newlyCompleted.join(', ')}`);
+
+            // 查詢完成者的名稱
+            const usersRef = db.collection(`artifacts/${APP_ID}/public/data/users`);
+
+            for (const completerId of newlyCompleted) {
+                try {
+                    // 獲取完成者名稱
+                    const completerDoc = await usersRef.doc(completerId).get();
+                    const completerName = completerDoc.exists ? completerDoc.data().name : '用戶';
+
+                    // 通知對象：發起人 + 所有被指派的用戶（排除完成者自己）
+                    const notifyTargets = [...new Set([
+                        afterData.authorId,
+                        ...(afterData.targets || [])
+                    ].filter(id => id && id !== completerId))];
+
+                    console.log(`[LINE] Will notify ${notifyTargets.length} users about completion`);
+
+                    // 發送完成通知
+                    for (const targetId of notifyTargets) {
+                        try {
+                            const userDoc = await usersRef.doc(targetId).get();
+                            if (!userDoc.exists) continue;
+
+                            const userData = userDoc.data();
+                            const lineUserId = userData.lineUserId;
+                            const lineNotifyEnabled = userData.lineNotifyEnabled;
+
+                            if (!lineUserId || !lineNotifyEnabled) continue;
+
+                            const message = createCompletionFlexMessage(afterData, completerName);
+                            await client.pushMessage(lineUserId, message);
+                            console.log(`[LINE] Completion notification sent to ${targetId}`);
+                        } catch (err) {
+                            console.error(`Failed to notify ${targetId} about completion:`, err);
+                        }
+                    }
+                } catch (err) {
+                    console.error(`Failed to process completion by ${completerId}:`, err);
+                }
+            }
+
+            // 完成通知已發送，不需要再發送更新通知
+            return;
+        }
+
+        // ====================
+        // 一般更新通知邏輯
+        // ====================
 
         // 如果只是更新 completedBy, readBy, updatedAt 等狀態欄位，不發送通知
         const importantFields = ['title', 'date', 'time', 'targets', 'isPublic', 'announcementType', 'pinned', 'attachments'];
