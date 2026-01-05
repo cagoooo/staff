@@ -4,6 +4,14 @@ import { DEPARTMENTS } from './departments.js';
 
 let statsCharts = {};
 
+// State for stats dashboard
+let statsState = {
+    selectedYear: new Date().getFullYear(),
+    selectedMonth: new Date().getMonth(), // 0-11
+    selectedDepartment: 'all', // 'all' or department key
+    viewMode: 'month' // 'month' or 'year'
+};
+
 // Initialize Stats - inject Chart.js CDN and UI elements
 export function initStats() {
     console.log('[Stats] Initializing...');
@@ -49,15 +57,36 @@ export function renderStats() {
     const currentUser = getAppCurrentUser();
     const now = new Date();
 
-    // Calculate current month range
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    // Use selected year/month from state
+    const selectedYear = statsState.selectedYear;
+    const selectedMonth = statsState.selectedMonth;
+    const selectedDept = statsState.selectedDepartment;
 
-    // Filter events for current month
-    const monthEvents = events.filter(e => {
+    // Calculate selected period range
+    const monthStart = new Date(selectedYear, selectedMonth, 1);
+    const monthEnd = new Date(selectedYear, selectedMonth + 1, 0);
+
+    // Filter events for selected month
+    let monthEvents = events.filter(e => {
         const eventDate = new Date(e.date);
         return eventDate >= monthStart && eventDate <= monthEnd;
     });
+
+    // Apply department filter if selected
+    if (selectedDept !== 'all') {
+        monthEvents = monthEvents.filter(e => {
+            // Check if event targets include users from selected department
+            if (e.targets && e.targets.length > 0) {
+                return e.targets.some(targetId => {
+                    const targetUser = users.find(u => u.id === targetId);
+                    return targetUser?.department === selectedDept;
+                });
+            }
+            // Check author's department
+            const author = users.find(u => u.id === e.authorId);
+            return author?.department === selectedDept;
+        });
+    }
 
     // Calculate statistics
     const totalEvents = monthEvents.length;
@@ -304,14 +333,136 @@ export function renderStats() {
             [data-theme="dark"] .stats-event-meta {
                 color: #b0b0d0;
             }
+            /* Stats controls styling */
+            .stats-controls {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 12px;
+                margin-bottom: 16px;
+                align-items: center;
+                justify-content: space-between;
+            }
+            .stats-period-selector {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+            .stats-nav-btn {
+                background: #6c5ce7;
+                color: white;
+                border: none;
+                border-radius: 8px;
+                width: 36px;
+                height: 36px;
+                cursor: pointer;
+                font-size: 18px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: background 0.2s;
+            }
+            .stats-nav-btn:hover {
+                background: #5a4bd6;
+            }
+            .stats-period-display {
+                font-family: 'VT323', monospace;
+                font-size: 24px;
+                font-weight: bold;
+                min-width: 140px;
+                text-align: center;
+            }
+            .stats-filter-select {
+                padding: 8px 12px;
+                border-radius: 8px;
+                border: 2px solid #ddd;
+                font-family: 'VT323', monospace;
+                font-size: 16px;
+                background: white;
+                cursor: pointer;
+            }
+            .stats-export-btn {
+                background: #00b894;
+                color: white;
+                border: none;
+                border-radius: 8px;
+                padding: 8px 16px;
+                font-family: 'VT323', monospace;
+                font-size: 16px;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                transition: background 0.2s;
+            }
+            .stats-export-btn:hover {
+                background: #00a884;
+            }
+            .stats-controls-left {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                flex-wrap: wrap;
+            }
+            .stats-controls-right {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+            }
+            @media (max-width: 767px) {
+                .stats-controls {
+                    flex-direction: column;
+                    align-items: stretch;
+                }
+                .stats-controls-left, .stats-controls-right {
+                    justify-content: center;
+                }
+                .stats-period-display {
+                    font-size: 20px;
+                }
+            }
+            /* Dark mode for controls */
+            [data-theme="dark"] .stats-filter-select {
+                background: #2a2a4a;
+                border-color: #4d4d7a;
+                color: #f0f0f0;
+            }
+            [data-theme="dark"] .stats-period-display {
+                color: #f0f0f0;
+            }
         </style>
+        
+        <!-- Stats Controls -->
+        <div class="stats-controls">
+            <div class="stats-controls-left">
+                <div class="stats-period-selector">
+                    <button class="stats-nav-btn" onclick="window.statsPrevMonth()" title="上個月">◀</button>
+                    <div class="stats-period-display">${selectedYear}年${selectedMonth + 1}月</div>
+                    <button class="stats-nav-btn" onclick="window.statsNextMonth()" title="下個月">▶</button>
+                </div>
+                <select class="stats-filter-select" onchange="window.statsFilterDept(this.value)" id="stats-dept-filter">
+                    <option value="all" ${selectedDept === 'all' ? 'selected' : ''}>全部處室</option>
+                    <option value="principal" ${selectedDept === 'principal' ? 'selected' : ''}>校長室</option>
+                    <option value="academic" ${selectedDept === 'academic' ? 'selected' : ''}>教務處</option>
+                    <option value="student" ${selectedDept === 'student' ? 'selected' : ''}>學務處</option>
+                    <option value="general" ${selectedDept === 'general' ? 'selected' : ''}>總務處</option>
+                    <option value="counseling" ${selectedDept === 'counseling' ? 'selected' : ''}>輔導室</option>
+                    <option value="teachers" ${selectedDept === 'teachers' ? 'selected' : ''}>教師群</option>
+                </select>
+            </div>
+            <div class="stats-controls-right">
+                <button class="stats-nav-btn" onclick="window.statsGoToday()" title="回到今天" style="background: #fdcb6e;">📅</button>
+                <button class="stats-export-btn" onclick="window.statsExportReport()">
+                    <i class="fas fa-download"></i> 匯出報表
+                </button>
+            </div>
+        </div>
         
         <!-- Overview Cards -->
         <div class="stats-grid stats-grid-4 mb-4">
             <div class="stats-card stats-card-clickable text-center" data-type="total" title="點擊查看詳細">
                 <div class="stats-icon" style="color: #6c5ce7;">📋</div>
                 <div class="stats-number">${totalEvents}</div>
-                <div class="stats-label">本月行程總數</div>
+                <div class="stats-label">${selectedMonth + 1}月行程總數</div>
             </div>
             <div class="stats-card stats-card-clickable text-center" data-type="completed" title="點擊查看詳細">
                 <div class="stats-icon" style="color: #00b894;">✅</div>
@@ -641,6 +792,144 @@ function closeStatsDetailModal() {
 
 // Export closeStatsDetailModal to window for onclick handlers
 window.closeStatsDetailModal = closeStatsDetailModal;
+
+// ============================================
+// STATS CONTROL FUNCTIONS
+// ============================================
+
+// Navigate to previous month
+function statsPrevMonth() {
+    statsState.selectedMonth--;
+    if (statsState.selectedMonth < 0) {
+        statsState.selectedMonth = 11;
+        statsState.selectedYear--;
+    }
+    renderStats();
+}
+
+// Navigate to next month
+function statsNextMonth() {
+    statsState.selectedMonth++;
+    if (statsState.selectedMonth > 11) {
+        statsState.selectedMonth = 0;
+        statsState.selectedYear++;
+    }
+    renderStats();
+}
+
+// Go to current month
+function statsGoToday() {
+    const now = new Date();
+    statsState.selectedYear = now.getFullYear();
+    statsState.selectedMonth = now.getMonth();
+    renderStats();
+}
+
+// Filter by department
+function statsFilterDept(dept) {
+    statsState.selectedDepartment = dept;
+    renderStats();
+}
+
+// Export stats report
+function statsExportReport() {
+    const events = globalEvents();
+    const users = globalUsers();
+    const currentUser = getAppCurrentUser();
+
+    const year = statsState.selectedYear;
+    const month = statsState.selectedMonth;
+    const dept = statsState.selectedDepartment;
+
+    // Get filtered events
+    const monthStart = new Date(year, month, 1);
+    const monthEnd = new Date(year, month + 1, 0);
+
+    let filteredEvents = events.filter(e => {
+        const eventDate = new Date(e.date);
+        return eventDate >= monthStart && eventDate <= monthEnd;
+    });
+
+    if (dept !== 'all') {
+        filteredEvents = filteredEvents.filter(e => {
+            if (e.targets && e.targets.length > 0) {
+                return e.targets.some(targetId => {
+                    const targetUser = users.find(u => u.id === targetId);
+                    return targetUser?.department === dept;
+                });
+            }
+            const author = users.find(u => u.id === e.authorId);
+            return author?.department === dept;
+        });
+    }
+
+    // Sort by date
+    filteredEvents.sort((a, b) => a.date.localeCompare(b.date));
+
+    // Calculate stats
+    const total = filteredEvents.length;
+    const completed = filteredEvents.filter(e => e.completedBy?.includes(currentUser?.id)).length;
+    const important = filteredEvents.filter(e => e.isPublic).length;
+
+    // Department labels
+    const deptLabels = {
+        'all': '全部處室',
+        'principal': '校長室',
+        'academic': '教務處',
+        'student': '學務處',
+        'general': '總務處',
+        'counseling': '輔導室',
+        'teachers': '教師群'
+    };
+
+    // Generate CSV content
+    const csvContent = [
+        ['行政業務協調系統 - 統計報表'],
+        [`報表期間: ${year}年${month + 1}月`],
+        [`篩選處室: ${deptLabels[dept] || '全部處室'}`],
+        [`匯出時間: ${new Date().toLocaleString('zh-TW')}`],
+        [],
+        ['統計摘要'],
+        [`行程總數,${total}`],
+        [`已完成,${completed}`],
+        [`待處理,${total - completed}`],
+        [`重要行事,${important}`],
+        [],
+        ['行程明細'],
+        ['日期', '時間', '標題', '類型', '發起人', '狀態'],
+        ...filteredEvents.map(e => [
+            e.date,
+            e.time || '全天',
+            `"${e.title.replace(/"/g, '""')}"`,
+            e.isPublic ? '重要' : '一般',
+            e.authorName || '',
+            e.completedBy?.includes(currentUser?.id) ? '已完成' : '待處理'
+        ])
+    ].map(row => row.join(',')).join('\n');
+
+    // Add BOM for Excel UTF-8 support
+    const BOM = '\uFEFF';
+    const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+
+    // Download file
+    const link = document.createElement('a');
+    const fileName = `統計報表_${year}年${month + 1}月_${deptLabels[dept]}.csv`;
+    link.href = URL.createObjectURL(blob);
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    // Show success message
+    alert(`✅ 報表已匯出！\n\n檔案名稱: ${fileName}\n\n包含 ${total} 筆行程資料`);
+}
+
+// Export control functions to window
+window.statsPrevMonth = statsPrevMonth;
+window.statsNextMonth = statsNextMonth;
+window.statsGoToday = statsGoToday;
+window.statsFilterDept = statsFilterDept;
+window.statsExportReport = statsExportReport;
 
 // Export to window
 window.renderStats = renderStats;
