@@ -4191,12 +4191,37 @@ exports.triggerDailySummary = onRequest(
         try {
             // 如果指定了 userId，只發送給該使用者
             if (userId) {
-                const userDoc = await db.doc(`artifacts/${APP_ID}/public/data/users/${userId}`).get();
-                if (!userDoc.exists) {
-                    return res.status(404).json({ error: 'User not found' });
+                let userDoc;
+                let userData;
+                let internalUserId = userId;
+
+                // 檢查是否為 LINE User ID (以 U 開頭)
+                if (userId.startsWith('U') && userId.length > 30) {
+                    // 用 LINE User ID 查詢使用者
+                    const usersSnapshot = await db.collection(`artifacts/${APP_ID}/public/data/users`)
+                        .where('lineUserId', '==', userId)
+                        .limit(1)
+                        .get();
+
+                    if (usersSnapshot.empty) {
+                        return res.status(404).json({
+                            error: 'User not found with this LINE User ID',
+                            hint: 'Make sure you have linked your LINE account in the app'
+                        });
+                    }
+
+                    userDoc = usersSnapshot.docs[0];
+                    userData = userDoc.data();
+                    internalUserId = userDoc.id;
+                } else {
+                    // 用內部 userId 查詢
+                    userDoc = await db.doc(`artifacts/${APP_ID}/public/data/users/${userId}`).get();
+                    if (!userDoc.exists) {
+                        return res.status(404).json({ error: 'User not found' });
+                    }
+                    userData = userDoc.data();
                 }
 
-                const userData = userDoc.data();
                 if (!userData.lineUserId) {
                     return res.status(400).json({ error: 'User has not linked LINE account' });
                 }
@@ -4209,8 +4234,8 @@ exports.triggerDailySummary = onRequest(
                 const userEvents = [];
                 eventsSnapshot.forEach(doc => {
                     const data = doc.data();
-                    const isTarget = data.targets && data.targets.includes(userId);
-                    const isAuthor = data.authorId === userId;
+                    const isTarget = data.targets && data.targets.includes(internalUserId);
+                    const isAuthor = data.authorId === internalUserId;
                     if (isTarget || isAuthor) {
                         userEvents.push({ id: doc.id, ...data });
                     }
