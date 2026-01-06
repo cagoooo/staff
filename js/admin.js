@@ -205,6 +205,7 @@ export function renderAdminPanel() {
 
     container.innerHTML = `
         ${backupUI}
+        ${getAdminMobileStyles()}
         
         <style>
             .sortable-th:hover { background: #3d4a4f !important; }
@@ -224,7 +225,8 @@ export function renderAdminPanel() {
             </button>
         </div>
         
-        <div class="content-card p-4">
+        <!-- Desktop Table View -->
+        <div class="content-card p-4 admin-desktop-table">
             <div class="overflow-x-auto">
                 <table style="width: 100%; border-collapse: collapse; font-family: 'VT323', monospace; font-size: 20px;">
                     <thead>
@@ -259,6 +261,11 @@ export function renderAdminPanel() {
                 </table>
             </div>
         </div>
+        
+        <!-- Mobile Card View -->
+        <div class="admin-mobile-cards">
+            ${sortedUsers.map(u => renderUserCard(u)).join('')}
+        </div>
     `;
 }
 
@@ -274,6 +281,180 @@ function getSortFieldLabel(field) {
         'status': '狀態'
     };
     return labels[field] || field;
+}
+
+// Mobile CSS styles for admin panel
+function getAdminMobileStyles() {
+    return `
+        <style>
+            /* Desktop: show table, hide cards */
+            @media (min-width: 769px) {
+                .admin-desktop-table { display: block; }
+                .admin-mobile-cards { display: none; }
+            }
+            
+            /* Mobile: hide table, show cards */
+            @media (max-width: 768px) {
+                .admin-desktop-table { display: none !important; }
+                .admin-mobile-cards { display: block !important; }
+            }
+            
+            .admin-mobile-cards {
+                display: none;
+            }
+            
+            .admin-user-card {
+                background: white;
+                border-radius: 12px;
+                margin-bottom: 12px;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                overflow: hidden;
+                border-left: 4px solid #6c5ce7;
+            }
+            
+            .admin-user-card.disabled {
+                opacity: 0.6;
+                border-left-color: #e74c3c;
+                background: #fff5f5;
+            }
+            
+            .admin-user-card.admin-role {
+                border-left-color: #f39c12;
+            }
+            
+            .admin-user-card-header {
+                background: #f8f9fa;
+                padding: 12px 16px;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                border-bottom: 1px solid #e9ecef;
+            }
+            
+            .admin-user-card-name {
+                font-family: 'VT323', monospace;
+                font-size: 22px;
+                font-weight: bold;
+            }
+            
+            .admin-user-card-badges {
+                display: flex;
+                gap: 6px;
+            }
+            
+            .admin-user-card-badge {
+                padding: 4px 8px;
+                border-radius: 12px;
+                font-size: 12px;
+                font-family: 'VT323', monospace;
+            }
+            
+            .admin-user-card-body {
+                padding: 12px 16px;
+            }
+            
+            .admin-user-card-row {
+                display: flex;
+                margin-bottom: 8px;
+                font-family: 'VT323', monospace;
+                font-size: 16px;
+            }
+            
+            .admin-user-card-label {
+                color: #636e72;
+                width: 60px;
+                flex-shrink: 0;
+            }
+            
+            .admin-user-card-value {
+                color: #2d3436;
+                word-break: break-all;
+            }
+            
+            .admin-user-card-actions {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 8px;
+                padding: 12px 16px;
+                background: #f8f9fa;
+                border-top: 1px solid #e9ecef;
+            }
+            
+            .admin-user-card-actions .pixel-btn {
+                flex: 1;
+                min-width: 70px;
+                padding: 8px 12px !important;
+                font-size: 14px !important;
+            }
+        </style>
+    `;
+}
+
+// Render mobile user card
+function renderUserCard(user) {
+    const deptLabels = {
+        'principal': '校長室',
+        'academic': '教務處',
+        'student': '學務處',
+        'general': '總務處',
+        'counseling': '輔導室',
+        'teachers': '教師群',
+        'kindergarten': '幼兒園'
+    };
+
+    const isDisabled = user.disabled === true;
+    const isAdminUser = user.role === 'admin';
+    const currentUser = getAppCurrentUser();
+    const isSelf = user.id === currentUser?.id;
+    const hasLine = user.lineUserId && user.lineNotifyEnabled;
+
+    return `
+        <div class="admin-user-card ${isDisabled ? 'disabled' : ''} ${isAdminUser ? 'admin-role' : ''}">
+            <div class="admin-user-card-header">
+                <span class="admin-user-card-name">${user.name || '未設定'}</span>
+                <div class="admin-user-card-badges">
+                    ${isAdminUser ? '<span class="admin-user-card-badge" style="background: #ffeaa7; color: #f39c12;">👑 管理員</span>' : ''}
+                    ${hasLine ? '<span class="admin-user-card-badge" style="background: #d4edda; color: #00B900;">LINE</span>' : ''}
+                    ${isDisabled ? '<span class="admin-user-card-badge" style="background: #f8d7da; color: #e74c3c;">停用</span>' :
+            '<span class="admin-user-card-badge" style="background: #d4edda; color: #00b894;">啟用</span>'}
+                </div>
+            </div>
+            <div class="admin-user-card-body">
+                <div class="admin-user-card-row">
+                    <span class="admin-user-card-label">帳號</span>
+                    <span class="admin-user-card-value">${user.username || user.email || '--'}</span>
+                </div>
+                <div class="admin-user-card-row">
+                    <span class="admin-user-card-label">處室</span>
+                    <span class="admin-user-card-value">${deptLabels[user.department] || user.department || '--'}</span>
+                </div>
+                <div class="admin-user-card-row">
+                    <span class="admin-user-card-label">職稱</span>
+                    <span class="admin-user-card-value">${user.jobTitle || '--'}</span>
+                </div>
+            </div>
+            ${!isSelf ? `
+                <div class="admin-user-card-actions">
+                    <button onclick="showEditUserModal('${user.id}')" class="pixel-btn" style="background: #6c5ce7;">
+                        ✏️ 編輯
+                    </button>
+                    <button onclick="${isDisabled ? `enableUser('${user.id}')` : `disableUser('${user.id}')`}" 
+                        class="pixel-btn" style="${isDisabled ? 'background: #00b894;' : 'background: #e17055;'}">
+                        ${isDisabled ? '✅ 啟用' : '⛔ 停用'}
+                    </button>
+                    ${!isAdminUser ? `
+                        <button onclick="promoteToAdmin('${user.id}')" class="pixel-btn" style="background: #f39c12;">
+                            👑 設管理員
+                        </button>
+                    ` : ''}
+                    <button onclick="deleteUser('${user.id}', '${user.name || user.username || ''}')" 
+                        class="pixel-btn" style="background: #d63031;">
+                        🗑️ 刪除
+                    </button>
+                </div>
+            ` : '<div class="admin-user-card-actions"><span style="color:#888;font-family:VT323,monospace;">（這是您自己）</span></div>'}
+        </div>
+    `;
 }
 
 // Render a single user row
