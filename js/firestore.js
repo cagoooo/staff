@@ -137,6 +137,12 @@ export async function handleFirebaseAddEvent(e) {
     const targets = [..._currentSelectedTargets];
     const btn = document.getElementById('btn-add-event');
 
+    // Validation: Must have time OR be all-day event
+    if (!time && !isAllDay) {
+        showAlert('⚠️ 請設定時間或勾選「全天行程」');
+        return;
+    }
+
     // New fields - date range support
     const isMultiDay = document.getElementById('evt-multi-day')?.checked || false;
     const endDate = isMultiDay ? document.getElementById('evt-end-date')?.value : null;
