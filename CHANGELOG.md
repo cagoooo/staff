@@ -3,11 +3,20 @@
 ## 📋 系統資訊
 
 | 專案名稱 | 行政業務協調系統 |
-| 版本 | v3.10.0 |
+| 版本 | v3.10.1 |
 | 更新日期 | 2026-01-06 |
 | 部署網址 | https://cagoooo.github.io/staff/ |
 | 技術棧 | HTML5, Tailwind CSS, Firebase (Auth, Firestore, Cloud Functions), LINE Messaging API |
 | Firebase 專案 | Blaze 方案 |
+
+---
+
+## 🎉 v3.10.1 更新內容 (2026-01-06)
+
+### 🎨 UI 優化
+| 項目 | 說明 |
+|------|------|
+| 👨‍🏫 教師群 Emoji | 共用日曆和新增行程的「教師群」篩選按鈕新增 👨‍🏫 圖示，與其他處室風格一致 |
 
 ---
 
