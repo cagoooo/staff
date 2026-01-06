@@ -2,7 +2,7 @@
 import { collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, setDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { db, appId } from './firebase-config.js';
 import { showAlert } from '../components/modal.js';
-import { cacheUsers, cacheEvents, getCachedUsers, getCachedEvents, isOnline, registerNetworkHandlers } from './cache-manager.js';
+import { cacheUsers, cacheEvents, getCachedUsers, getCachedEvents, isOnline, registerNetworkHandlers, isOfflineMode, setOfflineMode } from './cache-manager.js';
 import { getSession, saveSession } from './crypto.js';
 
 let _globalUsers = [];

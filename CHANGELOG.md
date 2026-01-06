@@ -3,11 +3,28 @@
 ## 📋 系統資訊
 
 | 專案名稱 | 行政業務協調系統 |
-| 版本 | v3.11.1 |
-| 更新日期 | 2026-01-06 |
+| 版本 | v3.12.0 |
+| 更新日期 | 2026-01-07 |
 | 部署網址 | https://cagoooo.github.io/staff/ |
 | 技術棧 | HTML5, Tailwind CSS, Firebase (Auth, Firestore, Cloud Functions), LINE Messaging API |
 | Firebase 專案 | Blaze 方案 |
+
+---
+
+## 🎉 v3.12.0 更新內容 (2026-01-07)
+
+### ✨ 新功能
+| 功能 | 說明 |
+|------|------|
+| 📲 行事曆訂閱 | 產生 iCal 訂閱連結，可加入 Google Calendar / Apple Calendar 自動同步 |
+| 📡 離線模式強化 | 離線時顯示快取資料，並顯示「最後同步時間」提示 |
+
+### 🔧 改進
+| 項目 | 說明 |
+|------|------|
+| Cloud Function | 新增 `getICalFeed` 端點產生 iCal 格式訂閱 |
+| 匯出選單 | 新增「📲 訂閱行事曆」選項，支援一鍵加入 Google Calendar |
+| Service Worker | 版本更新至 v3.12.1 |
 
 ---
 

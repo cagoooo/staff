@@ -5071,3 +5071,143 @@ exports.triggerWeeklySummary = onRequest(
         }
     }
 );
+
+// ============================================
+// iCal 訂閱 (Calendar Subscription)
+// ============================================
+
+/**
+ * 產生 iCal 格式的行程
+ * @param {Object} event - 行程資料
+ * @returns {string} - iCal VEVENT 格式
+ */
+function generateICalEvent(event) {
+    const uid = `${event.id}@smes-calendar`;
+    const now = new Date().toISOString().replace(/[-:.]/g, '').slice(0, 15) + 'Z';
+
+    // 解析日期和時間
+    const [year, month, day] = event.date.split('-');
+    const [hour, minute] = (event.time || '09:00').split(':');
+
+    // 格式化 iCal 日期 (YYYYMMDDTHHMMSS)
+    const startDate = `${year}${month}${day}T${hour}${minute}00`;
+
+    // 結束時間 (預設 1 小時後)
+    let endDate;
+    if (event.isAllDay) {
+        // 全天行程
+        endDate = startDate;
+    } else {
+        const endHour = String(parseInt(hour) + 1).padStart(2, '0');
+        endDate = `${year}${month}${day}T${endHour}${minute}00`;
+    }
+
+    // 跳脫特殊字元
+    const escapeIcal = (str) => str ? str.replace(/[,;\\]/g, '\\$&').replace(/\n/g, '\\n') : '';
+
+    return `BEGIN:VEVENT
+UID:${uid}
+DTSTAMP:${now}
+DTSTART:${startDate}
+DTEND:${endDate}
+SUMMARY:${escapeIcal(event.title)}
+DESCRIPTION:發起人：${escapeIcal(event.authorName || '')}
+STATUS:${event.isGloballyCompleted ? 'COMPLETED' : 'CONFIRMED'}
+END:VEVENT`;
+}
+
+/**
+ * 產生完整的 iCal 檔案內容
+ * @param {Array} events - 行程陣列
+ * @returns {string} - iCal 檔案內容
+ */
+function generateICalFile(events) {
+    const header = `BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//SMES//行政業務協調系統//ZH
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+X-WR-CALNAME:行政業務協調系統
+X-WR-TIMEZONE:Asia/Taipei`;
+
+    const footer = `END:VCALENDAR`;
+
+    const eventStrings = events.map(e => generateICalEvent(e)).join('\n');
+
+    return `${header}\n${eventStrings}\n${footer}`;
+}
+
+/**
+ * iCal 訂閱端點
+ * GET /ical?userId=xxx - 取得使用者相關行程的 iCal 訂閱
+ */
+exports.getICalFeed = onRequest(
+    {
+        region: "asia-east1",
+        cors: true
+    },
+    async (req, res) => {
+        console.log('[iCal Feed] Request received');
+
+        const { userId, token } = req.query;
+
+        if (!userId) {
+            return res.status(400).json({
+                error: 'Missing userId parameter',
+                usage: '/getICalFeed?userId=YOUR_USER_ID'
+            });
+        }
+
+        try {
+            // 驗證使用者存在
+            const userDoc = await db.doc(`artifacts/${APP_ID}/public/data/users/${userId}`).get();
+            if (!userDoc.exists) {
+                return res.status(404).json({ error: 'User not found' });
+            }
+
+            const userData = userDoc.data();
+
+            // 取得所有行程 (未來 3 個月)
+            const now = new Date();
+            const threeMonthsLater = new Date(now);
+            threeMonthsLater.setMonth(now.getMonth() + 3);
+
+            const todayStr = now.toISOString().slice(0, 10);
+            const futureStr = threeMonthsLater.toISOString().slice(0, 10);
+
+            const eventsSnapshot = await db.collection(`artifacts/${APP_ID}/public/data/school_events`)
+                .where('date', '>=', todayStr)
+                .where('date', '<=', futureStr)
+                .get();
+
+            // 篩選與使用者相關的行程
+            const userEvents = [];
+            eventsSnapshot.forEach(doc => {
+                const event = { id: doc.id, ...doc.data() };
+                const isTarget = event.targets && event.targets.includes(userId);
+                const isAuthor = event.authorId === userId;
+                const isPublic = event.isPublic; // 重要公告所有人可見
+
+                if (isTarget || isAuthor || isPublic) {
+                    userEvents.push(event);
+                }
+            });
+
+            console.log(`[iCal Feed] Found ${userEvents.length} events for user ${userData.name || userId}`);
+
+            // 產生 iCal 內容
+            const icalContent = generateICalFile(userEvents);
+
+            // 設定 Content-Type 為 text/calendar
+            res.set('Content-Type', 'text/calendar; charset=utf-8');
+            res.set('Content-Disposition', 'inline; filename="smes-calendar.ics"');
+            res.set('Cache-Control', 'public, max-age=300'); // 快取 5 分鐘
+
+            return res.status(200).send(icalContent);
+
+        } catch (err) {
+            console.error('[iCal Feed] Error:', err);
+            return res.status(500).json({ error: err.message });
+        }
+    }
+);

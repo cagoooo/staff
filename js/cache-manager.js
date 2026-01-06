@@ -113,21 +113,43 @@ export function registerNetworkHandlers(onOnline, onOffline) {
 
     window.addEventListener('online', () => {
         console.log('[Cache] Back online');
+        _isOfflineMode = false;
         hideOfflineIndicator();
         showOnlineToast();
         if (onOnline) onOnline();
     });
 
     window.addEventListener('offline', () => {
-        console.log('[Cache] Gone offline');
+        console.log('[Cache] Gone offline - using cached data');
+        _isOfflineMode = true;
         showOfflineIndicator();
         if (onOffline) onOffline();
     });
 
     // Check initial state
     if (!navigator.onLine) {
+        _isOfflineMode = true;
         showOfflineIndicator();
     }
+}
+
+// Offline mode state
+let _isOfflineMode = false;
+
+/**
+ * Check if currently in offline mode
+ * @returns {boolean} - True if offline
+ */
+export function isOfflineMode() {
+    return _isOfflineMode;
+}
+
+/**
+ * Set offline mode state
+ * @param {boolean} offline - Whether in offline mode
+ */
+export function setOfflineMode(offline) {
+    _isOfflineMode = offline;
 }
 
 // Create offline indicator element
@@ -151,7 +173,12 @@ function createOfflineIndicator() {
         display: none;
         box-shadow: 0 2px 10px rgba(0,0,0,0.3);
     `;
-    indicator.innerHTML = '📡 您目前離線中，部分功能可能受限';
+
+    // Get cache info
+    const lastSync = getLastSyncTime();
+    const syncInfo = lastSync ? `最後同步: ${lastSync.toLocaleString('zh-TW')}` : '';
+
+    indicator.innerHTML = `📡 離線模式 - 顯示快取資料 <span style="font-size: 14px; opacity: 0.8;">(${syncInfo})</span>`;
     document.body.appendChild(indicator);
 }
 

@@ -168,11 +168,11 @@ function showExportMenu() {
         box-shadow: 6px 6px 0 #2d3436;
         padding: 20px;
         z-index: 100;
-        min-width: 280px;
+        min-width: 320px;
     `;
 
     menu.innerHTML = `
-        <h3 style="font-family: 'VT323', monospace; font-size: 24px; margin-bottom: 16px;">📥 匯出行事曆</h3>
+        <h3 style="font-family: 'VT323', monospace; font-size: 24px; margin-bottom: 16px;">📥 匯出 / 訂閱行事曆</h3>
         <div style="display: flex; flex-direction: column; gap: 10px;">
             <button onclick="exportToICal(); document.getElementById('export-menu').remove();" 
                 class="pixel-btn" style="width: 100%;">
@@ -182,14 +182,84 @@ function showExportMenu() {
                 class="pixel-btn" style="width: 100%;">
                 📆 匯出本月 (iCal)
             </button>
+            <hr style="border: 1px dashed #ccc; margin: 8px 0;">
+            <button onclick="showSubscriptionOptions();" 
+                class="pixel-btn" style="width: 100%; background: #00b894;">
+                📲 訂閱行事曆 (Google/Apple)
+            </button>
             <button onclick="document.getElementById('export-menu').remove();" 
                 class="pixel-btn pixel-btn-secondary" style="width: 100%;">
-                ❌ 取消
+                ❌ 關閉
             </button>
         </div>
     `;
 
     document.body.appendChild(menu);
+}
+
+// Show subscription options
+function showSubscriptionOptions() {
+    const currentUser = getAppCurrentUser();
+    if (!currentUser) {
+        showAlert('請先登入');
+        return;
+    }
+
+    const menu = document.getElementById('export-menu');
+    if (!menu) return;
+
+    // Cloud Function URL
+    const baseUrl = 'https://asia-east1-smes-e1dc3.cloudfunctions.net/getICalFeed';
+    const subscriptionUrl = `${baseUrl}?userId=${currentUser.id}`;
+
+    menu.innerHTML = `
+        <h3 style="font-family: 'VT323', monospace; font-size: 24px; margin-bottom: 16px;">📲 訂閱行事曆</h3>
+        <p style="font-size: 14px; color: #666; margin-bottom: 12px;">
+            複製下方連結，貼到 Google Calendar 或 Apple Calendar 訂閱：
+        </p>
+        <div style="background: #f5f5f5; padding: 10px; border-radius: 8px; margin-bottom: 12px; word-break: break-all; font-size: 12px;">
+            ${subscriptionUrl}
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+            <button onclick="copySubscriptionUrl('${subscriptionUrl}');" 
+                class="pixel-btn" style="width: 100%; background: #6c5ce7;">
+                📋 複製訂閱連結
+            </button>
+            <button onclick="openGoogleCalendarSubscribe('${encodeURIComponent(subscriptionUrl)}');" 
+                class="pixel-btn" style="width: 100%; background: #4285f4;">
+                📅 加入 Google Calendar
+            </button>
+            <button onclick="showExportMenu();" 
+                class="pixel-btn pixel-btn-secondary" style="width: 100%;">
+                ← 返回
+            </button>
+        </div>
+        <p style="font-size: 12px; color: #999; margin-top: 12px;">
+            💡 提示：訂閱會自動同步更新，無需手動匯入
+        </p>
+    `;
+}
+
+// Copy subscription URL to clipboard
+function copySubscriptionUrl(url) {
+    navigator.clipboard.writeText(url).then(() => {
+        showAlert('✅ 訂閱連結已複製！');
+    }).catch(() => {
+        // Fallback for older browsers
+        const textarea = document.createElement('textarea');
+        textarea.value = url;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        showAlert('✅ 訂閱連結已複製！');
+    });
+}
+
+// Open Google Calendar subscription page
+function openGoogleCalendarSubscribe(encodedUrl) {
+    const googleUrl = `https://calendar.google.com/calendar/r/settings/addbyurl?url=${encodedUrl}`;
+    window.open(googleUrl, '_blank');
 }
 
 // Export current month
@@ -203,3 +273,7 @@ window.exportToICal = exportToICal;
 window.exportMonthToICal = exportMonthToICal;
 window.addToGoogleCalendar = addToGoogleCalendar;
 window.exportCurrentMonth = exportCurrentMonth;
+window.showSubscriptionOptions = showSubscriptionOptions;
+window.showExportMenu = showExportMenu;
+window.copySubscriptionUrl = copySubscriptionUrl;
+window.openGoogleCalendarSubscribe = openGoogleCalendarSubscribe;
