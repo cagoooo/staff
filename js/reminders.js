@@ -198,7 +198,8 @@ async function checkAndTriggerReminders() {
     const now = new Date();
 
     for (const reminder of _userReminders) {
-        if (reminder.triggered) continue;
+        // 跳過已在瀏覽器觸發過的提醒（避免重複顯示瀏覽器通知）
+        if (reminder.browserNotified) continue;
 
         const reminderTime = new Date(reminder.reminderTime);
 
@@ -207,12 +208,12 @@ async function checkAndTriggerReminders() {
             console.log('[Reminders] Triggering reminder:', reminder.id);
             triggerReminder(reminder);
 
-            // Mark as triggered
+            // 標記為已在瀏覽器通知（但不設 triggered，讓 Cloud Function 處理 LINE 通知）
             try {
                 const reminderRef = doc(db, 'artifacts', appId, 'public', 'data', 'reminders', reminder.id);
-                await updateDoc(reminderRef, { triggered: true });
+                await updateDoc(reminderRef, { browserNotified: true });
             } catch (err) {
-                console.error('[Reminders] Failed to mark triggered:', err);
+                console.error('[Reminders] Failed to mark browserNotified:', err);
             }
         }
     }
