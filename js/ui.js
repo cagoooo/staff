@@ -509,7 +509,7 @@ function enhanceEditorForm() {
             privateDiv.style.fontSize = '20px';
             privateDiv.innerHTML = `
                 <input type="checkbox" id="evt-private" class="w-6 h-6">
-                <label for="evt-private" style="color: #9b59b6;">🔒 私人行程（僅建立者、被指派者及管理員可見）</label>
+                <label for="evt-private" style="color: #9b59b6;">🔒 私人行程（僅建立者及被指派者可見）</label>
             `;
             pinnedDiv.insertAdjacentElement('afterend', privateDiv);
 
