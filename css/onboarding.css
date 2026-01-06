@@ -239,3 +239,15 @@
         font-size: 16px;
     }
 }
+/* Skip forever link */
+.onboarding-skip-forever {
+    text-align: center;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px dashed #4a4a5e;
+}
+
+.onboarding-skip-forever:hover span {
+    color: #a29bfe !important;
+    text-decoration: underline;
+}

@@ -11,57 +11,67 @@ const ONBOARDING_STEPS = [
         icon: '🎮',
         title: '歡迎使用！',
         content: '這是行政業務協調系統！<br>讓我帶您快速認識主要功能～',
-        target: null
+        target: null,
+        openSidebar: false
     },
     {
         id: 'sidebar',
         type: 'highlight',
         icon: '📋',
         title: '側邊選單',
-        content: '點擊左上角「☰」可開啟選單，<br>切換不同功能頁面。',
-        target: '#hamburger-btn',
-        position: 'right'
+        content: '這是功能選單，<br>可以切換不同頁面。<br><br>📱 手機端請點左上「☰」開啟',
+        target: '#sidebar',
+        position: 'right',
+        openSidebar: true
     },
     {
-        id: 'dashboard',
+        id: 'nav-dashboard',
         type: 'highlight',
         icon: '🏠',
         title: '主頁面',
-        content: '這裡顯示最新公告和重要行事，<br>讓您快速掌握今日重點！',
-        target: '#view-dashboard',
-        position: 'center'
+        content: '點擊這裡回到主頁面，<br>查看最新公告和重要行事！',
+        target: '.nav-btn.active',
+        position: 'right',
+        openSidebar: true
     },
     {
-        id: 'calendar',
-        type: 'info',
+        id: 'nav-calendar',
+        type: 'highlight',
         icon: '📅',
         title: '共用日曆',
-        content: '在「共用日曆」頁面可查看<br>所有處室的行程安排，<br>支援月視圖和週視圖！',
-        target: null
+        content: '點擊這裡查看日曆，<br>所有處室的行程一目瞭然！<br>支援月視圖和週視圖 📆',
+        target: 'button[onclick="switchTab(\'calendar\')"]',
+        position: 'right',
+        openSidebar: true
     },
     {
-        id: 'add-event',
-        type: 'info',
+        id: 'nav-add-event',
+        type: 'highlight',
         icon: '➕',
         title: '新增行程',
-        content: '點擊「新增行程」建立行事，<br>可設定通知人員和 LINE 提醒！<br><br>📱 手機端有浮動「+」按鈕喔！',
-        target: null
+        content: '點擊這裡新增行程！<br>可設定通知人員和 LINE 提醒<br><br>📱 手機端也有浮動「+」按鈕',
+        target: 'button[onclick="switchTab(\'editor\')"]',
+        position: 'right',
+        openSidebar: true
     },
     {
-        id: 'line',
-        type: 'info',
-        icon: '💚',
-        title: 'LINE 通知',
-        content: '綁定 LINE 帳號後，<br>新行程和被 @提及 時<br>會即時收到通知！<br><br>👉 請至「帳號設定」頁面綁定',
-        target: null
+        id: 'nav-account',
+        type: 'highlight',
+        icon: '⚙️',
+        title: '帳號設定',
+        content: '點擊這裡進行帳號設定，<br>包括綁定 LINE 通知！<br><br>💚 綁定後可收到即時通知',
+        target: 'button[onclick="switchTab(\'account\')"]',
+        position: 'right',
+        openSidebar: true
     },
     {
         id: 'complete',
         type: 'complete',
         icon: '🎉',
-        title: '教學完成！',
+        title: '導覽完成！',
         content: '您已了解基本功能！<br>有任何問題歡迎詢問～<br><br>祝您使用愉快！ 🚀',
-        target: null
+        target: null,
+        openSidebar: false
     }
 ];
 
@@ -69,6 +79,7 @@ let currentStep = 0;
 let overlayEl = null;
 let highlightEl = null;
 let cardEl = null;
+let sidebarWasOpen = false;
 
 /**
  * Check if onboarding should be shown
@@ -78,10 +89,18 @@ export function shouldShowOnboarding() {
 }
 
 /**
- * Mark onboarding as completed
+ * Mark onboarding as completed - ONLY when user explicitly chooses to
  */
-function completeOnboarding() {
+function markOnboardingComplete() {
     localStorage.setItem(ONBOARDING_KEY, 'true');
+    console.log('[Onboarding] User confirmed familiarity, marked complete');
+}
+
+/**
+ * Just hide onboarding without marking complete
+ */
+function justHideOnboarding() {
+    closeSidebarIfNeeded();
     hideOnboarding();
 }
 
@@ -90,14 +109,45 @@ function completeOnboarding() {
  */
 export function startOnboarding() {
     if (!shouldShowOnboarding()) {
-        console.log('[Onboarding] Already completed, skipping');
+        console.log('[Onboarding] Already marked as completed, skipping');
         return;
     }
 
     console.log('[Onboarding] Starting tutorial');
     currentStep = 0;
+
+    // Remember initial sidebar state
+    const sidebar = document.getElementById('sidebar');
+    sidebarWasOpen = sidebar?.classList.contains('open') || false;
+
     createOnboardingElements();
     showStep(currentStep);
+}
+
+/**
+ * Open sidebar for highlighting menu items (mobile support)
+ */
+function openSidebarForStep() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+
+    if (sidebar && !sidebar.classList.contains('open')) {
+        sidebar.classList.add('open');
+        if (overlay) overlay.classList.add('active');
+    }
+}
+
+/**
+ * Close sidebar if we opened it
+ */
+function closeSidebarIfNeeded() {
+    if (!sidebarWasOpen) {
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebar-overlay');
+
+        if (sidebar) sidebar.classList.remove('open');
+        if (overlay) overlay.classList.remove('active');
+    }
 }
 
 /**
@@ -141,6 +191,21 @@ function showStep(stepIndex) {
 
     currentStep = stepIndex;
 
+    // Open/close sidebar based on step requirement
+    if (step.openSidebar) {
+        openSidebarForStep();
+        // Wait for sidebar animation before positioning
+        setTimeout(() => updateHighlightAndCard(step, stepIndex), 250);
+    } else {
+        closeSidebarIfNeeded();
+        setTimeout(() => updateHighlightAndCard(step, stepIndex), 100);
+    }
+}
+
+/**
+ * Update highlight position and card content
+ */
+function updateHighlightAndCard(step, stepIndex) {
     // Update highlight if there's a target
     if (step.target && step.type === 'highlight') {
         const targetEl = document.querySelector(step.target);
@@ -199,16 +264,23 @@ function showStep(stepIndex) {
     // Navigation buttons
     cardHTML += '<div class="onboarding-nav">';
     if (isFirst) {
-        cardHTML += `<button class="onboarding-btn onboarding-btn-skip" onclick="window.skipOnboarding()">跳過</button>`;
+        cardHTML += `<button class="onboarding-btn onboarding-btn-skip" onclick="window.skipOnboardingTemp()">稍後再看</button>`;
         cardHTML += `<button class="onboarding-btn onboarding-btn-next" onclick="window.nextOnboardingStep()">開始導覽 →</button>`;
     } else if (isLast) {
         cardHTML += `<button class="onboarding-btn onboarding-btn-prev" onclick="window.prevOnboardingStep()">← 上一步</button>`;
-        cardHTML += `<button class="onboarding-btn onboarding-btn-finish" onclick="window.finishOnboarding()">開始使用！</button>`;
+        cardHTML += `<button class="onboarding-btn onboarding-btn-finish" onclick="window.finishOnboardingPermanent()">✅ 我已熟悉了</button>`;
     } else {
         cardHTML += `<button class="onboarding-btn onboarding-btn-prev" onclick="window.prevOnboardingStep()">← 上一步</button>`;
         cardHTML += `<button class="onboarding-btn onboarding-btn-next" onclick="window.nextOnboardingStep()">下一步 →</button>`;
     }
     cardHTML += '</div>';
+
+    // Add "never show again" option at the bottom for non-last steps
+    if (!isLast) {
+        cardHTML += `<div class="onboarding-skip-forever" onclick="window.finishOnboardingPermanent()">
+            <span style="font-size: 14px; color: #636e72; cursor: pointer;">不再顯示此教學</span>
+        </div>`;
+    }
 
     // Update card
     cardEl.innerHTML = cardHTML;
@@ -241,13 +313,32 @@ function positionCard(step) {
         if (targetEl) {
             const rect = targetEl.getBoundingClientRect();
 
-            // Try to position below the target
-            top = rect.bottom + 20;
-            left = Math.max(padding, Math.min(rect.left, viewport.width - cardWidth - padding));
+            // On mobile with sidebar open, position to the right of sidebar
+            if (viewport.width < 768 && step.openSidebar) {
+                // Position in the remaining space to the right
+                top = rect.top;
+                left = Math.min(rect.right + 15, viewport.width - cardWidth - padding);
 
-            // If not enough space below, position above
-            if (top + 200 > viewport.height) {
-                top = rect.top - 220;
+                // If no space on right, position below
+                if (left < rect.right) {
+                    top = rect.bottom + 15;
+                    left = Math.max(padding, (viewport.width - cardWidth) / 2);
+                }
+            } else {
+                // Desktop: position to the right of target
+                top = rect.top;
+                left = rect.right + 20;
+
+                // If not enough space on right, position below
+                if (left + cardWidth > viewport.width - padding) {
+                    top = rect.bottom + 20;
+                    left = Math.max(padding, rect.left);
+                }
+            }
+
+            // Ensure card is visible vertically
+            if (top + 250 > viewport.height) {
+                top = Math.max(padding, viewport.height - 280);
             }
         }
     } else {
@@ -257,7 +348,7 @@ function positionCard(step) {
     }
 
     cardEl.style.top = `${Math.max(padding, top)}px`;
-    cardEl.style.left = `${left}px`;
+    cardEl.style.left = `${Math.max(padding, left)}px`;
 }
 
 /**
@@ -279,17 +370,20 @@ function prevStep() {
 }
 
 /**
- * Skip onboarding
+ * Skip onboarding temporarily (will show again next time)
  */
-function skipOnboarding() {
-    completeOnboarding();
+function skipOnboardingTemp() {
+    console.log('[Onboarding] User chose to skip temporarily');
+    justHideOnboarding();
 }
 
 /**
- * Finish onboarding
+ * Finish onboarding permanently (user confirmed familiarity)
  */
-function finishOnboarding() {
-    completeOnboarding();
+function finishOnboardingPermanent() {
+    markOnboardingComplete();
+    closeSidebarIfNeeded();
+    hideOnboarding();
 }
 
 /**
@@ -326,8 +420,8 @@ export function resetOnboarding() {
 // Expose functions to window for onclick handlers
 window.nextOnboardingStep = nextStep;
 window.prevOnboardingStep = prevStep;
-window.skipOnboarding = skipOnboarding;
-window.finishOnboarding = finishOnboarding;
+window.skipOnboardingTemp = skipOnboardingTemp;
+window.finishOnboardingPermanent = finishOnboardingPermanent;
 window.startOnboarding = startOnboarding;
 window.resetOnboarding = resetOnboarding;
 
