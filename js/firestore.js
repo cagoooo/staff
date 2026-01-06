@@ -368,6 +368,12 @@ export async function deleteEvent(eventId) {
             deletedByName: _appCurrentUser.name
         });
         showAlert('行程已移至回收站！');
+
+        // Refresh UI immediately
+        if (window.renderCalendar) window.renderCalendar();
+        if (window.renderDashboard) window.renderDashboard();
+        if (window.renderDayEvents) window.renderDayEvents();
+
         return true;
     } catch (err) {
         showAlert('刪除失敗：' + err.message);
