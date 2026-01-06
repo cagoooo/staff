@@ -3,11 +3,29 @@
 ## 📋 系統資訊
 
 | 專案名稱 | 行政業務協調系統 |
-| 版本 | v3.9.1 |
-| 更新日期 | 2026-01-05 |
+| 版本 | v3.10.0 |
+| 更新日期 | 2026-01-06 |
 | 部署網址 | https://cagoooo.github.io/staff/ |
 | 技術棧 | HTML5, Tailwind CSS, Firebase (Auth, Firestore, Cloud Functions), LINE Messaging API |
 | Firebase 專案 | Blaze 方案 |
+
+---
+
+## 🎉 v3.10.0 更新內容 (2026-01-06)
+
+### ✨ 新功能
+| 功能 | 說明 |
+|------|------|
+| 🎨 標籤顏色自訂 | 新增/編輯標籤時可選擇 10 種預設色或自訂顏色 |
+| 📆 週視圖 | 日曆新增週視圖模式，類似 Google Calendar 顯示 |
+| 📅 週報提醒 | 每週一早上 8:00 自動發送本週行程總覽 LINE 通知 |
+| 🧪 週報測試 API | 新增 `triggerWeeklySummary` API 可手動測試 |
+
+### 🔧 改進
+| 項目 | 說明 |
+|------|------|
+| 📊 統計控制項 | 改進月份切換和處室篩選的 UI |
+| 🎯 LINE 通知 | 支援用 LINE User ID 或系統 ID 觸發測試通知 |
 
 ---
 

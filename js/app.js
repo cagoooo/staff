@@ -20,6 +20,7 @@ import { initLineConnect } from './line-connect.js';
 import './conflict-detection.js'; // Load conflict detection
 import { initTemplates } from './templates.js';
 import './backup-restore.js'; // Load backup/restore
+import { initWeekView } from './week-view.js';
 
 // Wire up dependencies (avoid circular imports)
 setAuthDeps({
@@ -54,6 +55,7 @@ async function init() {
     initReminders();
     initLineConnect();
     initTemplates();
+    initWeekView();
 
     // 恢復記住的帳號密碼
     restoreRememberedCredentials();
