@@ -132,6 +132,7 @@ export async function handleFirebaseAddEvent(e) {
     const time = document.getElementById('evt-time').value;
     const isAllDay = document.getElementById('evt-all-day')?.checked || false;
     const isPublic = document.getElementById('evt-is-public').checked;
+    const isPrivate = document.getElementById('evt-private')?.checked || false;
     const lineNotifyEnabled = document.getElementById('evt-line-notify')?.checked ?? true;
     const targets = [..._currentSelectedTargets];
     const btn = document.getElementById('btn-add-event');
@@ -196,6 +197,7 @@ export async function handleFirebaseAddEvent(e) {
             time: isAllDay ? '' : time, // 全天行程不需要時間
             targets,
             isPublic,
+            isPrivate, // 私人行程
             announcementType,
             pinned,
             tags,

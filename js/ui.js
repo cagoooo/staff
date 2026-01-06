@@ -2,6 +2,7 @@
 import { globalUsers, globalEvents, getAppCurrentUser, getCurrentSelectedTargets } from './firestore.js';
 import { DEPARTMENTS, getDepartmentList, getDepartmentName, getDepartmentColor, renderDepartmentOptions, renderPositionOptions } from './departments.js';
 import { renderTagBadges, eventMatchesTagFilter, renderTagFilters } from './tags.js';
+import { canViewEvent, filterVisibleEvents } from './visibility.js';
 
 // Calendar state
 let currentCalendarDate = new Date();
@@ -82,7 +83,12 @@ export function renderCalendar() {
     const totalDays = new Date(year, month + 1, 0).getDate();
 
     // Get events for this month (including multi-day events, excluding deleted)
-    const events = globalEvents().filter(e => !e.deletedAt);
+    // Apply visibility filter for private events
+    const currentUser = getAppCurrentUser();
+    const events = filterVisibleEvents(
+        globalEvents().filter(e => !e.deletedAt),
+        currentUser
+    );
     const monthStartStr = `${year}-${String(month + 1).padStart(2, '0')}-01`;
     const lastDay = new Date(year, month + 1, 0).getDate();
     const monthEndStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
@@ -496,6 +502,17 @@ function enhanceEditorForm() {
             `;
             checkboxParent.insertAdjacentElement('afterend', pinnedDiv);
 
+            // Create private event checkbox
+            const privateDiv = document.createElement('div');
+            privateDiv.className = 'flex items-center gap-3 mb-3';
+            privateDiv.style.fontFamily = "'VT323', monospace";
+            privateDiv.style.fontSize = '20px';
+            privateDiv.innerHTML = `
+                <input type="checkbox" id="evt-private" class="w-6 h-6">
+                <label for="evt-private" style="color: #9b59b6;">🔒 私人行程（僅建立者、被指派者及管理員可見）</label>
+            `;
+            pinnedDiv.insertAdjacentElement('afterend', privateDiv);
+
             // Update spacing for public checkbox
             checkboxParent.className = 'flex items-center gap-3 mb-3';
         }
@@ -549,10 +566,13 @@ export function renderDashboard() {
     const listImportant = document.getElementById('important-events-list');
     const listCompleted = document.getElementById('completed-events-list');
     const completedBadge = document.getElementById('completed-count-badge');
-    // Filter out deleted events
-    const events = globalEvents().filter(e => !e.deletedAt);
     const users = globalUsers();
     const currentUser = getAppCurrentUser();
+    // Filter out deleted events and apply visibility filter for private events
+    const events = filterVisibleEvents(
+        globalEvents().filter(e => !e.deletedAt),
+        currentUser
+    );
 
     listAnnounce.innerHTML = '';
     listImportant.innerHTML = '';
@@ -699,8 +719,11 @@ async function markAsRead(eventId) {
 export function renderNotifications() {
     const list = document.getElementById('notification-list');
     const currentUser = getAppCurrentUser();
-    // Filter out deleted events
-    const events = globalEvents().filter(e => !e.deletedAt);
+    // Filter out deleted events and apply visibility filter for private events
+    const events = filterVisibleEvents(
+        globalEvents().filter(e => !e.deletedAt),
+        currentUser
+    );
 
     list.innerHTML = '';
 
