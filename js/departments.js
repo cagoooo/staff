@@ -77,6 +77,17 @@ export const DEPARTMENTS = {
             '班級導師',
             '科任老師'
         ]
+    },
+    kindergarten: {
+        id: 'kindergarten',
+        name: '幼兒園',
+        color: '#e84393', // 粉紅色
+        icon: '🌸',
+        positions: [
+            '主任',
+            '教師',
+            '教保員'
+        ]
     }
 };
 

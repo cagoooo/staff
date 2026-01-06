@@ -402,6 +402,10 @@
                             <button onclick="filterByDept('teachers')" class="dept-filter-btn" data-dept="teachers"
                                 style="font-family: 'VT323', monospace; font-size: 18px; padding: 6px 12px; border: 2px solid #00b894; background: #00b89422; cursor: pointer;">👨‍🏫
                                 教師群</button>
+                            <button onclick="filterByDept('kindergarten')" class="dept-filter-btn"
+                                data-dept="kindergarten"
+                                style="font-family: 'VT323', monospace; font-size: 18px; padding: 6px 12px; border: 2px solid #e84393; background: #e8439322; cursor: pointer;">🌸
+                                幼兒園</button>
                         </div>
 
                         <!-- Calendar Grid -->
@@ -533,6 +537,10 @@
                                         class="target-filter-btn"
                                         style="font-size: 14px; padding: 4px 8px; border: 1px solid #00b894; cursor: pointer;">👨‍🏫
                                         教師群</button>
+                                    <button type="button" onclick="filterTargetsByDept('kindergarten')"
+                                        class="target-filter-btn"
+                                        style="font-size: 14px; padding: 4px 8px; border: 1px solid #e84393; cursor: pointer;">🌸
+                                        幼兒園</button>
                                 </div>
                                 <div id="selected-targets-container"
                                     class="flex flex-wrap gap-2 mb-2 p-3 border-2 border-dashed min-h-[50px] bg-white items-center"
@@ -560,13 +568,13 @@
                     </div>
                 </div>
             </div>
-        <!-- Floating Action Button (Mobile Only) -->
-        <div class="fab-container" id="fab-container">
-            <span class="fab-tooltip">新增行程</span>
-            <button class="fab-btn pulse" onclick="switchTab('editor')" aria-label="新增行程">
-                <span class="fab-icon">+</span>
-            </button>
-        </div>
+            <!-- Floating Action Button (Mobile Only) -->
+            <div class="fab-container" id="fab-container">
+                <span class="fab-tooltip">新增行程</span>
+                <button class="fab-btn pulse" onclick="switchTab('editor')" aria-label="新增行程">
+                    <span class="fab-icon">+</span>
+                </button>
+            </div>
         </main>
     </div>
 

@@ -1667,17 +1667,18 @@ async function handleFollow(client, event) {
                         },
                         {
                             type: "text",
-                            text: "📋 您的 LINE ID",
+                            text: "📋 您的 LINE 綁定代碼",
                             size: "sm",
                             color: "#888888",
                             margin: "lg"
                         },
                         {
                             type: "text",
-                            text: "請長按下方訊息複製 ID",
+                            text: "⚠️ 這不是登入帳號！請按下方步驟操作",
                             size: "xs",
-                            color: "#aaaaaa",
-                            margin: "sm"
+                            color: "#e17055",
+                            margin: "sm",
+                            weight: "bold"
                         }
                     ]
                 }
@@ -1703,18 +1704,42 @@ async function handleFollow(client, event) {
                     contents: [
                         {
                             type: "text",
-                            text: "👆 請複製上方 ID",
+                            text: "📝 綁定步驟",
                             weight: "bold",
                             size: "md",
                             color: "#667eea"
                         },
                         {
-                            type: "text",
-                            text: "貼到系統的「帳號設定」→「LINE 通知」中完成綁定",
-                            size: "sm",
-                            color: "#666666",
-                            wrap: true,
-                            margin: "md"
+                            type: "box",
+                            layout: "vertical",
+                            margin: "md",
+                            spacing: "sm",
+                            contents: [
+                                {
+                                    type: "text",
+                                    text: "1️⃣ 點下方按鈕開啟系統",
+                                    size: "sm",
+                                    color: "#333333"
+                                },
+                                {
+                                    type: "text",
+                                    text: "2️⃣ 用 Email 註冊或登入",
+                                    size: "sm",
+                                    color: "#333333"
+                                },
+                                {
+                                    type: "text",
+                                    text: "3️⃣ 進入「帳號設定」→「LINE 通知」",
+                                    size: "sm",
+                                    color: "#333333"
+                                },
+                                {
+                                    type: "text",
+                                    text: "4️⃣ 長按複製上方代碼並貼上",
+                                    size: "sm",
+                                    color: "#333333"
+                                }
+                            ]
                         }
                     ]
                 },
@@ -1727,7 +1752,7 @@ async function handleFollow(client, event) {
                             type: "button",
                             action: {
                                 type: "uri",
-                                label: "🔗 前往系統",
+                                label: "🔗 開啟系統註冊/登入",
                                 uri: LINK_URL
                             },
                             style: "primary",
@@ -2167,18 +2192,51 @@ async function handleMessage(client, event) {
                         contents: [
                             {
                                 type: "text",
-                                text: "👆 請複製上方 ID",
+                                text: "📝 綁定步驟",
                                 weight: "bold",
                                 size: "md",
                                 color: "#00b894"
                             },
                             {
+                                type: "box",
+                                layout: "vertical",
+                                margin: "md",
+                                spacing: "sm",
+                                contents: [
+                                    {
+                                        type: "text",
+                                        text: "1️⃣ 點下方按鈕開啟系統",
+                                        size: "sm",
+                                        color: "#333333"
+                                    },
+                                    {
+                                        type: "text",
+                                        text: "2️⃣ 用 Email 註冊或登入",
+                                        size: "sm",
+                                        color: "#333333"
+                                    },
+                                    {
+                                        type: "text",
+                                        text: "3️⃣ 進入「帳號設定」→「LINE 通知」",
+                                        size: "sm",
+                                        color: "#333333"
+                                    },
+                                    {
+                                        type: "text",
+                                        text: "4️⃣ 長按複製上方代碼並貼上",
+                                        size: "sm",
+                                        color: "#333333"
+                                    }
+                                ]
+                            },
+                            {
                                 type: "text",
-                                text: "貼到系統的「帳號設定」→「LINE 通知」中完成綁定",
-                                size: "sm",
-                                color: "#666666",
+                                text: "⚠️ 這不是登入帳號，請勿貼到登入頁面",
+                                size: "xs",
+                                color: "#e17055",
                                 wrap: true,
-                                margin: "md"
+                                margin: "md",
+                                weight: "bold"
                             }
                         ]
                     },
@@ -2191,7 +2249,7 @@ async function handleMessage(client, event) {
                                 type: "button",
                                 action: {
                                     type: "uri",
-                                    label: "🔗 前往系統綁定",
+                                    label: "🔗 開啟系統註冊/登入",
                                     uri: LINK_URL
                                 },
                                 style: "primary",
@@ -3012,17 +3070,48 @@ function createTodayEventsFlex(events) {
 
 /**
  * 用戶資料更新時，同步更新相關行程的 authorName
+ * 同時處理 LINE 綁定/取消綁定的通知
  */
 exports.onUserUpdate = onDocumentUpdated(
     {
         document: `artifacts/${APP_ID}/public/data/users/{userId}`,
-        region: "asia-east1"
+        region: "asia-east1",
+        secrets: ["LINE_CHANNEL_ACCESS_TOKEN", "LINE_CHANNEL_SECRET"]
     },
     async (event) => {
         const beforeData = event.data.before.data();
         const afterData = event.data.after.data();
         const userId = event.params.userId;
 
+        // ========== 處理 LINE 綁定狀態變更 ==========
+        const beforeLineId = beforeData.lineUserId || null;
+        const afterLineId = afterData.lineUserId || null;
+
+        // 新綁定 LINE (之前沒有 lineUserId，現在有了)
+        if (!beforeLineId && afterLineId) {
+            console.log(`[UserUpdate] User ${userId} bound LINE account: ${afterLineId}`);
+            try {
+                const client = getLineClient();
+                await client.pushMessage(afterLineId, createLineBindSuccessMessage(afterData.name || '用戶'));
+                console.log(`[UserUpdate] Sent LINE bind success notification to ${afterLineId}`);
+            } catch (err) {
+                console.error(`[UserUpdate] Failed to send LINE bind notification:`, err);
+            }
+        }
+
+        // 取消綁定 LINE (之前有 lineUserId，現在沒有了)
+        if (beforeLineId && !afterLineId) {
+            console.log(`[UserUpdate] User ${userId} unbound LINE account: ${beforeLineId}`);
+            try {
+                const client = getLineClient();
+                await client.pushMessage(beforeLineId, createLineUnbindMessage(beforeData.name || '用戶'));
+                console.log(`[UserUpdate] Sent LINE unbind notification to ${beforeLineId}`);
+            } catch (err) {
+                console.error(`[UserUpdate] Failed to send LINE unbind notification:`, err);
+            }
+        }
+
+        // ========== 處理名稱變更（原有邏輯）==========
         // 檢查名稱是否有變更
         if (beforeData.name === afterData.name) {
             return; // 名稱沒變，不需要更新
@@ -3057,6 +3146,227 @@ exports.onUserUpdate = onDocumentUpdated(
         }
     }
 );
+
+/**
+ * LINE 綁定成功通知訊息
+ */
+function createLineBindSuccessMessage(userName) {
+    return {
+        type: "flex",
+        altText: "🎉 LINE 綁定成功！",
+        contents: {
+            type: "bubble",
+            size: "kilo",
+            header: {
+                type: "box",
+                layout: "vertical",
+                backgroundColor: "#00b894",
+                paddingAll: "20px",
+                contents: [
+                    {
+                        type: "text",
+                        text: "🎉 綁定成功！",
+                        color: "#ffffff",
+                        size: "xl",
+                        weight: "bold",
+                        align: "center"
+                    }
+                ]
+            },
+            body: {
+                type: "box",
+                layout: "vertical",
+                paddingAll: "20px",
+                spacing: "md",
+                contents: [
+                    {
+                        type: "text",
+                        text: `${userName}，您好！`,
+                        weight: "bold",
+                        size: "md",
+                        color: "#333333"
+                    },
+                    {
+                        type: "text",
+                        text: "您已成功綁定 LINE 通知服務",
+                        size: "sm",
+                        color: "#666666",
+                        wrap: true
+                    },
+                    {
+                        type: "separator",
+                        margin: "lg"
+                    },
+                    {
+                        type: "box",
+                        layout: "vertical",
+                        margin: "lg",
+                        spacing: "sm",
+                        contents: [
+                            {
+                                type: "text",
+                                text: "✅ 新行程通知",
+                                size: "sm",
+                                color: "#00b894"
+                            },
+                            {
+                                type: "text",
+                                text: "✅ 行程異動提醒",
+                                size: "sm",
+                                color: "#00b894"
+                            },
+                            {
+                                type: "text",
+                                text: "✅ 留言通知",
+                                size: "sm",
+                                color: "#00b894"
+                            },
+                            {
+                                type: "text",
+                                text: "✅ 每日/每週摘要",
+                                size: "sm",
+                                color: "#00b894"
+                            }
+                        ]
+                    },
+                    {
+                        type: "text",
+                        text: "從現在開始，您將在 LINE 收到重要通知！",
+                        size: "xs",
+                        color: "#888888",
+                        wrap: true,
+                        margin: "lg"
+                    }
+                ]
+            },
+            footer: {
+                type: "box",
+                layout: "vertical",
+                paddingAll: "12px",
+                contents: [
+                    {
+                        type: "button",
+                        action: {
+                            type: "uri",
+                            label: "🔗 開啟系統",
+                            uri: LINK_URL
+                        },
+                        style: "primary",
+                        color: "#00b894",
+                        height: "sm"
+                    }
+                ]
+            }
+        }
+    };
+}
+
+/**
+ * LINE 取消綁定通知訊息
+ */
+function createLineUnbindMessage(userName) {
+    return {
+        type: "flex",
+        altText: "📭 LINE 綁定已取消",
+        contents: {
+            type: "bubble",
+            size: "kilo",
+            header: {
+                type: "box",
+                layout: "vertical",
+                backgroundColor: "#fdcb6e",
+                paddingAll: "20px",
+                contents: [
+                    {
+                        type: "text",
+                        text: "📭 綁定已取消",
+                        color: "#333333",
+                        size: "xl",
+                        weight: "bold",
+                        align: "center"
+                    }
+                ]
+            },
+            body: {
+                type: "box",
+                layout: "vertical",
+                paddingAll: "20px",
+                spacing: "md",
+                contents: [
+                    {
+                        type: "text",
+                        text: `${userName}，您好`,
+                        weight: "bold",
+                        size: "md",
+                        color: "#333333"
+                    },
+                    {
+                        type: "text",
+                        text: "您的 LINE 通知綁定已取消",
+                        size: "sm",
+                        color: "#666666",
+                        wrap: true
+                    },
+                    {
+                        type: "separator",
+                        margin: "lg"
+                    },
+                    {
+                        type: "box",
+                        layout: "vertical",
+                        margin: "lg",
+                        backgroundColor: "#fff5f5",
+                        cornerRadius: "8px",
+                        paddingAll: "12px",
+                        contents: [
+                            {
+                                type: "text",
+                                text: "⚠️ 取消綁定後您將無法收到：",
+                                size: "sm",
+                                color: "#e17055",
+                                weight: "bold"
+                            },
+                            {
+                                type: "text",
+                                text: "• 新行程指派通知\n• 行程異動提醒\n• 留言通知\n• 每日/每週摘要",
+                                size: "xs",
+                                color: "#666666",
+                                wrap: true,
+                                margin: "sm"
+                            }
+                        ]
+                    },
+                    {
+                        type: "text",
+                        text: "如需重新啟用通知，請至系統「帳號設定」重新綁定 LINE",
+                        size: "xs",
+                        color: "#888888",
+                        wrap: true,
+                        margin: "lg"
+                    }
+                ]
+            },
+            footer: {
+                type: "box",
+                layout: "vertical",
+                paddingAll: "12px",
+                contents: [
+                    {
+                        type: "button",
+                        action: {
+                            type: "uri",
+                            label: "🔗 重新綁定",
+                            uri: LINK_URL
+                        },
+                        style: "primary",
+                        color: "#667eea",
+                        height: "sm"
+                    }
+                ]
+            }
+        }
+    };
+}
 
 /**
  * 新行程建立時通知被指派的用戶
