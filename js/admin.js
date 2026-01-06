@@ -4,6 +4,83 @@ import { db, appId } from './firebase-config.js';
 import { doc, updateDoc, deleteDoc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { showAlert, showConfirm } from '../components/modal.js';
 
+// Sorting state
+let currentSortField = 'name';
+let currentSortDirection = 'asc';
+
+// Sort users by field
+function sortUsers(users, field, direction) {
+    const deptLabels = {
+        'principal': '校長室',
+        'academic': '教務處',
+        'student': '學務處',
+        'general': '總務處',
+        'counseling': '輔導室',
+        'teachers': '教師群',
+        'kindergarten': '幼兒園'
+    };
+
+    return [...users].sort((a, b) => {
+        let valA, valB;
+
+        switch (field) {
+            case 'name':
+                valA = a.name || '';
+                valB = b.name || '';
+                break;
+            case 'username':
+                valA = a.username || a.email || '';
+                valB = b.username || b.email || '';
+                break;
+            case 'department':
+                valA = deptLabels[a.department] || a.department || '';
+                valB = deptLabels[b.department] || b.department || '';
+                break;
+            case 'jobTitle':
+                valA = a.jobTitle || '';
+                valB = b.jobTitle || '';
+                break;
+            case 'role':
+                valA = a.role === 'admin' ? '管理員' : '一般';
+                valB = b.role === 'admin' ? '管理員' : '一般';
+                break;
+            case 'line':
+                valA = a.lineUserId && a.lineNotifyEnabled ? 1 : 0;
+                valB = b.lineUserId && b.lineNotifyEnabled ? 1 : 0;
+                break;
+            case 'status':
+                valA = a.disabled ? 1 : 0;
+                valB = b.disabled ? 1 : 0;
+                break;
+            default:
+                valA = a.name || '';
+                valB = b.name || '';
+        }
+
+        // Compare
+        if (typeof valA === 'string') {
+            const cmp = valA.localeCompare(valB, 'zh-TW');
+            return direction === 'asc' ? cmp : -cmp;
+        } else {
+            const cmp = valA - valB;
+            return direction === 'asc' ? cmp : -cmp;
+        }
+    });
+}
+
+// Handle column header click
+window.sortAdminTable = function (field) {
+    if (currentSortField === field) {
+        // Toggle direction
+        currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
+    } else {
+        // New field, default to ascending
+        currentSortField = field;
+        currentSortDirection = 'asc';
+    }
+    renderAdminPanel();
+};
+
 // Check if current user is admin
 function isAdmin() {
     const user = getAppCurrentUser();
@@ -108,17 +185,38 @@ export function renderAdminPanel() {
 
     const users = globalUsers();
 
+    // Sort users
+    const sortedUsers = sortUsers(users, currentSortField, currentSortDirection);
+
     // Get backup UI HTML
     const backupUI = window.getBackupUIHtml ? window.getBackupUIHtml() : '';
+
+    // Sort indicator helper
+    const sortIndicator = (field) => {
+        if (currentSortField === field) {
+            return currentSortDirection === 'asc' ? ' ▲' : ' ▼';
+        }
+        return ' ↕';
+    };
+
+    // Sortable header style
+    const thStyle = `padding: 12px; text-align: left; cursor: pointer; user-select: none; transition: background 0.2s;`;
+    const thHover = `onmouseover="this.style.background='#3d4a4f'" onmouseout="this.style.background=''"`;
 
     container.innerHTML = `
         ${backupUI}
         
-        <div class="content-card p-4 mb-4" style="display: flex; justify-content: space-between; align-items: center;">
+        <style>
+            .sortable-th:hover { background: #3d4a4f !important; }
+            .sort-indicator { font-size: 14px; opacity: 0.7; margin-left: 4px; }
+            .sort-indicator.active { opacity: 1; color: #6c5ce7; }
+        </style>
+        
+        <div class="content-card p-4 mb-4" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
             <div>
                 <h2 style="font-family: 'VT323', monospace; font-size: 28px;">👥 使用者管理</h2>
                 <p style="font-family: 'VT323', monospace; font-size: 18px; color: #636e72;" class="mt-2">
-                    共 ${users.length} 位使用者
+                    共 ${users.length} 位使用者 | 排序：${getSortFieldLabel(currentSortField)} ${currentSortDirection === 'asc' ? '↑' : '↓'}
                 </p>
             </div>
             <button onclick="showAddUserModal()" class="pixel-btn" style="background: #00b894; font-size: 18px;">
@@ -131,23 +229,51 @@ export function renderAdminPanel() {
                 <table style="width: 100%; border-collapse: collapse; font-family: 'VT323', monospace; font-size: 20px;">
                     <thead>
                         <tr style="background: #2d3436; color: white;">
-                            <th style="padding: 12px; text-align: left;">姓名</th>
-                            <th style="padding: 12px; text-align: left;">帳號</th>
-                            <th style="padding: 12px; text-align: left;">處室</th>
-                            <th style="padding: 12px; text-align: left;">職稱</th>
-                            <th style="padding: 12px; text-align: left;">角色</th>
-                            <th style="padding: 12px; text-align: center;">LINE</th>
-                            <th style="padding: 12px; text-align: center;">狀態</th>
+                            <th class="sortable-th" style="${thStyle}" onclick="sortAdminTable('name')">
+                                姓名<span class="sort-indicator ${currentSortField === 'name' ? 'active' : ''}">${sortIndicator('name')}</span>
+                            </th>
+                            <th class="sortable-th" style="${thStyle}" onclick="sortAdminTable('username')">
+                                帳號<span class="sort-indicator ${currentSortField === 'username' ? 'active' : ''}">${sortIndicator('username')}</span>
+                            </th>
+                            <th class="sortable-th" style="${thStyle}" onclick="sortAdminTable('department')">
+                                處室<span class="sort-indicator ${currentSortField === 'department' ? 'active' : ''}">${sortIndicator('department')}</span>
+                            </th>
+                            <th class="sortable-th" style="${thStyle}" onclick="sortAdminTable('jobTitle')">
+                                職稱<span class="sort-indicator ${currentSortField === 'jobTitle' ? 'active' : ''}">${sortIndicator('jobTitle')}</span>
+                            </th>
+                            <th class="sortable-th" style="${thStyle}" onclick="sortAdminTable('role')">
+                                角色<span class="sort-indicator ${currentSortField === 'role' ? 'active' : ''}">${sortIndicator('role')}</span>
+                            </th>
+                            <th class="sortable-th" style="${thStyle} text-align: center;" onclick="sortAdminTable('line')">
+                                LINE<span class="sort-indicator ${currentSortField === 'line' ? 'active' : ''}">${sortIndicator('line')}</span>
+                            </th>
+                            <th class="sortable-th" style="${thStyle} text-align: center;" onclick="sortAdminTable('status')">
+                                狀態<span class="sort-indicator ${currentSortField === 'status' ? 'active' : ''}">${sortIndicator('status')}</span>
+                            </th>
                             <th style="padding: 12px; text-align: center;">操作</th>
                         </tr>
                     </thead>
                     <tbody id="user-list-tbody">
-                        ${users.map(u => renderUserRow(u)).join('')}
+                        ${sortedUsers.map(u => renderUserRow(u)).join('')}
                     </tbody>
                 </table>
             </div>
         </div>
     `;
+}
+
+// Helper: Get sort field label in Chinese
+function getSortFieldLabel(field) {
+    const labels = {
+        'name': '姓名',
+        'username': '帳號',
+        'department': '處室',
+        'jobTitle': '職稱',
+        'role': '角色',
+        'line': 'LINE',
+        'status': '狀態'
+    };
+    return labels[field] || field;
 }
 
 // Render a single user row
