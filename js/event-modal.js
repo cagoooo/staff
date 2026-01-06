@@ -94,6 +94,11 @@ export function initEventModal() {
                             <option value="normal">📋 一般</option>
                             <option value="important">⚡ 重要</option>
                             <option value="urgent">🚨 緊急</option>
+                            <option value="meeting">🏛️ 會議</option>
+                            <option value="training">📚 研習</option>
+                            <option value="event">🎉 活動</option>
+                            <option value="reminder">⏰ 提醒</option>
+                            <option value="deadline">📅 截止日</option>
                         </select>
                     </div>
                     <div class="flex items-center gap-3 mb-3" style="font-family: 'VT323', monospace; font-size: 20px;">

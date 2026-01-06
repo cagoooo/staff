@@ -455,6 +455,11 @@ function enhanceEditorForm() {
             <option value="normal">📋 一般</option>
             <option value="important">⚡ 重要</option>
             <option value="urgent">🚨 緊急</option>
+            <option value="meeting">🏛️ 會議</option>
+            <option value="training">📚 研習</option>
+            <option value="event">🎉 活動</option>
+            <option value="reminder">⏰ 提醒</option>
+            <option value="deadline">📅 截止日</option>
         </select>
     `;
     dateTimeGrid.insertAdjacentElement('afterend', typeDiv);
@@ -554,11 +559,16 @@ function renderSelectedChips() {
 // Dashboard
 // ============================================
 
-// Announcement type configurations
+// Announcement type configurations - School administration specific
 const ANNOUNCEMENT_TYPES = {
     normal: { label: '一般', icon: '📋', bg: 'bg-gray-50', border: '#636e72' },
     important: { label: '重要', icon: '⚡', bg: 'bg-yellow-50', border: '#f39c12' },
-    urgent: { label: '緊急', icon: '🚨', bg: 'bg-red-50', border: '#e74c3c' }
+    urgent: { label: '緊急', icon: '🚨', bg: 'bg-red-50', border: '#e74c3c' },
+    meeting: { label: '會議', icon: '🏛️', bg: 'bg-blue-50', border: '#3498db' },
+    training: { label: '研習', icon: '📚', bg: 'bg-green-50', border: '#27ae60' },
+    event: { label: '活動', icon: '🎉', bg: 'bg-purple-50', border: '#9b59b6' },
+    reminder: { label: '提醒', icon: '⏰', bg: 'bg-orange-50', border: '#e67e22' },
+    deadline: { label: '截止日', icon: '📅', bg: 'bg-pink-50', border: '#e84393' }
 };
 
 export function renderDashboard() {
