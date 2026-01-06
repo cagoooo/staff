@@ -447,6 +447,7 @@ export function renderStats() {
                     <option value="general" ${selectedDept === 'general' ? 'selected' : ''}>總務處</option>
                     <option value="counseling" ${selectedDept === 'counseling' ? 'selected' : ''}>輔導室</option>
                     <option value="teachers" ${selectedDept === 'teachers' ? 'selected' : ''}>教師群</option>
+                    <option value="kindergarten" ${selectedDept === 'kindergarten' ? 'selected' : ''}>幼兒園</option>
                 </select>
             </div>
             <div class="stats-controls-right">
@@ -599,6 +600,7 @@ function renderDeptChart(deptCounts) {
         'general': '總務處',
         'counseling': '輔導室',
         'teachers': '教師群',
+        'kindergarten': '幼兒園',
         'other': '其他'
     };
 
@@ -609,6 +611,7 @@ function renderDeptChart(deptCounts) {
         'general': '#e67e22',
         'counseling': '#9b59b6',
         'teachers': '#00b894',
+        'kindergarten': '#e84393',
         'other': '#636e72'
     };
 
@@ -879,7 +882,8 @@ function statsExportReport() {
         'student': '學務處',
         'general': '總務處',
         'counseling': '輔導室',
-        'teachers': '教師群'
+        'teachers': '教師群',
+        'kindergarten': '幼兒園'
     };
 
     // Generate CSV content
