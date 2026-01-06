@@ -297,15 +297,24 @@ function updateHighlightAndCard(step, stepIndex) {
 
 /**
  * Position the card relative to highlight or center
+ * On mobile (<768px), CSS handles positioning - card is fixed at bottom
  */
 function positionCard(step) {
-    const cardWidth = 320;
-    const padding = 20;
     const viewport = {
         width: window.innerWidth,
         height: window.innerHeight
     };
 
+    // On mobile, CSS handles card positioning (fixed at bottom)
+    if (viewport.width < 768) {
+        cardEl.style.top = '';
+        cardEl.style.left = '';
+        return;
+    }
+
+    // Desktop positioning
+    const cardWidth = 320;
+    const padding = 20;
     let top, left;
 
     if (step.target && step.type === 'highlight') {
@@ -313,27 +322,14 @@ function positionCard(step) {
         if (targetEl) {
             const rect = targetEl.getBoundingClientRect();
 
-            // On mobile with sidebar open, position to the right of sidebar
-            if (viewport.width < 768 && step.openSidebar) {
-                // Position in the remaining space to the right
-                top = rect.top;
-                left = Math.min(rect.right + 15, viewport.width - cardWidth - padding);
+            // Desktop: position to the right of target
+            top = rect.top;
+            left = rect.right + 20;
 
-                // If no space on right, position below
-                if (left < rect.right) {
-                    top = rect.bottom + 15;
-                    left = Math.max(padding, (viewport.width - cardWidth) / 2);
-                }
-            } else {
-                // Desktop: position to the right of target
-                top = rect.top;
-                left = rect.right + 20;
-
-                // If not enough space on right, position below
-                if (left + cardWidth > viewport.width - padding) {
-                    top = rect.bottom + 20;
-                    left = Math.max(padding, rect.left);
-                }
+            // If not enough space on right, position below
+            if (left + cardWidth > viewport.width - padding) {
+                top = rect.bottom + 20;
+                left = Math.max(padding, rect.left);
             }
 
             // Ensure card is visible vertically

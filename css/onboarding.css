@@ -1,4 +1,4 @@
-/* Onboarding Tutorial Styles */
+/* Onboarding Tutorial Styles - Mobile Optimized */
 
 /* Overlay background */
 .onboarding-overlay {
@@ -53,7 +53,7 @@
     }
 }
 
-/* Tooltip card */
+/* Tooltip card - Base */
 .onboarding-card {
     position: fixed;
     z-index: 100000;
@@ -62,18 +62,37 @@
     border-radius: 12px;
     padding: 20px;
     max-width: 320px;
-    width: 90%;
+    width: calc(100vw - 40px);
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(108, 92, 231, 0.3);
     font-family: 'VT323', monospace;
     color: white;
     transform: translateY(20px);
     opacity: 0;
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    box-sizing: border-box;
 }
 
 .onboarding-card.active {
     transform: translateY(0);
     opacity: 1;
+}
+
+/* Mobile: Fixed position at bottom */
+@media (max-width: 767px) {
+    .onboarding-card {
+        position: fixed !important;
+        bottom: 20px !important;
+        top: auto !important;
+        left: 50% !important;
+        transform: translateX(-50%) translateY(20px);
+        max-width: calc(100vw - 32px);
+        width: calc(100vw - 32px);
+        padding: 16px;
+    }
+
+    .onboarding-card.active {
+        transform: translateX(-50%) translateY(0);
+    }
 }
 
 .onboarding-card-header {
@@ -84,8 +103,9 @@
 }
 
 .onboarding-card-icon {
-    font-size: 36px;
+    font-size: 32px;
     animation: iconBounce 1s ease-in-out infinite;
+    flex-shrink: 0;
 }
 
 @keyframes iconBounce {
@@ -110,20 +130,20 @@
     font-size: 18px;
     line-height: 1.5;
     color: #dfe6e9;
-    margin-bottom: 20px;
+    margin-bottom: 16px;
 }
 
 /* Progress dots */
 .onboarding-progress {
     display: flex;
     justify-content: center;
-    gap: 8px;
-    margin-bottom: 16px;
+    gap: 6px;
+    margin-bottom: 12px;
 }
 
 .onboarding-dot {
-    width: 10px;
-    height: 10px;
+    width: 8px;
+    height: 8px;
     border-radius: 50%;
     background: #636e72;
     transition: all 0.3s ease;
@@ -131,7 +151,7 @@
 
 .onboarding-dot.active {
     background: #6c5ce7;
-    transform: scale(1.3);
+    transform: scale(1.4);
 }
 
 .onboarding-dot.completed {
@@ -142,18 +162,19 @@
 .onboarding-nav {
     display: flex;
     justify-content: space-between;
-    gap: 12px;
+    gap: 10px;
 }
 
 .onboarding-btn {
     flex: 1;
-    padding: 10px 16px;
+    padding: 10px 12px;
     border: 3px solid;
     border-radius: 8px;
     font-family: 'VT323', monospace;
-    font-size: 18px;
+    font-size: 16px;
     cursor: pointer;
     transition: all 0.2s ease;
+    white-space: nowrap;
 }
 
 .onboarding-btn-skip {
@@ -207,8 +228,8 @@
 }
 
 .onboarding-welcome-icon {
-    font-size: 64px;
-    margin-bottom: 16px;
+    font-size: 56px;
+    margin-bottom: 12px;
     animation: welcomeBounce 1.5s ease-in-out infinite;
 }
 
@@ -224,11 +245,29 @@
     }
 }
 
-/* Responsive adjustments */
+/* Skip forever link */
+.onboarding-skip-forever {
+    text-align: center;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed #4a4a5e;
+}
+
+.onboarding-skip-forever span {
+    font-size: 14px;
+    color: #636e72;
+    cursor: pointer;
+}
+
+.onboarding-skip-forever:hover span {
+    color: #a29bfe !important;
+    text-decoration: underline;
+}
+
+/* Mobile specific adjustments */
 @media (max-width: 480px) {
     .onboarding-card {
-        padding: 16px;
-        max-width: 280px;
+        padding: 14px;
     }
 
     .onboarding-card-title {
@@ -237,17 +276,35 @@
 
     .onboarding-card-content {
         font-size: 16px;
+        margin-bottom: 12px;
+    }
+
+    .onboarding-btn {
+        padding: 8px 10px;
+        font-size: 15px;
+    }
+
+    .onboarding-welcome-icon {
+        font-size: 48px;
+    }
+
+    .onboarding-card-icon {
+        font-size: 28px;
     }
 }
-/* Skip forever link */
-.onboarding-skip-forever {
-    text-align: center;
-    margin-top: 12px;
-    padding-top: 12px;
-    border-top: 1px dashed #4a4a5e;
-}
 
-.onboarding-skip-forever:hover span {
-    color: #a29bfe !important;
-    text-decoration: underline;
+/* Very small screens */
+@media (max-width: 360px) {
+    .onboarding-card {
+        padding: 12px;
+    }
+
+    .onboarding-nav {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .onboarding-btn {
+        width: 100%;
+    }
 }
