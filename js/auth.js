@@ -111,6 +111,11 @@ export function checkLoadingComplete() {
         const currentUser = _getAppCurrentUser();
         if (currentUser) {
             _initAppUI();
+
+            // Check if onboarding tutorial should be shown for returning users
+            if (shouldShowOnboarding()) {
+                setTimeout(() => startOnboarding(), 1500);
+            }
         } else {
             authContainer.classList.remove('hidden-section');
         }
