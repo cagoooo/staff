@@ -301,9 +301,69 @@ export function filterByDept(deptId) {
 // Editor Functions with Department Filter
 // ============================================
 
+// Search term for target filtering
+let editorSearchTerm = '';
+
+// Tag keywords mapping for search
+const TAG_KEYWORDS = {
+    '導師': ['班級導師', '幼兒園導師'],
+    '科任': ['科任教師'],
+    '組長': ['教學組長', '註冊組長', '設備組長', '生教組長', '訓育組長', '體育組長', '衛生組長', '事務組長', '出納組長', '文書組長', '資料組長', '輔導組長'],
+    '主任': ['教務主任', '學務主任', '總務主任', '輔導主任'],
+    '護理': ['護理師'],
+    '代理': ['代理教師'],
+    '幹事': ['幹事'],
+    '校長': ['校長']
+};
+
+// Check if a job title matches a tag keyword
+function matchesTagKeyword(jobTitle, searchTerm) {
+    if (!jobTitle || !searchTerm) return false;
+    const lowerSearch = searchTerm.toLowerCase();
+
+    for (const [keyword, titles] of Object.entries(TAG_KEYWORDS)) {
+        if (keyword.includes(lowerSearch)) {
+            if (titles.some(t => jobTitle.includes(t))) return true;
+        }
+    }
+    return false;
+}
+
+export function searchTargets(term) {
+    editorSearchTerm = term;
+    renderEditorOptions();
+}
+
+// Dynamically create search input before target selection list
+function createSearchInput() {
+    if (document.getElementById('target-search')) return;
+
+    const targetDeptFilter = document.getElementById('target-dept-filter');
+    if (!targetDeptFilter) return;
+
+    const searchContainer = document.createElement('div');
+    searchContainer.className = 'mb-2';
+    searchContainer.innerHTML = `
+        <input type="text" id="target-search" class="pixel-input" 
+               placeholder="🔍 搜尋姓名或標籤 (導師、科任、組長...)"
+               style="font-size: 16px; width: 100%;">
+    `;
+
+    // Insert after department filter
+    targetDeptFilter.parentNode.insertBefore(searchContainer, targetDeptFilter.nextSibling);
+
+    // Add event listener
+    document.getElementById('target-search').addEventListener('input', (e) => {
+        searchTargets(e.target.value);
+    });
+}
+
 export function renderEditorOptions() {
     const listContainer = document.getElementById('target-selection-list');
     if (!listContainer) return;
+
+    // Create search input if not exists
+    createSearchInput();
 
     listContainer.innerHTML = '';
     const users = globalUsers();
@@ -315,8 +375,19 @@ export function renderEditorOptions() {
         filteredUsers = users.filter(u => u.department === editorDeptFilter);
     }
 
+    // Apply search filter
+    if (editorSearchTerm && editorSearchTerm.trim()) {
+        const searchLower = editorSearchTerm.toLowerCase().trim();
+        filteredUsers = filteredUsers.filter(u => {
+            const nameMatch = u.name?.toLowerCase().includes(searchLower);
+            const titleMatch = u.jobTitle?.toLowerCase().includes(searchLower);
+            const tagMatch = matchesTagKeyword(u.jobTitle, searchLower);
+            return nameMatch || titleMatch || tagMatch;
+        });
+    }
+
     if (filteredUsers.length === 0) {
-        listContainer.innerHTML = '<div class="text-gray-400 text-sm p-2">此處室無人員</div>';
+        listContainer.innerHTML = '<div class="text-gray-400 text-sm p-2">無符合的人員</div>';
         return;
     }
 
@@ -336,6 +407,9 @@ export function renderEditorOptions() {
 
     renderSelectedChips();
 }
+
+// Export search function to window
+window.searchTargets = searchTargets;
 
 export function filterTargetsByDept(deptId) {
     editorDeptFilter = deptId;
