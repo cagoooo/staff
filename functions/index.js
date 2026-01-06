@@ -4268,3 +4268,496 @@ exports.triggerDailySummary = onRequest(
         }
     }
 );
+
+// ============================================
+// 週報提醒通知 (Weekly Summary)
+// ============================================
+
+/**
+ * 建立週報摘要 Flex Message
+ * @param {string} userName - 使用者名稱
+ * @param {string} weekStartStr - 週一日期
+ * @param {string} weekEndStr - 週日日期
+ * @param {Array} events - 本週行程陣列
+ */
+function createWeeklySummaryFlexMessage(userName, weekStartStr, weekEndStr, events) {
+    // 格式化日期顯示
+    const startDate = new Date(weekStartStr + 'T00:00:00+08:00');
+    const endDate = new Date(weekEndStr + 'T00:00:00+08:00');
+    const displayPeriod = `${startDate.getMonth() + 1}/${startDate.getDate()} - ${endDate.getMonth() + 1}/${endDate.getDate()}`;
+
+    // 按日期分組
+    const eventsByDate = {};
+    const weekDays = ['日', '一', '二', '三', '四', '五', '六'];
+
+    events.forEach(e => {
+        if (!eventsByDate[e.date]) {
+            eventsByDate[e.date] = [];
+        }
+        eventsByDate[e.date].push(e);
+    });
+
+    // 統計
+    const totalCount = events.length;
+    const importantCount = events.filter(e => e.isPublic || e.announcementType === 'important' || e.announcementType === 'urgent').length;
+
+    // 建立每日行程列表 (最多顯示 7 天各 2 項)
+    const dayItems = [];
+    const sortedDates = Object.keys(eventsByDate).sort();
+
+    sortedDates.slice(0, 5).forEach(dateStr => {
+        const dayEvents = eventsByDate[dateStr];
+        const date = new Date(dateStr + 'T00:00:00+08:00');
+        const dayLabel = `${date.getMonth() + 1}/${date.getDate()} (${weekDays[date.getDay()]})`;
+
+        dayItems.push({
+            type: "box",
+            layout: "vertical",
+            spacing: "xs",
+            contents: [
+                {
+                    type: "text",
+                    text: dayLabel,
+                    size: "sm",
+                    color: "#667eea",
+                    weight: "bold"
+                },
+                ...dayEvents.slice(0, 2).map(event => ({
+                    type: "text",
+                    text: (event.isPublic ? "⭐ " : "• ") +
+                        (event.title.length > 20 ? event.title.substring(0, 20) + '...' : event.title),
+                    size: "xs",
+                    color: event.isPublic ? "#e17055" : "#333333",
+                    wrap: true
+                })),
+                ...(dayEvents.length > 2 ? [{
+                    type: "text",
+                    text: `  +${dayEvents.length - 2} 項...`,
+                    size: "xs",
+                    color: "#888888"
+                }] : [])
+            ]
+        });
+    });
+
+    if (sortedDates.length > 5) {
+        dayItems.push({
+            type: "text",
+            text: `還有 ${sortedDates.length - 5} 天有行程...`,
+            size: "xs",
+            color: "#888888",
+            margin: "sm"
+        });
+    }
+
+    // 空的行程列表
+    if (events.length === 0) {
+        dayItems.push({
+            type: "text",
+            text: "🎉 本週沒有排定的行程！",
+            size: "sm",
+            color: "#00b894",
+            align: "center"
+        });
+    }
+
+    return {
+        type: "flex",
+        altText: `📆 本週行程總覽 (${displayPeriod}) - ${totalCount} 項`,
+        contents: {
+            type: "bubble",
+            size: "mega",
+            header: {
+                type: "box",
+                layout: "vertical",
+                backgroundColor: "#0984e3",
+                paddingAll: "15px",
+                contents: [
+                    {
+                        type: "box",
+                        layout: "horizontal",
+                        contents: [
+                            {
+                                type: "text",
+                                text: "📆",
+                                size: "xl",
+                                flex: 0
+                            },
+                            {
+                                type: "box",
+                                layout: "vertical",
+                                flex: 1,
+                                margin: "md",
+                                contents: [
+                                    {
+                                        type: "text",
+                                        text: "本週行程總覽",
+                                        color: "#ffffff",
+                                        size: "lg",
+                                        weight: "bold"
+                                    },
+                                    {
+                                        type: "text",
+                                        text: `${userName}，週一愉快！`,
+                                        color: "#ffffffcc",
+                                        size: "sm"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            },
+            body: {
+                type: "box",
+                layout: "vertical",
+                paddingAll: "15px",
+                spacing: "lg",
+                contents: [
+                    // 期間與統計
+                    {
+                        type: "box",
+                        layout: "horizontal",
+                        contents: [
+                            {
+                                type: "box",
+                                layout: "vertical",
+                                flex: 1,
+                                contents: [
+                                    {
+                                        type: "text",
+                                        text: displayPeriod,
+                                        size: "lg",
+                                        weight: "bold",
+                                        color: "#333333"
+                                    }
+                                ]
+                            },
+                            {
+                                type: "box",
+                                layout: "horizontal",
+                                flex: 1,
+                                spacing: "sm",
+                                contents: [
+                                    {
+                                        type: "box",
+                                        layout: "vertical",
+                                        backgroundColor: "#0984e320",
+                                        cornerRadius: "8px",
+                                        paddingAll: "8px",
+                                        alignItems: "center",
+                                        contents: [
+                                            {
+                                                type: "text",
+                                                text: String(totalCount),
+                                                size: "xl",
+                                                weight: "bold",
+                                                color: "#0984e3"
+                                            },
+                                            {
+                                                type: "text",
+                                                text: "總計",
+                                                size: "xs",
+                                                color: "#0984e3"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        type: "box",
+                                        layout: "vertical",
+                                        backgroundColor: importantCount > 0 ? "#e1705520" : "#00b89420",
+                                        cornerRadius: "8px",
+                                        paddingAll: "8px",
+                                        alignItems: "center",
+                                        contents: [
+                                            {
+                                                type: "text",
+                                                text: String(importantCount),
+                                                size: "xl",
+                                                weight: "bold",
+                                                color: importantCount > 0 ? "#e17055" : "#00b894"
+                                            },
+                                            {
+                                                type: "text",
+                                                text: "重要",
+                                                size: "xs",
+                                                color: importantCount > 0 ? "#e17055" : "#00b894"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    // 分隔線
+                    {
+                        type: "separator"
+                    },
+                    // 行程列表
+                    {
+                        type: "box",
+                        layout: "vertical",
+                        spacing: "md",
+                        contents: dayItems
+                    }
+                ]
+            },
+            footer: {
+                type: "box",
+                layout: "vertical",
+                paddingAll: "12px",
+                contents: [
+                    {
+                        type: "button",
+                        action: {
+                            type: "uri",
+                            label: "📅 查看完整行程",
+                            uri: LINK_URL
+                        },
+                        style: "primary",
+                        color: "#0984e3",
+                        height: "sm"
+                    }
+                ]
+            }
+        },
+        quickReply: {
+            items: [
+                createQuickReplyUriItem("📅 前往查看", LINK_URL)
+            ]
+        }
+    };
+}
+
+/**
+ * 週報提醒 - 排程函數
+ * 每週一早上 8:00 (台灣時間) 發送本週行程總覽
+ */
+exports.weeklySummaryNotification = onSchedule(
+    {
+        schedule: "0 8 * * 1", // 每週一 08:00 執行
+        timeZone: "Asia/Taipei",
+        region: "asia-east1",
+        secrets: ["LINE_CHANNEL_ACCESS_TOKEN", "LINE_CHANNEL_SECRET"]
+    },
+    async (event) => {
+        console.log('[Weekly Summary] Starting weekly summary notification...');
+
+        const client = getLineClient();
+
+        // 取得本週一和週日的日期 (台灣時間)
+        const now = new Date();
+        const taiwanTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Taipei' }));
+
+        // 本週一 (今天)
+        const monday = new Date(taiwanTime);
+        const mondayStr = formatDate(monday);
+
+        // 本週日
+        const sunday = new Date(monday);
+        sunday.setDate(monday.getDate() + 6);
+        const sundayStr = formatDate(sunday);
+
+        console.log(`[Weekly Summary] Week: ${mondayStr} - ${sundayStr}`);
+
+        function formatDate(d) {
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        try {
+            // 1. 取得所有使用者
+            const usersSnapshot = await db.collection(`artifacts/${APP_ID}/public/data/users`).get();
+            const users = [];
+            usersSnapshot.forEach(doc => {
+                const data = doc.data();
+                if (data.lineUserId && data.lineNotifyEnabled) {
+                    users.push({ id: doc.id, ...data });
+                }
+            });
+
+            console.log(`[Weekly Summary] Found ${users.length} users with LINE notifications enabled`);
+
+            if (users.length === 0) {
+                console.log('[Weekly Summary] No users to notify');
+                return;
+            }
+
+            // 2. 取得本週所有行程
+            const eventsSnapshot = await db.collection(`artifacts/${APP_ID}/public/data/events`)
+                .where('date', '>=', mondayStr)
+                .where('date', '<=', sundayStr)
+                .get();
+
+            const weekEvents = [];
+            eventsSnapshot.forEach(doc => {
+                weekEvents.push({ id: doc.id, ...doc.data() });
+            });
+
+            console.log(`[Weekly Summary] Found ${weekEvents.length} events for this week`);
+
+            // 3. 對每個使用者，篩選出與他相關的行程並發送通知
+            let sentCount = 0;
+
+            for (const user of users) {
+                try {
+                    // 篩選與此使用者相關的行程
+                    const userEvents = weekEvents.filter(event => {
+                        const isTarget = event.targets && event.targets.includes(user.id);
+                        const isAuthor = event.authorId === user.id;
+                        return isTarget || isAuthor;
+                    });
+
+                    // 如果沒有相關行程，跳過此使用者
+                    if (userEvents.length === 0) {
+                        continue;
+                    }
+
+                    console.log(`[Weekly Summary] Sending ${userEvents.length} events to user ${user.name || user.id}`);
+
+                    // 建立並發送週報摘要訊息
+                    const message = createWeeklySummaryFlexMessage(
+                        user.name || '使用者',
+                        mondayStr,
+                        sundayStr,
+                        userEvents
+                    );
+
+                    await client.pushMessage(user.lineUserId, message);
+                    sentCount++;
+
+                    // 避免 API 限流
+                    await new Promise(resolve => setTimeout(resolve, 100));
+
+                } catch (userErr) {
+                    console.error(`[Weekly Summary] Failed to notify user ${user.id}:`, userErr.message);
+                }
+            }
+
+            console.log(`[Weekly Summary] Completed! Sent ${sentCount} notifications`);
+
+        } catch (err) {
+            console.error('[Weekly Summary] Error:', err);
+            throw err;
+        }
+    }
+);
+
+/**
+ * 手動觸發週報 (用於測試)
+ */
+exports.triggerWeeklySummary = onRequest(
+    {
+        region: "asia-east1",
+        cors: true,
+        secrets: ["LINE_CHANNEL_ACCESS_TOKEN", "LINE_CHANNEL_SECRET"]
+    },
+    async (req, res) => {
+        console.log('[Weekly Summary] Manual trigger started...');
+
+        const client = getLineClient();
+        const { userId } = req.query;
+
+        // 計算本週日期範圍
+        const now = new Date();
+        const taiwanTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Taipei' }));
+
+        // 找到本週一
+        const dayOfWeek = taiwanTime.getDay();
+        const monday = new Date(taiwanTime);
+        monday.setDate(taiwanTime.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+
+        // 本週日
+        const sunday = new Date(monday);
+        sunday.setDate(monday.getDate() + 6);
+
+        function formatDate(d) {
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        const mondayStr = formatDate(monday);
+        const sundayStr = formatDate(sunday);
+
+        console.log(`[Weekly Summary] Week: ${mondayStr} - ${sundayStr}`);
+
+        try {
+            if (userId) {
+                let userDoc;
+                let userData;
+                let internalUserId = userId;
+
+                // 檢查是否為 LINE User ID
+                if (userId.startsWith('U') && userId.length > 30) {
+                    const usersSnapshot = await db.collection(`artifacts/${APP_ID}/public/data/users`)
+                        .where('lineUserId', '==', userId)
+                        .limit(1)
+                        .get();
+
+                    if (usersSnapshot.empty) {
+                        return res.status(404).json({ error: 'User not found with this LINE User ID' });
+                    }
+
+                    userDoc = usersSnapshot.docs[0];
+                    userData = userDoc.data();
+                    internalUserId = userDoc.id;
+                } else {
+                    userDoc = await db.doc(`artifacts/${APP_ID}/public/data/users/${userId}`).get();
+                    if (!userDoc.exists) {
+                        return res.status(404).json({ error: 'User not found' });
+                    }
+                    userData = userDoc.data();
+                }
+
+                if (!userData.lineUserId) {
+                    return res.status(400).json({ error: 'User has not linked LINE account' });
+                }
+
+                // 取得本週行程
+                const eventsSnapshot = await db.collection(`artifacts/${APP_ID}/public/data/events`)
+                    .where('date', '>=', mondayStr)
+                    .where('date', '<=', sundayStr)
+                    .get();
+
+                const userEvents = [];
+                eventsSnapshot.forEach(doc => {
+                    const data = doc.data();
+                    const isTarget = data.targets && data.targets.includes(internalUserId);
+                    const isAuthor = data.authorId === internalUserId;
+                    if (isTarget || isAuthor) {
+                        userEvents.push({ id: doc.id, ...data });
+                    }
+                });
+
+                // 發送週報
+                const message = createWeeklySummaryFlexMessage(
+                    userData.name || '使用者',
+                    mondayStr,
+                    sundayStr,
+                    userEvents
+                );
+
+                await client.pushMessage(userData.lineUserId, message);
+
+                return res.status(200).json({
+                    success: true,
+                    week: `${mondayStr} - ${sundayStr}`,
+                    eventsCount: userEvents.length,
+                    message: `Weekly summary sent to ${userData.name || userId}`
+                });
+            } else {
+                return res.status(400).json({
+                    error: 'Please specify userId query parameter',
+                    example: '/triggerWeeklySummary?userId=xxx'
+                });
+            }
+        } catch (err) {
+            console.error('[Weekly Summary] Manual trigger error:', err);
+            return res.status(500).json({ error: err.message });
+        }
+    }
+);

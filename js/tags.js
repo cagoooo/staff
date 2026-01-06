@@ -161,10 +161,12 @@ export function renderTagSelector(containerId, selectedTags = []) {
                 <input type="text" id="tag-search-input" class="pixel-input" placeholder="搜尋或新增標籤..." style="font-size: 14px; padding: 6px;">
                 <div id="tag-dropdown-list" class="hidden-section" style="position: absolute; background: white; border: 2px solid #2d3436; max-height: 200px; overflow-y: auto; z-index: 100; width: 100%;">
                     ${tags.map(tag => `
-                        <div class="tag-option" style="padding: 8px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 8px;"
+                        <div class="tag-option" data-tag-id="${tag.id}" style="padding: 8px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 8px;"
                             onmouseover="this.style.background='#f0f0f0'" onmouseout="this.style.background='white'">
                             <div onclick="addTagToSelection('${tag.name}')" style="flex: 1; display: flex; align-items: center; gap: 8px;">
-                                <span style="width: 12px; height: 12px; border-radius: 50%; background: ${tag.color};"></span>
+                                <span onclick="event.stopPropagation(); showTagColorPicker('${tag.id}', '${tag.color}')" 
+                                    style="width: 16px; height: 16px; border-radius: 50%; background: ${tag.color}; cursor: pointer; border: 2px solid white; box-shadow: 0 0 0 1px #ccc;" 
+                                    title="點擊更換顏色"></span>
                                 ${tag.name}
                             </div>
                             <button type="button" onclick="event.stopPropagation(); confirmDeleteTag('${tag.id}', '${tag.name}')" 
@@ -209,10 +211,10 @@ export function renderTagSelector(containerId, selectedTags = []) {
         // Add "create new" option if search doesn't match
         if (search && !tags.some(t => t.name.toLowerCase() === search)) {
             dropdown.innerHTML += `
-                <div class="tag-option" onclick="createAndAddTag('${e.target.value}')" 
+                <div class="tag-option" onclick="showNewTagColorPicker('${e.target.value.replace(/'/g, "\\'").replace(/"/g, '&quot;')}')" 
                     style="padding: 8px; cursor: pointer; color: #00b894; font-weight: bold;"
                     onmouseover="this.style.background='#f0f0f0'" onmouseout="this.style.background='white'">
-                    ➕ 新增「${e.target.value}」
+                    ➕ 新增「${e.target.value}」(點擊選擇顏色)
                 </div>
             `;
         }
@@ -399,3 +401,182 @@ window.confirmDeleteTag = function (tagId, tagName) {
 
 // 將 renderTagSelector 導出到 window
 window.renderTagSelector = renderTagSelector;
+
+// ============================================
+// 標籤顏色選擇器
+// ============================================
+
+/**
+ * 顯示標籤顏色選擇器 (編輯現有標籤)
+ */
+window.showTagColorPicker = function (tagId, currentColor) {
+    // 移除現有的顏色選擇器
+    closeTagColorPicker();
+
+    const tag = _globalTags.find(t => t.id === tagId);
+    if (!tag) return;
+
+    const pickerHtml = `
+        <div id="tag-color-picker" style="
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: white; border-radius: 12px; padding: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3); z-index: 10000;
+            min-width: 280px; font-family: 'VT323', monospace;
+        ">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <h3 style="margin: 0; font-size: 20px;">🎨 選擇標籤顏色</h3>
+                <button onclick="closeTagColorPicker()" style="background: none; border: none; font-size: 20px; cursor: pointer;">✕</button>
+            </div>
+            <p style="margin: 0 0 12px; color: #636e72;">標籤: ${tag.name}</p>
+            <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 16px;">
+                ${TAG_COLORS.map(color => `
+                    <div onclick="updateTagColor('${tagId}', '${color}')" 
+                        style="width: 40px; height: 40px; border-radius: 50%; background: ${color}; 
+                        cursor: pointer; border: 3px solid ${color === currentColor ? '#2d3436' : 'transparent'};
+                        transition: transform 0.2s;"
+                        onmouseover="this.style.transform='scale(1.15)'" 
+                        onmouseout="this.style.transform='scale(1)'">
+                    </div>
+                `).join('')}
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <label style="color: #636e72;">自訂:</label>
+                <input type="color" id="custom-tag-color" value="${currentColor}" 
+                    style="width: 60px; height: 36px; border: none; cursor: pointer;">
+                <button onclick="updateTagColor('${tagId}', document.getElementById('custom-tag-color').value)"
+                    style="background: #6c5ce7; color: white; border: none; border-radius: 8px; 
+                    padding: 8px 16px; cursor: pointer; font-family: inherit;">
+                    套用
+                </button>
+            </div>
+        </div>
+        <div id="tag-color-picker-overlay" onclick="closeTagColorPicker()" 
+            style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; 
+            background: rgba(0,0,0,0.4); z-index: 9999;"></div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', pickerHtml);
+};
+
+/**
+ * 顯示新增標籤的顏色選擇器
+ */
+window.showNewTagColorPicker = function (tagName) {
+    // 移除現有的顏色選擇器
+    closeTagColorPicker();
+
+    // 自動選擇一個未使用的顏色
+    const usedColors = _globalTags.map(t => t.color);
+    const defaultColor = TAG_COLORS.find(c => !usedColors.includes(c)) || TAG_COLORS[0];
+
+    const pickerHtml = `
+        <div id="tag-color-picker" style="
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: white; border-radius: 12px; padding: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3); z-index: 10000;
+            min-width: 280px; font-family: 'VT323', monospace;
+        ">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <h3 style="margin: 0; font-size: 20px;">🏷️ 新增標籤</h3>
+                <button onclick="closeTagColorPicker()" style="background: none; border: none; font-size: 20px; cursor: pointer;">✕</button>
+            </div>
+            <p style="margin: 0 0 12px; font-size: 18px; font-weight: bold;">「${tagName}」</p>
+            <p style="margin: 0 0 12px; color: #636e72; font-size: 14px;">請選擇標籤顏色:</p>
+            <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 16px;">
+                ${TAG_COLORS.map((color, index) => `
+                    <div onclick="createTagWithColor('${tagName.replace(/'/g, "\\'")}', '${color}')" 
+                        style="width: 40px; height: 40px; border-radius: 50%; background: ${color}; 
+                        cursor: pointer; border: 3px solid ${index === 0 ? '#2d3436' : 'transparent'};
+                        transition: transform 0.2s;"
+                        onmouseover="this.style.transform='scale(1.15)'" 
+                        onmouseout="this.style.transform='scale(1)'">
+                    </div>
+                `).join('')}
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <label style="color: #636e72;">自訂:</label>
+                <input type="color" id="custom-new-tag-color" value="${defaultColor}" 
+                    style="width: 60px; height: 36px; border: none; cursor: pointer;">
+                <button onclick="createTagWithColor('${tagName.replace(/'/g, "\\'")}', document.getElementById('custom-new-tag-color').value)"
+                    style="background: #00b894; color: white; border: none; border-radius: 8px; 
+                    padding: 8px 16px; cursor: pointer; font-family: inherit;">
+                    建立標籤
+                </button>
+            </div>
+        </div>
+        <div id="tag-color-picker-overlay" onclick="closeTagColorPicker()" 
+            style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; 
+            background: rgba(0,0,0,0.4); z-index: 9999;"></div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', pickerHtml);
+};
+
+/**
+ * 關閉顏色選擇器
+ */
+window.closeTagColorPicker = function () {
+    const picker = document.getElementById('tag-color-picker');
+    const overlay = document.getElementById('tag-color-picker-overlay');
+    if (picker) picker.remove();
+    if (overlay) overlay.remove();
+};
+
+function closeTagColorPicker() {
+    window.closeTagColorPicker();
+}
+
+/**
+ * 更新標籤顏色
+ */
+window.updateTagColor = async function (tagId, newColor) {
+    const success = await updateTag(tagId, { color: newColor });
+    if (success) {
+        // 更新本地快取
+        const tag = _globalTags.find(t => t.id === tagId);
+        if (tag) tag.color = newColor;
+
+        // 更新顯示
+        updateSelectedTagsDisplay();
+        if (window.renderTagFilters) window.renderTagFilters();
+
+        // 關閉選擇器
+        closeTagColorPicker();
+
+        // 重新渲染下拉選單
+        const container = document.querySelector('.tag-selector');
+        if (container) {
+            const selectedTags = window._selectedEventTags || [];
+            renderTagSelector('event-tags' in document.getElementById ? 'event-tags' : container.parentElement.id, selectedTags);
+        }
+    }
+};
+
+/**
+ * 建立指定顏色的新標籤
+ */
+window.createTagWithColor = async function (tagName, color) {
+    const newTag = await addTag(tagName, color);
+    if (newTag) {
+        // 立即加入本地快取
+        if (!_globalTags.find(t => t.id === newTag.id)) {
+            _globalTags.push(newTag);
+        }
+
+        // 加入選擇
+        window.addTagToSelection(newTag.name);
+
+        // 清空搜尋框
+        const searchInput = document.getElementById('tag-search-input');
+        if (searchInput) searchInput.value = '';
+
+        // 關閉選擇器
+        closeTagColorPicker();
+
+        // 更新顯示
+        updateSelectedTagsDisplay();
+    }
+};
+
+// 導出 TAG_COLORS 供其他模組使用
+export { TAG_COLORS };
