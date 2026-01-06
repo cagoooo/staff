@@ -1,0 +1,241 @@
+/* Onboarding Tutorial Styles */
+
+/* Overlay background */
+.onboarding-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.75);
+    z-index: 99998;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.onboarding-overlay.active {
+    opacity: 1;
+}
+
+/* Highlight hole - punched through overlay */
+.onboarding-highlight {
+    position: fixed;
+    z-index: 99999;
+    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.75);
+    border-radius: 8px;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: none;
+}
+
+.onboarding-highlight::before {
+    content: '';
+    position: absolute;
+    top: -4px;
+    left: -4px;
+    right: -4px;
+    bottom: -4px;
+    border: 3px solid #a29bfe;
+    border-radius: 12px;
+    animation: highlightPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes highlightPulse {
+
+    0%,
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 0.7;
+        transform: scale(1.02);
+    }
+}
+
+/* Tooltip card */
+.onboarding-card {
+    position: fixed;
+    z-index: 100000;
+    background: linear-gradient(180deg, #2d3436 0%, #1e272e 100%);
+    border: 4px solid #6c5ce7;
+    border-radius: 12px;
+    padding: 20px;
+    max-width: 320px;
+    width: 90%;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(108, 92, 231, 0.3);
+    font-family: 'VT323', monospace;
+    color: white;
+    transform: translateY(20px);
+    opacity: 0;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.onboarding-card.active {
+    transform: translateY(0);
+    opacity: 1;
+}
+
+.onboarding-card-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.onboarding-card-icon {
+    font-size: 36px;
+    animation: iconBounce 1s ease-in-out infinite;
+}
+
+@keyframes iconBounce {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-5px);
+    }
+}
+
+.onboarding-card-title {
+    font-size: 22px;
+    color: #a29bfe;
+    margin: 0;
+}
+
+.onboarding-card-content {
+    font-size: 18px;
+    line-height: 1.5;
+    color: #dfe6e9;
+    margin-bottom: 20px;
+}
+
+/* Progress dots */
+.onboarding-progress {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.onboarding-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #636e72;
+    transition: all 0.3s ease;
+}
+
+.onboarding-dot.active {
+    background: #6c5ce7;
+    transform: scale(1.3);
+}
+
+.onboarding-dot.completed {
+    background: #00b894;
+}
+
+/* Navigation buttons */
+.onboarding-nav {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.onboarding-btn {
+    flex: 1;
+    padding: 10px 16px;
+    border: 3px solid;
+    border-radius: 8px;
+    font-family: 'VT323', monospace;
+    font-size: 18px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.onboarding-btn-skip {
+    background: transparent;
+    border-color: #636e72;
+    color: #636e72;
+}
+
+.onboarding-btn-skip:hover {
+    border-color: #b2bec3;
+    color: #b2bec3;
+}
+
+.onboarding-btn-prev {
+    background: transparent;
+    border-color: #a29bfe;
+    color: #a29bfe;
+}
+
+.onboarding-btn-prev:hover {
+    background: rgba(162, 155, 254, 0.1);
+}
+
+.onboarding-btn-next {
+    background: linear-gradient(135deg, #6c5ce7 0%, #a29bfe 100%);
+    border-color: #6c5ce7;
+    color: white;
+    font-weight: bold;
+}
+
+.onboarding-btn-next:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(108, 92, 231, 0.4);
+}
+
+.onboarding-btn-finish {
+    background: linear-gradient(135deg, #00b894 0%, #55efc4 100%);
+    border-color: #00b894;
+    color: white;
+    font-weight: bold;
+}
+
+.onboarding-btn-finish:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0, 184, 148, 0.4);
+}
+
+/* Welcome screen special styling */
+.onboarding-welcome {
+    text-align: center;
+}
+
+.onboarding-welcome-icon {
+    font-size: 64px;
+    margin-bottom: 16px;
+    animation: welcomeBounce 1.5s ease-in-out infinite;
+}
+
+@keyframes welcomeBounce {
+
+    0%,
+    100% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.1);
+    }
+}
+
+/* Responsive adjustments */
+@media (max-width: 480px) {
+    .onboarding-card {
+        padding: 16px;
+        max-width: 280px;
+    }
+
+    .onboarding-card-title {
+        font-size: 20px;
+    }
+
+    .onboarding-card-content {
+        font-size: 16px;
+    }
+}

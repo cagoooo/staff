@@ -4,6 +4,7 @@ import { collection, addDoc, query, where, getDocs, doc, getDoc, updateDoc, setD
 import { auth, db, appId } from './firebase-config.js';
 import { showAlert } from '../components/modal.js';
 import { hashPassword, verifyPassword, isHashed, saveSession, getSession, clearSession } from './crypto.js';
+import { shouldShowOnboarding, startOnboarding } from './onboarding.js';
 
 let _globalUsers = () => [];
 let _setAppCurrentUser = () => { };
@@ -244,6 +245,11 @@ export async function handleAppLogin(e) {
             }
 
             _initAppUI();
+
+            // Check if onboarding tutorial should be shown
+            if (shouldShowOnboarding()) {
+                setTimeout(() => startOnboarding(), 1000);
+            }
         } else {
             showAlert('帳號或密碼錯誤');
         }
@@ -464,6 +470,11 @@ async function processGoogleLoginResult(result) {
                 showAlert('請先完善您的處室和職稱資料');
                 if (window.switchTab) window.switchTab('account');
             }, 500);
+        } else {
+            // Only show onboarding if profile is complete
+            if (shouldShowOnboarding()) {
+                setTimeout(() => startOnboarding(), 500);
+            }
         }
     }, 1000);
 }
