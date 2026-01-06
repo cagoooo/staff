@@ -158,6 +158,7 @@ function createWeekViewContainer() {
                 align-items: center;
                 gap: 10px;
                 margin-bottom: 15px;
+                flex-wrap: wrap;
             }
             .week-nav-label {
                 font-family: 'VT323', monospace;
@@ -170,18 +171,114 @@ function createWeekViewContainer() {
                 min-height: 40px;
                 padding: 3px;
             }
+            
+            /* ========== MOBILE RWD STYLES ========== */
             @media (max-width: 768px) {
+                .week-nav {
+                    gap: 6px;
+                }
+                .week-nav .pixel-btn {
+                    padding: 6px 8px !important;
+                    font-size: 12px !important;
+                }
+                .week-nav-label {
+                    font-size: 16px;
+                    min-width: 140px;
+                    order: -1;
+                    width: 100%;
+                }
+                
+                /* Mobile: Vertical card layout instead of grid */
                 .week-view-grid {
-                    grid-template-columns: 50px repeat(7, 1fr);
-                    font-size: 12px;
+                    display: none !important;
                 }
-                .week-time-cell {
-                    font-size: 10px;
+                .week-mobile-view {
+                    display: block !important;
                 }
-                .week-event-item {
-                    font-size: 10px;
-                    padding: 2px 3px;
+            }
+            
+            @media (min-width: 769px) {
+                .week-mobile-view {
+                    display: none !important;
                 }
+            }
+            
+            /* Mobile card styles */
+            .week-mobile-view {
+                display: none;
+            }
+            .week-mobile-day {
+                background: white;
+                border-radius: 8px;
+                margin-bottom: 12px;
+                box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+                overflow: hidden;
+            }
+            .week-mobile-day.today {
+                border: 3px solid #6c5ce7;
+            }
+            .week-mobile-day-header {
+                background: #2d3436;
+                color: white;
+                padding: 12px 16px;
+                font-family: 'VT323', monospace;
+                font-size: 20px;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+            .week-mobile-day.today .week-mobile-day-header {
+                background: #6c5ce7;
+            }
+            .week-mobile-day-content {
+                padding: 12px;
+            }
+            .week-mobile-event {
+                background: #f8f9fa;
+                border-left: 4px solid #667eea;
+                padding: 10px 12px;
+                margin-bottom: 8px;
+                border-radius: 0 6px 6px 0;
+                cursor: pointer;
+                transition: background 0.2s;
+            }
+            .week-mobile-event:hover {
+                background: #e9ecef;
+            }
+            .week-mobile-event.important {
+                border-left-color: #e17055;
+                background: #fff5f5;
+            }
+            .week-mobile-event.completed {
+                opacity: 0.6;
+                border-left-color: #00b894;
+            }
+            .week-mobile-event-time {
+                font-size: 14px;
+                color: #636e72;
+                font-weight: bold;
+            }
+            .week-mobile-event-title {
+                font-family: 'VT323', monospace;
+                font-size: 18px;
+                margin-top: 4px;
+            }
+            .week-mobile-event-title.completed {
+                text-decoration: line-through;
+                color: #888;
+            }
+            .week-mobile-empty {
+                text-align: center;
+                padding: 20px;
+                color: #aaa;
+                font-family: 'VT323', monospace;
+                font-size: 16px;
+            }
+            .week-mobile-day-badge {
+                background: rgba(255,255,255,0.2);
+                padding: 4px 10px;
+                border-radius: 12px;
+                font-size: 14px;
             }
         </style>
         <div class="week-nav">
@@ -208,7 +305,8 @@ function renderWeekView() {
     const weekLabel = document.getElementById('week-label');
     if (!weekGrid) return;
 
-    const events = globalEvents();
+    // Filter out deleted events
+    const events = globalEvents().filter(e => !e.deletedAt);
     const currentUser = getAppCurrentUser();
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -318,7 +416,54 @@ function renderWeekView() {
     });
 
     html += '</div>';
-    weekGrid.innerHTML = html;
+
+    // ========== Mobile View HTML ==========
+    let mobileHtml = '<div class="week-mobile-view">';
+    const weekDayNames = ['週日', '週一', '週二', '週三', '週四', '週五', '週六'];
+
+    weekDates.forEach(date => {
+        const dateStr = formatDate(date);
+        const isToday = date.getTime() === today.getTime();
+        const dayAllEvents = eventsByDateTime[dateStr]?.allDay || [];
+        const dayTimedEvents = eventsByDateTime[dateStr]?.timed || [];
+        const allDayEvents = [...dayAllEvents, ...dayTimedEvents].sort((a, b) =>
+            (a.time || '00:00').localeCompare(b.time || '00:00')
+        );
+
+        mobileHtml += `
+            <div class="week-mobile-day ${isToday ? 'today' : ''}">
+                <div class="week-mobile-day-header">
+                    <span>${weekDayNames[date.getDay()]} ${date.getMonth() + 1}/${date.getDate()}</span>
+                    ${isToday ? '<span class="week-mobile-day-badge">今天</span>' : ''}
+                    ${allDayEvents.length > 0 ? `<span class="week-mobile-day-badge">${allDayEvents.length} 項</span>` : ''}
+                </div>
+                <div class="week-mobile-day-content">
+        `;
+
+        if (allDayEvents.length === 0) {
+            mobileHtml += '<div class="week-mobile-empty">📭 無行程</div>';
+        } else {
+            allDayEvents.forEach(e => {
+                const isImportant = e.isPublic || e.announcementType === 'important' || e.announcementType === 'urgent';
+                const isCompleted = e.completedBy?.includes(currentUser?.id);
+                const timeDisplay = e.isAllDay ? '🌅 全天' : `🕐 ${e.time}`;
+
+                mobileHtml += `
+                    <div class="week-mobile-event ${isImportant ? 'important' : ''} ${isCompleted ? 'completed' : ''}"
+                         onclick="openEventModal && openEventModal('${e.id}')">
+                        <div class="week-mobile-event-time">${timeDisplay}</div>
+                        <div class="week-mobile-event-title ${isCompleted ? 'completed' : ''}">${e.title}</div>
+                    </div>
+                `;
+            });
+        }
+
+        mobileHtml += '</div></div>';
+    });
+
+    mobileHtml += '</div>';
+
+    weekGrid.innerHTML = html + mobileHtml;
 }
 
 // Navigate weeks
