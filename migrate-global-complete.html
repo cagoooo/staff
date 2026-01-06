@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>資料遷移 - isGloballyCompleted</title>
+    <style>
+        body {
+            font-family: 'VT323', 'Courier New', monospace;
+            background: #1a1a2e;
+            color: #eee;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: #6c5ce7;
+        }
+
+        .card {
+            background: #2a2a4a;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+            border-left: 4px solid #6c5ce7;
+        }
+
+        button {
+            background: #6c5ce7;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+
+        button:hover {
+            background: #5a4bd6;
+        }
+
+        button:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+
+        button.danger {
+            background: #e17055;
+        }
+
+        button.success {
+            background: #00b894;
+        }
+
+        button.google {
+            background: #4285f4;
+        }
+
+        #log {
+            background: #111;
+            padding: 15px;
+            border-radius: 8px;
+            height: 250px;
+            overflow-y: auto;
+            font-size: 14px;
+            white-space: pre-wrap;
+        }
+
+        .success {
+            color: #00b894;
+        }
+
+        .error {
+            color: #e17055;
+        }
+
+        .warning {
+            color: #fdcb6e;
+        }
+
+        .info {
+            color: #74b9ff;
+        }
+
+        #login-section {
+            text-align: center;
+        }
+
+        #user-info {
+            background: #00b894;
+            padding: 10px 20px;
+            border-radius: 8px;
+            display: inline-block;
+            margin-bottom: 10px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        input[type="text"] {
+            padding: 10px;
+            border-radius: 8px;
+            border: 2px solid #444;
+            background: #1a1a2e;
+            color: #eee;
+            width: 200px;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>🔧 資料遷移工具</h1>
+    <h2>isGloballyCompleted 欄位修復</h2>
+
+    <!-- 登入區塊 -->
+    <div class="card" id="login-section">
+        <h3>🔐 請先登入（需管理員帳號）</h3>
+        <button class="google" onclick="googleSignIn()">🔑 使用 Google 登入</button>
+        <p id="login-status" style="color: #fdcb6e;">尚未登入</p>
+    </div>
+
+    <!-- 工具區塊（登入後顯示） -->
+    <div id="tool-section" class="hidden">
+        <div class="card">
+            <div id="user-info"></div>
+            <button onclick="signOut()" style="background: #636e72; padding: 8px 16px; font-size: 14px;">登出</button>
+        </div>
+
+        <div class="card">
+            <h3>🚀 批次遷移</h3>
+            <button id="btn-preview" onclick="previewChanges()">👁️ 預覽需修復的資料</button>
+            <button id="btn-migrate" onclick="runMigration()" class="danger" disabled>⚡ 執行遷移</button>
+            <button onclick="clearLog()">🗑️ 清除日誌</button>
+        </div>
+
+        <div class="card" style="border-left-color: #e17055;">
+            <h3>🔧 單筆修正（移除 isGloballyCompleted）</h3>
+            <p>輸入行程標題關鍵字，將 isGloballyCompleted 設為 false：</p>
+            <input type="text" id="fix-keyword" placeholder="例如：三年級營養">
+            <button onclick="searchAndFix()" style="background: #e17055;">🔍 搜尋並修正</button>
+            <div id="fix-result" style="margin-top: 10px;"></div>
+        </div>
+
+        <div class="card">
+            <h3>📝 執行日誌</h3>
+            <div id="log"></div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, collection, getDocs, doc, updateDoc, deleteField } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut as fbSignOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+
+        // Firebase 設定
+        const firebaseConfig = {
+            apiKey: "AIzaSyDGGD24GfSUcPrXbgoi0OSHogXR_wfVrNA",
+            authDomain: "smes-e1dc3.firebaseapp.com",
+            projectId: "smes-e1dc3",
+            storageBucket: "smes-e1dc3.firebasestorage.app",
+            messagingSenderId: "626362737802",
+            appId: "1:626362737802:web:5437ee537f575edec97973"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        const appId = "default-app-id";
+
+        let eventsToFix = [];
+        let currentUser = null;
+
+        // 監聽登入狀態
+        onAuthStateChanged(auth, (user) => {
+            currentUser = user;
+            if (user) {
+                document.getElementById('login-section').classList.add('hidden');
+                document.getElementById('tool-section').classList.remove('hidden');
+                document.getElementById('user-info').innerHTML = `✅ 已登入：<strong>${user.displayName || user.email}</strong>`;
+                log(`使用者已登入: ${user.email}`, 'success');
+            } else {
+                document.getElementById('login-section').classList.remove('hidden');
+                document.getElementById('tool-section').classList.add('hidden');
+            }
+        });
+
+        // Google 登入
+        window.googleSignIn = async function () {
+            try {
+                const provider = new GoogleAuthProvider();
+                await signInWithPopup(auth, provider);
+            } catch (err) {
+                document.getElementById('login-status').textContent = `登入失敗: ${err.message}`;
+                document.getElementById('login-status').style.color = '#e17055';
+            }
+        };
+
+        // 登出
+        window.signOut = async function () {
+            await fbSignOut(auth);
+            location.reload();
+        };
+
+        // 日誌函數
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            if (!logDiv) return;
+            const time = new Date().toLocaleTimeString();
+            logDiv.innerHTML += `<span class="${type}">[${time}] ${message}</span>\n`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        // 預覽需修復的資料
+        window.previewChanges = async function () {
+            if (!currentUser) { log('請先登入', 'error'); return; }
+
+            const btn = document.getElementById('btn-preview');
+            btn.disabled = true;
+            btn.textContent = '⏳ 掃描中...';
+            log('開始掃描所有行程...', 'info');
+
+            try {
+                const eventsRef = collection(db, 'artifacts', appId, 'public', 'data', 'school_events');
+                const snapshot = await getDocs(eventsRef);
+
+                eventsToFix = [];
+                let totalEvents = 0;
+                let alreadyFixed = 0;
+
+                snapshot.forEach(docSnap => {
+                    const event = { id: docSnap.id, ...docSnap.data() };
+                    totalEvents++;
+
+                    if (event.authorId && event.completedBy && Array.isArray(event.completedBy) &&
+                        event.completedBy.includes(event.authorId)) {
+                        if (event.isGloballyCompleted === true) {
+                            alreadyFixed++;
+                        } else {
+                            eventsToFix.push(event);
+                        }
+                    }
+                });
+
+                log(`掃描完成！共 ${totalEvents} 筆行程`, 'success');
+                log(`已有 isGloballyCompleted: ${alreadyFixed} 筆`, 'info');
+                log(`需要修復: ${eventsToFix.length} 筆`, eventsToFix.length > 0 ? 'warning' : 'success');
+
+                if (eventsToFix.length > 0) {
+                    log('\n--- 需修復的行程列表 ---', 'warning');
+                    eventsToFix.forEach((e, i) => {
+                        log(`${i + 1}. [${e.date}] ${e.title} (建立者: ${e.authorName || e.authorId})`, 'warning');
+                    });
+                    document.getElementById('btn-migrate').disabled = false;
+                } else {
+                    log('\n🎉 所有資料已是最新狀態，無需修復！', 'success');
+                }
+            } catch (err) {
+                log(`錯誤: ${err.message}`, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '👁️ 預覽需修復的資料';
+            }
+        };
+
+        // 執行遷移
+        window.runMigration = async function () {
+            if (eventsToFix.length === 0 || !confirm(`確定要修復 ${eventsToFix.length} 筆行程嗎？`)) return;
+
+            const btn = document.getElementById('btn-migrate');
+            btn.disabled = true;
+            btn.textContent = '⏳ 執行中...';
+            log('\n--- 開始執行遷移 ---', 'info');
+
+            let successCount = 0;
+            for (const event of eventsToFix) {
+                try {
+                    const eventRef = doc(db, 'artifacts', appId, 'public', 'data', 'school_events', event.id);
+                    await updateDoc(eventRef, { isGloballyCompleted: true });
+                    log(`✅ 已修復: ${event.title}`, 'success');
+                    successCount++;
+                } catch (err) {
+                    log(`❌ 失敗: ${event.title} - ${err.message}`, 'error');
+                }
+            }
+
+            log(`\n--- 遷移完成：${successCount} 筆 ---`, 'success');
+            eventsToFix = [];
+            btn.textContent = '✅ 遷移完成';
+            btn.classList.add('success');
+        };
+
+        // 單筆修正 - 搜尋並移除 isGloballyCompleted
+        window.searchAndFix = async function () {
+            const keyword = document.getElementById('fix-keyword').value.trim();
+            const resultDiv = document.getElementById('fix-result');
+
+            if (!keyword) {
+                resultDiv.innerHTML = '<span style="color: #e17055;">請輸入關鍵字</span>';
+                return;
+            }
+
+            resultDiv.innerHTML = '<span style="color: #74b9ff;">搜尋中...</span>';
+            log(`搜尋關鍵字: "${keyword}"...`, 'info');
+
+            try {
+                const eventsRef = collection(db, 'artifacts', appId, 'public', 'data', 'school_events');
+                const snapshot = await getDocs(eventsRef);
+
+                let found = [];
+                snapshot.forEach(docSnap => {
+                    const event = { id: docSnap.id, ...docSnap.data() };
+                    if (event.title && event.title.includes(keyword) && event.isGloballyCompleted === true) {
+                        found.push(event);
+                    }
+                });
+
+                if (found.length === 0) {
+                    resultDiv.innerHTML = '<span style="color: #fdcb6e;">找不到符合的行程，或行程沒有 isGloballyCompleted</span>';
+                    log('找不到符合條件的行程', 'warning');
+                    return;
+                }
+
+                let html = `<span style="color: #00b894;">找到 ${found.length} 筆：</span><br>`;
+                found.forEach((e, i) => {
+                    html += `<button onclick="fixSingleEvent('${e.id}', '${e.title.replace(/'/g, "\\'")}')" 
+                        style="margin: 5px; padding: 8px 12px; font-size: 14px; background: #e17055;">
+                        ❌ 移除: ${e.title}
+                    </button><br>`;
+                });
+                resultDiv.innerHTML = html;
+
+            } catch (err) {
+                resultDiv.innerHTML = `<span style="color: #e17055;">錯誤: ${err.message}</span>`;
+            }
+        };
+
+        // 修正單筆行程
+        window.fixSingleEvent = async function (eventId, title) {
+            if (!confirm(`確定要移除「${title}」的 isGloballyCompleted 嗎？`)) return;
+
+            try {
+                const eventRef = doc(db, 'artifacts', appId, 'public', 'data', 'school_events', eventId);
+                await updateDoc(eventRef, { isGloballyCompleted: deleteField() });
+                log(`✅ 已移除 isGloballyCompleted: ${title}`, 'success');
+                document.getElementById('fix-result').innerHTML = `<span style="color: #00b894;">✅ 已修正: ${title}</span>`;
+            } catch (err) {
+                log(`❌ 修正失敗: ${err.message}`, 'error');
+            }
+        };
+
+        // 清除日誌
+        window.clearLog = function () {
+            document.getElementById('log').innerHTML = '';
+        };
+    </script>
+</body>
+
+</html>
