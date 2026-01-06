@@ -248,6 +248,25 @@ export async function handleMarkAsDone(eventId) {
     });
 }
 
+// Mark as complete without confirmation dialog (for swipe gestures)
+export async function markEventCompleteNoConfirm(eventId) {
+    if (!isOnline()) {
+        showAlert('離線中無法操作');
+        return false;
+    }
+
+    if (!_appCurrentUser || !db) return false;
+
+    try {
+        const eventRef = doc(db, 'artifacts', appId, 'public', 'data', 'school_events', eventId);
+        await updateDoc(eventRef, { completedBy: arrayUnion(_appCurrentUser.id) });
+        return true;
+    } catch (err) {
+        showAlert('操作失敗');
+        return false;
+    }
+}
+
 export async function handleUpdateProfile(e) {
     e.preventDefault();
 
@@ -305,7 +324,7 @@ export async function updateEvent(eventId, data) {
     }
 }
 
-// Delete an event
+// Soft delete an event (move to trash)
 export async function deleteEvent(eventId) {
     if (!isOnline()) {
         showAlert('離線中無法刪除行程');
@@ -316,13 +335,71 @@ export async function deleteEvent(eventId) {
 
     try {
         const eventRef = doc(db, 'artifacts', appId, 'public', 'data', 'school_events', eventId);
-        await deleteDoc(eventRef);
-        showAlert('行程已刪除！');
+        await updateDoc(eventRef, {
+            deletedAt: new Date().toISOString(),
+            deletedBy: _appCurrentUser.id,
+            deletedByName: _appCurrentUser.name
+        });
+        showAlert('行程已移至回收站！');
         return true;
     } catch (err) {
         showAlert('刪除失敗：' + err.message);
         return false;
     }
+}
+
+// Restore an event from trash
+export async function restoreEvent(eventId) {
+    if (!isOnline()) {
+        showAlert('離線中無法復原行程');
+        return false;
+    }
+
+    if (!_appCurrentUser || !db) return false;
+
+    try {
+        const eventRef = doc(db, 'artifacts', appId, 'public', 'data', 'school_events', eventId);
+        await updateDoc(eventRef, {
+            deletedAt: null,
+            deletedBy: null,
+            deletedByName: null
+        });
+        showAlert('行程已復原！');
+        return true;
+    } catch (err) {
+        showAlert('復原失敗：' + err.message);
+        return false;
+    }
+}
+
+// Permanently delete an event
+export async function permanentlyDeleteEvent(eventId) {
+    if (!isOnline()) {
+        showAlert('離線中無法永久刪除');
+        return false;
+    }
+
+    if (!_appCurrentUser || !db) return false;
+
+    try {
+        const eventRef = doc(db, 'artifacts', appId, 'public', 'data', 'school_events', eventId);
+        await deleteDoc(eventRef);
+        showAlert('行程已永久刪除！');
+        return true;
+    } catch (err) {
+        showAlert('刪除失敗：' + err.message);
+        return false;
+    }
+}
+
+// Get deleted events (trash)
+export function getDeletedEvents() {
+    return _globalEvents.filter(e => e.deletedAt);
+}
+
+// Get active events (not deleted)
+export function getActiveEvents() {
+    return _globalEvents.filter(e => !e.deletedAt);
 }
 
 // Get event by ID
@@ -393,9 +470,14 @@ export async function addNewEvent(eventData) {
 
 window.handleFirebaseAddEvent = handleFirebaseAddEvent;
 window.handleMarkAsDone = handleMarkAsDone;
+window._markEventCompleteNoConfirm = markEventCompleteNoConfirm;
 window.handleUpdateProfile = handleUpdateProfile;
 window.updateEvent = updateEvent;
 window.deleteEvent = deleteEvent;
+window.restoreEvent = restoreEvent;
+window.permanentlyDeleteEvent = permanentlyDeleteEvent;
+window.getDeletedEvents = getDeletedEvents;
+window.getActiveEvents = getActiveEvents;
 window.getEventById = getEventById;
 window.markEventAsRead = markEventAsRead;
 window.toggleEventPin = toggleEventPin;

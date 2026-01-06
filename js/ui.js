@@ -81,8 +81,8 @@ export function renderCalendar() {
     const firstDay = new Date(year, month, 1).getDay();
     const totalDays = new Date(year, month + 1, 0).getDate();
 
-    // Get events for this month (including multi-day events)
-    const events = globalEvents();
+    // Get events for this month (including multi-day events, excluding deleted)
+    const events = globalEvents().filter(e => !e.deletedAt);
     const monthStartStr = `${year}-${String(month + 1).padStart(2, '0')}-01`;
     const lastDay = new Date(year, month + 1, 0).getDate();
     const monthEndStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
@@ -475,7 +475,8 @@ export function renderDashboard() {
     const listImportant = document.getElementById('important-events-list');
     const listCompleted = document.getElementById('completed-events-list');
     const completedBadge = document.getElementById('completed-count-badge');
-    const events = globalEvents();
+    // Filter out deleted events
+    const events = globalEvents().filter(e => !e.deletedAt);
     const users = globalUsers();
     const currentUser = getAppCurrentUser();
 
@@ -628,7 +629,8 @@ async function markAsRead(eventId) {
 export function renderNotifications() {
     const list = document.getElementById('notification-list');
     const currentUser = getAppCurrentUser();
-    const events = globalEvents();
+    // Filter out deleted events
+    const events = globalEvents().filter(e => !e.deletedAt);
 
     list.innerHTML = '';
 
@@ -712,8 +714,8 @@ export function switchTab(tabName) {
     // Also scroll main window for mobile
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
-    // Hide all views including admin
-    ['dashboard', 'calendar', 'account', 'notifications', 'editor', 'stats', 'admin'].forEach(v => {
+    // Hide all views including admin and trash
+    ['dashboard', 'calendar', 'account', 'notifications', 'editor', 'stats', 'admin', 'trash'].forEach(v => {
         const el = document.getElementById('view-' + v);
         if (el) el.classList.add('hidden-section');
     });
@@ -725,19 +727,27 @@ export function switchTab(tabName) {
     const btns = document.querySelectorAll('aside .nav-btn');
     if (btns[indexMap[tabName]]) btns[indexMap[tabName]].classList.add('active');
 
+    // Activate trash button if on trash tab
+    if (tabName === 'trash') {
+        const trashBtn = document.getElementById('nav-trash');
+        if (trashBtn) trashBtn.classList.add('active');
+    }
+
     const titles = {
         'dashboard': '主頁面',
         'calendar': '共用日曆',
         'account': '帳號設定',
         'notifications': '待辦與通知',
         'editor': '新增行程',
-        'stats': '📊 統計儀表板'
+        'stats': '📊 統計儀表板',
+        'trash': '🗑️ 回收站'
     };
-    document.getElementById('page-title').innerText = titles[tabName];
+    document.getElementById('page-title').innerText = titles[tabName] || tabName;
 
     if (tabName === 'dashboard') renderDashboard();
     if (tabName === 'calendar') renderCalendar();
     if (tabName === 'stats' && window.renderStats) window.renderStats();
+    if (tabName === 'trash' && window.renderTrashList) window.renderTrashList();
     if (tabName === 'account' && currentUser) {
         document.getElementById('edit-department').innerHTML = renderDepartmentOptions(currentUser.department || '');
         setTimeout(() => {

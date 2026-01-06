@@ -21,6 +21,8 @@ import './conflict-detection.js'; // Load conflict detection
 import { initTemplates } from './templates.js';
 import './backup-restore.js'; // Load backup/restore
 import { initWeekView } from './week-view.js';
+import { initSwipeGestures } from './swipe-gestures.js';
+import { initTrash } from './trash.js';
 
 // Wire up dependencies (avoid circular imports)
 setAuthDeps({
@@ -56,6 +58,8 @@ async function init() {
     initLineConnect();
     initTemplates();
     initWeekView();
+    initSwipeGestures();
+    initTrash();
 
     // 恢復記住的帳號密碼
     restoreRememberedCredentials();
