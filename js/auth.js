@@ -332,6 +332,9 @@ export async function handleGoogleLogin() {
     googleBtn.disabled = true;
     googleBtn.innerHTML = '登入中...';
 
+    // 顯示像素風格讀取動畫
+    showPixelLoadingOverlay();
+
     try {
         const provider = new GoogleAuthProvider();
 
@@ -354,6 +357,7 @@ export async function handleGoogleLogin() {
 
     } catch (err) {
         console.error('[Auth] Google login error:', err);
+        hidePixelLoadingOverlay();
         googleBtn.disabled = false;
         googleBtn.innerHTML = '🌐 使用 Google 登入';
 
@@ -440,6 +444,7 @@ async function processGoogleLoginResult(result) {
 
     // Wait for data listeners to load
     setTimeout(async () => {
+        hidePixelLoadingOverlay();
         _initAppUI();
 
         // Check if user is admin and inject admin UI
@@ -566,3 +571,197 @@ export function restoreRememberedCredentials() {
 }
 
 window.restoreRememberedCredentials = restoreRememberedCredentials;
+
+// ============================================
+// 像素風格讀取動畫 (Pixel Loading Animation)
+// ============================================
+
+let loadingInterval = null;
+let loadingPhase = 0;
+
+const LOADING_MESSAGES = [
+    '連線到 Google 伺服器...',
+    '正在驗證身份...',
+    '取得帳號資訊...',
+    '同步使用者資料...',
+    '準備進入系統...',
+    '載入中，請稍候...',
+    '即將完成...',
+];
+
+/**
+ * 顯示像素風格讀取動畫覆蓋層
+ */
+function showPixelLoadingOverlay() {
+    // 避免重複建立
+    if (document.getElementById('pixel-loading-overlay')) return;
+
+    const overlay = document.createElement('div');
+    overlay.id = 'pixel-loading-overlay';
+    overlay.innerHTML = `
+        <style>
+            @keyframes pixel-walk {
+                0%, 100% { transform: translateY(0px); }
+                25% { transform: translateY(-8px); }
+                50% { transform: translateY(0px); }
+                75% { transform: translateY(-4px); }
+            }
+            @keyframes pixel-blink {
+                0%, 48%, 52%, 100% { opacity: 1; }
+                50% { opacity: 0.3; }
+            }
+            @keyframes progress-fill {
+                0% { width: 0%; }
+                10% { width: 15%; }
+                30% { width: 35%; }
+                50% { width: 55%; }
+                70% { width: 75%; }
+                90% { width: 90%; }
+                100% { width: 95%; }
+            }
+            @keyframes pixel-dots {
+                0%, 25% { content: ''; }
+                26%, 50% { content: '.'; }
+                51%, 75% { content: '..'; }
+                76%, 100% { content: '...'; }
+            }
+            .pixel-loading-container {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                z-index: 99999;
+                font-family: 'VT323', 'Courier New', monospace;
+            }
+            .pixel-character {
+                font-size: 64px;
+                animation: pixel-walk 0.6s ease-in-out infinite;
+                margin-bottom: 20px;
+                text-shadow: 4px 4px 0 #0a0a1a;
+            }
+            .pixel-title {
+                color: #fff;
+                font-size: 28px;
+                margin-bottom: 30px;
+                text-shadow: 2px 2px 0 #6c5ce7;
+                letter-spacing: 2px;
+            }
+            .pixel-progress-container {
+                width: 280px;
+                height: 24px;
+                background: #2d3436;
+                border: 4px solid #fff;
+                box-shadow: 4px 4px 0 #0a0a1a;
+                position: relative;
+                overflow: hidden;
+            }
+            .pixel-progress-bar {
+                height: 100%;
+                background: linear-gradient(90deg, #6c5ce7, #a29bfe, #6c5ce7);
+                background-size: 200% 100%;
+                animation: progress-fill 8s ease-out forwards;
+                position: relative;
+            }
+            .pixel-progress-bar::after {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 50%;
+                background: rgba(255,255,255,0.3);
+            }
+            .pixel-message {
+                color: #a29bfe;
+                font-size: 18px;
+                margin-top: 20px;
+                animation: pixel-blink 1.5s ease-in-out infinite;
+            }
+            .pixel-tip {
+                color: #636e72;
+                font-size: 14px;
+                margin-top: 30px;
+                max-width: 300px;
+                text-align: center;
+                line-height: 1.5;
+            }
+            .pixel-stars {
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                pointer-events: none;
+                overflow: hidden;
+            }
+            .pixel-star {
+                position: absolute;
+                color: #fff;
+                font-size: 8px;
+                animation: pixel-blink 2s ease-in-out infinite;
+            }
+        </style>
+        <div class="pixel-loading-container">
+            <div class="pixel-stars" id="pixel-stars"></div>
+            <div class="pixel-character">🏃‍♂️</div>
+            <div class="pixel-title">⚡ LOADING ⚡</div>
+            <div class="pixel-progress-container">
+                <div class="pixel-progress-bar"></div>
+            </div>
+            <div class="pixel-message" id="pixel-loading-message">連線到 Google 伺服器...</div>
+            <div class="pixel-tip">💡 小提示：請在彈出的視窗中選擇您的 Google 帳號</div>
+        </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    // 添加星星背景
+    const starsContainer = document.getElementById('pixel-stars');
+    for (let i = 0; i < 30; i++) {
+        const star = document.createElement('div');
+        star.className = 'pixel-star';
+        star.textContent = '✦';
+        star.style.left = Math.random() * 100 + '%';
+        star.style.top = Math.random() * 100 + '%';
+        star.style.animationDelay = Math.random() * 2 + 's';
+        star.style.opacity = Math.random() * 0.5 + 0.3;
+        starsContainer.appendChild(star);
+    }
+
+    // 定期更換訊息
+    loadingPhase = 0;
+    loadingInterval = setInterval(() => {
+        loadingPhase = (loadingPhase + 1) % LOADING_MESSAGES.length;
+        const messageEl = document.getElementById('pixel-loading-message');
+        if (messageEl) {
+            messageEl.textContent = LOADING_MESSAGES[loadingPhase];
+        }
+    }, 2000);
+}
+
+/**
+ * 隱藏像素讀取動畫覆蓋層
+ */
+function hidePixelLoadingOverlay() {
+    if (loadingInterval) {
+        clearInterval(loadingInterval);
+        loadingInterval = null;
+    }
+
+    const overlay = document.getElementById('pixel-loading-overlay');
+    if (overlay) {
+        // 添加淡出動畫
+        overlay.style.transition = 'opacity 0.3s ease-out';
+        overlay.style.opacity = '0';
+        setTimeout(() => overlay.remove(), 300);
+    }
+}
+
+window.showPixelLoadingOverlay = showPixelLoadingOverlay;
+window.hidePixelLoadingOverlay = hidePixelLoadingOverlay;
