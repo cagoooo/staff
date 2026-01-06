@@ -372,7 +372,7 @@ function renderWeekView() {
         html += `<div class="week-day-cell week-all-day-row" onclick="selectDate('${dateStr}')">`;
         dayEvents.slice(0, 3).forEach(e => {
             const isImportant = e.isPublic || e.announcementType === 'important' || e.announcementType === 'urgent';
-            const isCompleted = e.completedBy?.includes(currentUser?.id);
+            const isCompleted = e.isGloballyCompleted || e.completedBy?.includes(currentUser?.id);
             html += `<div class="week-event-item ${isImportant ? 'important' : ''} ${isCompleted ? 'completed' : ''}" 
                 onclick="event.stopPropagation(); openEventModal && openEventModal('${e.id}')" 
                 title="${e.title}">
@@ -401,7 +401,7 @@ function renderWeekView() {
             html += `<div class="week-day-cell" onclick="selectDate('${dateStr}')">`;
             hourEvents.slice(0, 2).forEach(e => {
                 const isImportant = e.isPublic || e.announcementType === 'important' || e.announcementType === 'urgent';
-                const isCompleted = e.completedBy?.includes(currentUser?.id);
+                const isCompleted = e.isGloballyCompleted || e.completedBy?.includes(currentUser?.id);
                 html += `<div class="week-event-item ${isImportant ? 'important' : ''} ${isCompleted ? 'completed' : ''}" 
                     onclick="event.stopPropagation(); openEventModal && openEventModal('${e.id}')" 
                     title="${e.time} - ${e.title}">
@@ -445,7 +445,7 @@ function renderWeekView() {
         } else {
             allDayEvents.forEach(e => {
                 const isImportant = e.isPublic || e.announcementType === 'important' || e.announcementType === 'urgent';
-                const isCompleted = e.completedBy?.includes(currentUser?.id);
+                const isCompleted = e.isGloballyCompleted || e.completedBy?.includes(currentUser?.id);
                 const timeDisplay = e.isAllDay ? '🌅 全天' : `🕐 ${e.time}`;
 
                 mobileHtml += `

@@ -238,10 +238,23 @@ export async function handleMarkAsDone(eventId) {
         return;
     }
 
+    // 取得行程資料以檢查是否為建立者
+    const event = _globalEvents.find(e => e.id === eventId);
+    const isAuthor = event && event.authorId === _appCurrentUser?.id;
+
     window.showConfirm('標記為已完成？', async () => {
         try {
             const eventRef = doc(db, 'artifacts', appId, 'public', 'data', 'school_events', eventId);
-            await updateDoc(eventRef, { completedBy: arrayUnion(_appCurrentUser.id) });
+
+            // 如果是建立者，設定 isGloballyCompleted，所有人都會看到已完成
+            if (isAuthor) {
+                await updateDoc(eventRef, {
+                    completedBy: arrayUnion(_appCurrentUser.id),
+                    isGloballyCompleted: true
+                });
+            } else {
+                await updateDoc(eventRef, { completedBy: arrayUnion(_appCurrentUser.id) });
+            }
         } catch (err) {
             showAlert('操作失敗');
         }
@@ -259,7 +272,19 @@ export async function markEventCompleteNoConfirm(eventId) {
 
     try {
         const eventRef = doc(db, 'artifacts', appId, 'public', 'data', 'school_events', eventId);
-        await updateDoc(eventRef, { completedBy: arrayUnion(_appCurrentUser.id) });
+
+        // 檢查是否為建立者
+        const event = _globalEvents.find(e => e.id === eventId);
+        const isAuthor = event && event.authorId === _appCurrentUser?.id;
+
+        if (isAuthor) {
+            await updateDoc(eventRef, {
+                completedBy: arrayUnion(_appCurrentUser.id),
+                isGloballyCompleted: true
+            });
+        } else {
+            await updateDoc(eventRef, { completedBy: arrayUnion(_appCurrentUser.id) });
+        }
         return true;
     } catch (err) {
         showAlert('操作失敗');

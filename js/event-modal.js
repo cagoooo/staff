@@ -168,9 +168,9 @@ export function openEventModal(eventId) {
         targetsContainer.innerHTML = '<span style="color: #636e72;">無</span>';
     }
 
-    // Status
+    // Status - 建立者完成時全局顯示已完成
     const currentUser = getAppCurrentUser();
-    const completed = event.completedBy?.includes(currentUser?.id);
+    const completed = event.isGloballyCompleted || event.completedBy?.includes(currentUser?.id);
     document.getElementById('event-detail-status').innerHTML = completed
         ? '<span style="color: #00b894;">✅ 已完成</span>'
         : '<span style="color: #fdcb6e;">⏳ 待處理</span>';

@@ -88,11 +88,11 @@ export function renderStats() {
         });
     }
 
-    // Calculate statistics
+    // Calculate statistics - 建立者完成時全局顯示已完成
+    const isEventCompleted = (e) => e.isGloballyCompleted || e.completedBy?.includes(currentUser?.id);
+
     const totalEvents = monthEvents.length;
-    const completedEvents = monthEvents.filter(e =>
-        e.completedBy?.includes(currentUser?.id)
-    ).length;
+    const completedEvents = monthEvents.filter(e => isEventCompleted(e)).length;
     const pendingEvents = totalEvents - completedEvents;
     const completionRate = totalEvents > 0 ? Math.round((completedEvents / totalEvents) * 100) : 0;
 
@@ -113,7 +113,7 @@ export function renderStats() {
         const eventDate = new Date(e.date);
         return eventDate < now &&
             (e.targets?.includes(currentUser?.id) || e.authorId === currentUser?.id) &&
-            !e.completedBy?.includes(currentUser?.id);
+            !e.isGloballyCompleted && !e.completedBy?.includes(currentUser?.id);
     });
 
     // Department distribution (by target users, not just author)
@@ -166,7 +166,7 @@ export function renderStats() {
     const myEvents = monthEvents.filter(e =>
         e.targets?.includes(currentUser?.id) || e.authorId === currentUser?.id
     );
-    const myCompleted = myEvents.filter(e => e.completedBy?.includes(currentUser?.id)).length;
+    const myCompleted = myEvents.filter(e => e.isGloballyCompleted || e.completedBy?.includes(currentUser?.id)).length;
     const myRate = myEvents.length > 0 ? Math.round((myCompleted / myEvents.length) * 100) : 0;
 
     // Most active users
@@ -565,8 +565,8 @@ export function renderStats() {
     // Store event data for click handlers
     window._statsEventData = {
         monthEvents: monthEvents,
-        completedEventsList: monthEvents.filter(e => e.completedBy?.includes(currentUser?.id)),
-        pendingEventsList: monthEvents.filter(e => !e.completedBy?.includes(currentUser?.id)),
+        completedEventsList: monthEvents.filter(e => e.isGloballyCompleted || e.completedBy?.includes(currentUser?.id)),
+        pendingEventsList: monthEvents.filter(e => !e.isGloballyCompleted && !e.completedBy?.includes(currentUser?.id)),
         importantEventsList: monthEvents.filter(e => e.isPublic),
         currentUser: currentUser
     };
@@ -871,7 +871,7 @@ function statsExportReport() {
 
     // Calculate stats
     const total = filteredEvents.length;
-    const completed = filteredEvents.filter(e => e.completedBy?.includes(currentUser?.id)).length;
+    const completed = filteredEvents.filter(e => e.isGloballyCompleted || e.completedBy?.includes(currentUser?.id)).length;
     const important = filteredEvents.filter(e => e.isPublic).length;
 
     // Department labels
@@ -907,7 +907,7 @@ function statsExportReport() {
             `"${e.title.replace(/"/g, '""')}"`,
             e.isPublic ? '重要' : '一般',
             e.authorName || '',
-            e.completedBy?.includes(currentUser?.id) ? '已完成' : '待處理'
+            e.isGloballyCompleted || e.completedBy?.includes(currentUser?.id) ? '已完成' : '待處理'
         ])
     ].map(row => row.join(',')).join('\n');
 

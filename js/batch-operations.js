@@ -202,13 +202,28 @@ export async function batchMarkComplete() {
     const currentUser = getAppCurrentUser();
     if (!currentUser) return;
 
+    const events = globalEvents();
+
     showConfirm(`確定要將 ${selectedEvents.size} 項行程標記為完成嗎？`, async () => {
         let successCount = 0;
 
         for (const eventId of selectedEvents) {
             try {
                 const eventRef = doc(db, 'artifacts', appId, 'public', 'data', 'school_events', eventId);
-                await updateDoc(eventRef, { completedBy: arrayUnion(currentUser.id) });
+
+                // 檢查是否為建立者
+                const event = events.find(e => e.id === eventId);
+                const isAuthor = event && event.authorId === currentUser.id;
+
+                if (isAuthor) {
+                    // 建立者完成時設定 isGloballyCompleted
+                    await updateDoc(eventRef, {
+                        completedBy: arrayUnion(currentUser.id),
+                        isGloballyCompleted: true
+                    });
+                } else {
+                    await updateDoc(eventRef, { completedBy: arrayUnion(currentUser.id) });
+                }
                 successCount++;
             } catch (err) {
                 console.error('[BatchOps] Mark complete failed:', err);

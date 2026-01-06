@@ -485,15 +485,11 @@ export function renderDashboard() {
     if (listCompleted) listCompleted.innerHTML = '';
 
     // 分離已完成和未完成的行程
-    const completedEvents = events.filter(evt => {
-        // 如果當前用戶已標記完成
-        return evt.completedBy && evt.completedBy.includes(currentUser?.id);
-    });
+    // 行程判斷為已完成的條件：建立者已全局完成 OR 當前用戶已標記完成
+    const isEventCompleted = (evt) => evt.isGloballyCompleted || evt.completedBy?.includes(currentUser?.id);
 
-    const pendingEvents = events.filter(evt => {
-        // 當前用戶尚未標記完成
-        return !evt.completedBy || !evt.completedBy.includes(currentUser?.id);
-    });
+    const completedEvents = events.filter(evt => isEventCompleted(evt));
+    const pendingEvents = events.filter(evt => !isEventCompleted(evt));
 
     // Sort events: pinned first, then by urgency, then by date
     const sortedEvents = [...pendingEvents].sort((a, b) => {
@@ -638,7 +634,7 @@ export function renderNotifications() {
     const myNotifs = events.filter(evt => {
         const isMine = evt.authorId === currentUser.id;
         const isForMe = evt.targets && evt.targets.includes(currentUser.id);
-        const isDone = evt.completedBy && evt.completedBy.includes(currentUser.id);
+        const isDone = evt.isGloballyCompleted || (evt.completedBy && evt.completedBy.includes(currentUser.id));
         return (isMine || isForMe) && !isDone;
     }).sort((a, b) => new Date(a.date) - new Date(b.date));
 
@@ -684,7 +680,7 @@ export function updateNotificationBadge() {
     const myNotifs = events.filter(evt => {
         const isMine = evt.authorId === currentUser.id;
         const isForMe = evt.targets && evt.targets.includes(currentUser.id);
-        const isDone = evt.completedBy && evt.completedBy.includes(currentUser.id);
+        const isDone = evt.isGloballyCompleted || (evt.completedBy && evt.completedBy.includes(currentUser.id));
         return (isMine || isForMe) && !isDone;
     });
 

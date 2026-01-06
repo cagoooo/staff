@@ -155,8 +155,8 @@ function checkUpcomingEvents() {
         const isInvolved = event.targets?.includes(currentUser.id) || event.authorId === currentUser.id;
         if (!isInvolved) return;
 
-        // Skip completed events
-        if (event.completedBy?.includes(currentUser.id)) return;
+        // Skip completed events (including globally completed by author)
+        if (event.isGloballyCompleted || event.completedBy?.includes(currentUser.id)) return;
 
         // Calculate time until event
         const eventDateTime = new Date(`${event.date}T${event.time || '09:00'}`);
