@@ -173,6 +173,120 @@ async function sendQuotaWarning(currentCount) {
 }
 
 /**
+ * 從 LINE 官方 API 獲取實際發送統計
+ * @param {string} dateStr - 日期字串 YYYYMMDD 格式
+ * @returns {Object} - { push, reply, broadcast, success }
+ */
+async function getLineApiDeliveryStats(dateStr) {
+    try {
+        const channelAccessToken = process.env.LINE_CHANNEL_ACCESS_TOKEN;
+        if (!channelAccessToken) {
+            console.error('[LINE Stats] No channel access token available');
+            return { push: 0, reply: 0, broadcast: 0, success: false };
+        }
+
+        // 使用 node-fetch 或內建 fetch
+        const fetch = require('node-fetch');
+
+        // 獲取 Push 訊息統計
+        const pushResponse = await fetch(`https://api.line.me/v2/bot/message/delivery/push?date=${dateStr}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${channelAccessToken}`
+            }
+        });
+
+        let pushCount = 0;
+        if (pushResponse.ok) {
+            const pushData = await pushResponse.json();
+            pushCount = pushData.success || 0;
+            console.log(`[LINE Stats] Push messages on ${dateStr}: ${pushCount}`);
+        } else {
+            console.error(`[LINE Stats] Failed to get push stats: ${pushResponse.status}`);
+        }
+
+        // 獲取 Reply 訊息統計
+        const replyResponse = await fetch(`https://api.line.me/v2/bot/message/delivery/reply?date=${dateStr}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${channelAccessToken}`
+            }
+        });
+
+        let replyCount = 0;
+        if (replyResponse.ok) {
+            const replyData = await replyResponse.json();
+            replyCount = replyData.success || 0;
+            console.log(`[LINE Stats] Reply messages on ${dateStr}: ${replyCount}`);
+        }
+
+        // 獲取 Broadcast 訊息統計
+        const broadcastResponse = await fetch(`https://api.line.me/v2/bot/message/delivery/broadcast?date=${dateStr}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${channelAccessToken}`
+            }
+        });
+
+        let broadcastCount = 0;
+        if (broadcastResponse.ok) {
+            const broadcastData = await broadcastResponse.json();
+            broadcastCount = broadcastData.success || 0;
+            console.log(`[LINE Stats] Broadcast messages on ${dateStr}: ${broadcastCount}`);
+        }
+
+        return {
+            push: pushCount,
+            reply: replyCount,
+            broadcast: broadcastCount,
+            total: pushCount + replyCount + broadcastCount,
+            success: true
+        };
+    } catch (err) {
+        console.error('[LINE Stats] Error fetching LINE API stats:', err.message);
+        return { push: 0, reply: 0, broadcast: 0, total: 0, success: false };
+    }
+}
+
+/**
+ * 獲取本月累計 LINE 統計 (從 LINE 官方 API)
+ * @returns {Object} - { push, reply, broadcast, total, success }
+ */
+async function getMonthlyLineApiStats() {
+    const now = new Date();
+    const taiwanTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Taipei' }));
+
+    const year = taiwanTime.getFullYear();
+    const month = taiwanTime.getMonth() + 1;
+    const today = taiwanTime.getDate();
+
+    let totalPush = 0;
+    let totalReply = 0;
+    let totalBroadcast = 0;
+
+    // 遍歷本月每一天
+    for (let day = 1; day <= today; day++) {
+        const dateStr = `${year}${String(month).padStart(2, '0')}${String(day).padStart(2, '0')}`;
+        const stats = await getLineApiDeliveryStats(dateStr);
+        if (stats.success) {
+            totalPush += stats.push;
+            totalReply += stats.reply;
+            totalBroadcast += stats.broadcast;
+        }
+        // 避免速率限制，加入小延遲
+        await sleep(50);
+    }
+
+    return {
+        push: totalPush,
+        reply: totalReply,
+        broadcast: totalBroadcast,
+        total: totalPush + totalReply + totalBroadcast,
+        success: true
+    };
+}
+
+/**
  * 帶有指數退避的 LINE pushMessage 重試函數
  * @param {Client} client - LINE Bot SDK Client
  * @param {string} lineUserId - LINE User ID
@@ -5866,8 +5980,180 @@ exports.triggerLineApiReport = onRequest(
             const dailyStats = dailyDoc.exists ? dailyDoc.data() : null;
             const monthlyStats = monthlyDoc.exists ? monthlyDoc.data() : null;
 
-            // 建立報告訊息
-            const message = createLineApiStatsFlexMessage(dailyStats, monthlyStats, targetDate, monthStr.split('-')[1]);
+            // 獲取 LINE 官方 API 的本月統計
+            console.log('[LINE Stats] Fetching official LINE API statistics...');
+            const officialMonthlyStats = await getMonthlyLineApiStats();
+            console.log('[LINE Stats] Official monthly stats:', officialMonthlyStats);
+
+            // 獲取今日官方統計
+            const todayStr = targetDate.replace(/-/g, '');
+            const officialDailyStats = await getLineApiDeliveryStats(todayStr);
+            console.log('[LINE Stats] Official daily stats:', officialDailyStats);
+
+            // 使用官方 API 數據來建立報告
+            const officialMonthlyUsed = officialMonthlyStats.total || 0;
+            const officialDailyUsed = officialDailyStats.total || 0;
+            const monthlyQuota = MONTHLY_MESSAGE_QUOTA;
+            const percentage = Math.round((officialMonthlyUsed / monthlyQuota) * 100);
+            const remaining = monthlyQuota - officialMonthlyUsed;
+
+            // 根據使用率決定顏色
+            let statusColor = '#00b894';
+            let statusIcon = '✅';
+            if (percentage >= 80) {
+                statusColor = '#d63031';
+                statusIcon = '🚨';
+            } else if (percentage >= 60) {
+                statusColor = '#fdcb6e';
+                statusIcon = '⚠️';
+            }
+
+            // 建立包含官方 API 數據的報告訊息
+            const message = {
+                type: 'flex',
+                altText: `📊 LINE API 使用報告 - ${targetDate}`,
+                contents: {
+                    type: 'bubble',
+                    size: 'mega',
+                    header: {
+                        type: 'box',
+                        layout: 'vertical',
+                        backgroundColor: '#6c5ce7',
+                        paddingAll: '15px',
+                        contents: [
+                            { type: 'text', text: '📊 LINE API 使用報告', color: '#ffffff', weight: 'bold', size: 'lg', align: 'center' },
+                            { type: 'text', text: `(官方 API 數據)`, color: '#dfe6e9', size: 'xs', align: 'center', margin: 'xs' },
+                            { type: 'text', text: targetDate, color: '#dfe6e9', size: 'sm', align: 'center', margin: 'sm' }
+                        ]
+                    },
+                    body: {
+                        type: 'box',
+                        layout: 'vertical',
+                        paddingAll: '15px',
+                        spacing: 'lg',
+                        contents: [
+                            // 今日統計 (官方 API)
+                            {
+                                type: 'box',
+                                layout: 'vertical',
+                                spacing: 'sm',
+                                contents: [
+                                    { type: 'text', text: '📅 今日統計', weight: 'bold', size: 'md', color: '#2d3436' },
+                                    {
+                                        type: 'box',
+                                        layout: 'horizontal',
+                                        contents: [
+                                            { type: 'text', text: 'Push 訊息', size: 'sm', color: '#636e72', flex: 2 },
+                                            { type: 'text', text: `${officialDailyStats.push} 則`, size: 'sm', color: '#00b894', weight: 'bold', flex: 1, align: 'end' }
+                                        ]
+                                    },
+                                    {
+                                        type: 'box',
+                                        layout: 'horizontal',
+                                        contents: [
+                                            { type: 'text', text: 'Reply 訊息', size: 'sm', color: '#636e72', flex: 2 },
+                                            { type: 'text', text: `${officialDailyStats.reply} 則`, size: 'sm', color: '#0984e3', weight: 'bold', flex: 1, align: 'end' }
+                                        ]
+                                    },
+                                    {
+                                        type: 'box',
+                                        layout: 'horizontal',
+                                        contents: [
+                                            { type: 'text', text: '今日總計', size: 'sm', color: '#2d3436', weight: 'bold', flex: 2 },
+                                            { type: 'text', text: `${officialDailyUsed} 則`, size: 'sm', color: '#2d3436', weight: 'bold', flex: 1, align: 'end' }
+                                        ]
+                                    }
+                                ]
+                            },
+                            { type: 'separator' },
+                            // 本月統計 (官方 API)
+                            {
+                                type: 'box',
+                                layout: 'vertical',
+                                spacing: 'sm',
+                                contents: [
+                                    { type: 'text', text: `📆 ${monthStr.split('-')[1]} 月統計`, weight: 'bold', size: 'md', color: '#2d3436' },
+                                    {
+                                        type: 'box',
+                                        layout: 'horizontal',
+                                        contents: [
+                                            { type: 'text', text: 'Push 訊息', size: 'sm', color: '#636e72', flex: 2 },
+                                            { type: 'text', text: `${officialMonthlyStats.push} 則`, size: 'sm', color: '#00b894', weight: 'bold', flex: 1, align: 'end' }
+                                        ]
+                                    },
+                                    {
+                                        type: 'box',
+                                        layout: 'horizontal',
+                                        contents: [
+                                            { type: 'text', text: 'Reply 訊息', size: 'sm', color: '#636e72', flex: 2 },
+                                            { type: 'text', text: `${officialMonthlyStats.reply} 則`, size: 'sm', color: '#0984e3', weight: 'bold', flex: 1, align: 'end' }
+                                        ]
+                                    },
+                                    {
+                                        type: 'box',
+                                        layout: 'horizontal',
+                                        contents: [
+                                            { type: 'text', text: '已使用總計', size: 'sm', color: '#636e72', flex: 2 },
+                                            { type: 'text', text: `${officialMonthlyUsed} / ${monthlyQuota} 則`, size: 'sm', color: statusColor, weight: 'bold', flex: 2, align: 'end' }
+                                        ]
+                                    },
+                                    {
+                                        type: 'box',
+                                        layout: 'horizontal',
+                                        contents: [
+                                            { type: 'text', text: '使用率', size: 'sm', color: '#636e72', flex: 2 },
+                                            { type: 'text', text: `${statusIcon} ${percentage}%`, size: 'sm', color: statusColor, weight: 'bold', flex: 1, align: 'end' }
+                                        ]
+                                    },
+                                    {
+                                        type: 'box',
+                                        layout: 'horizontal',
+                                        contents: [
+                                            { type: 'text', text: '剩餘額度', size: 'sm', color: '#636e72', flex: 2 },
+                                            { type: 'text', text: `${remaining} 則`, size: 'sm', color: '#636e72', weight: 'bold', flex: 1, align: 'end' }
+                                        ]
+                                    }
+                                ]
+                            },
+                            // 進度條
+                            {
+                                type: 'box',
+                                layout: 'vertical',
+                                spacing: 'xs',
+                                margin: 'md',
+                                contents: [
+                                    {
+                                        type: 'box',
+                                        layout: 'vertical',
+                                        height: '8px',
+                                        backgroundColor: '#dfe6e9',
+                                        cornerRadius: '4px',
+                                        contents: [
+                                            {
+                                                type: 'box',
+                                                layout: 'vertical',
+                                                height: '8px',
+                                                width: `${Math.min(percentage, 100)}%`,
+                                                backgroundColor: statusColor,
+                                                cornerRadius: '4px',
+                                                contents: []
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    footer: {
+                        type: 'box',
+                        layout: 'vertical',
+                        paddingAll: '10px',
+                        contents: [
+                            { type: 'text', text: '🏫 行政業務協調系統', size: 'xs', color: '#888888', align: 'center' }
+                        ]
+                    }
+                }
+            };
 
             // 發送給管理者
             await client.pushMessage(ADMIN_LINE_USER_ID, message);
@@ -5875,8 +6161,20 @@ exports.triggerLineApiReport = onRequest(
             return res.status(200).json({
                 success: true,
                 date: targetDate,
-                dailyStats: dailyStats,
-                monthlyStats: monthlyStats,
+                officialStats: {
+                    daily: officialDailyStats,
+                    monthly: officialMonthlyStats
+                },
+                internalStats: {
+                    daily: dailyStats,
+                    monthly: monthlyStats
+                },
+                summary: {
+                    monthlyUsed: officialMonthlyUsed,
+                    quota: monthlyQuota,
+                    percentage: percentage,
+                    remaining: remaining
+                },
                 message: 'Report sent to admin'
             });
 
