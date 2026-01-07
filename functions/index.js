@@ -3551,13 +3551,23 @@ exports.onEventUpdate = onDocumentUpdated(
             const usersRef = db.collection(`artifacts/${APP_ID}/public/data/users`);
             const deleterName = afterData.deletedByName || '管理員';
 
+            console.log(`[LINE] Deletion targets (author: ${afterData.authorId}, targets: ${JSON.stringify(afterData.targets)}, deletedBy: ${deletedBy})`);
+            console.log(`[LINE] Final notification targets: ${JSON.stringify(allTargets)}`);
+
             for (const targetId of allTargets) {
                 try {
                     const userDoc = await usersRef.doc(targetId).get();
-                    if (!userDoc.exists) continue;
+                    if (!userDoc.exists) {
+                        console.log(`[LINE] User ${targetId} not found in database`);
+                        continue;
+                    }
 
                     const userData = userDoc.data();
-                    if (!userData.lineUserId || !userData.lineNotifyEnabled) continue;
+                    console.log(`[LINE] User ${targetId} - lineUserId: ${!!userData.lineUserId}, lineNotifyEnabled: ${userData.lineNotifyEnabled}`);
+                    if (!userData.lineUserId || !userData.lineNotifyEnabled) {
+                        console.log(`[LINE] Skipping ${targetId} - no LINE binding or disabled`);
+                        continue;
+                    }
 
                     const message = {
                         type: 'flex',
