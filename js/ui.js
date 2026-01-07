@@ -1,5 +1,5 @@
 // UI Rendering Module - With Department & Calendar
-import { globalUsers, globalEvents, getAppCurrentUser, getCurrentSelectedTargets } from './firestore.js';
+import { globalUsers, globalEvents, getAppCurrentUser, getCurrentSelectedTargets, setCurrentSelectedTargets } from './firestore.js';
 import { DEPARTMENTS, getDepartmentList, getDepartmentName, getDepartmentColor, renderDepartmentOptions, renderPositionOptions } from './departments.js';
 import { renderTagBadges, eventMatchesTagFilter, renderTagFilters } from './tags.js';
 import { canViewEvent, filterVisibleEvents } from './visibility.js';
@@ -479,26 +479,96 @@ export function selectAllTargets() {
     const users = globalUsers();
     if (!users || users.length === 0) {
         console.warn('[selectAllTargets] No users available');
+        showToast('⚠️ 無可用人員', 'warning');
         return;
     }
 
     // 選擇所有用戶
-    selectedTargets = users.map(u => u.id);
-    console.log(`[selectAllTargets] Selected all ${selectedTargets.length} users`);
+    const allUserIds = users.map(u => u.id);
+    setCurrentSelectedTargets(allUserIds);
+    console.log(`[selectAllTargets] Selected all ${allUserIds.length} users`);
 
     // 更新 UI
     renderEditorOptions();
     renderSelectedChips();
+
+    // 顯示成功反饋
+    showToast(`✅ 已選取全部 ${allUserIds.length} 位人員`, 'success');
 }
 
 // 清空所有選擇
 export function clearAllTargets() {
-    selectedTargets = [];
+    const currentCount = getCurrentSelectedTargets().length;
+    setCurrentSelectedTargets([]);
     console.log('[clearAllTargets] Cleared all selections');
 
     // 更新 UI
     renderEditorOptions();
     renderSelectedChips();
+
+    // 顯示成功反饋
+    if (currentCount > 0) {
+        showToast(`🗑️ 已清空 ${currentCount} 位人員選擇`, 'info');
+    } else {
+        showToast('ℹ️ 目前沒有選擇任何人員', 'info');
+    }
+}
+
+// Toast 通知函數
+function showToast(message, type = 'info') {
+    // 移除現有的 toast
+    const existingToast = document.querySelector('.select-toast');
+    if (existingToast) existingToast.remove();
+
+    const colors = {
+        success: { bg: '#00b894', text: '#fff' },
+        warning: { bg: '#fdcb6e', text: '#2d3436' },
+        info: { bg: '#6c5ce7', text: '#fff' },
+        error: { bg: '#d63031', text: '#fff' }
+    };
+
+    const color = colors[type] || colors.info;
+
+    const toast = document.createElement('div');
+    toast.className = 'select-toast';
+    toast.style.cssText = `
+        position: fixed;
+        bottom: 100px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: ${color.bg};
+        color: ${color.text};
+        padding: 12px 24px;
+        border-radius: 8px;
+        font-family: 'VT323', monospace;
+        font-size: 18px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        z-index: 10000;
+        animation: toastSlideUp 0.3s ease, toastFadeOut 0.3s ease 2s forwards;
+    `;
+    toast.textContent = message;
+
+    // 添加動畫樣式
+    if (!document.querySelector('#toast-animation-style')) {
+        const style = document.createElement('style');
+        style.id = 'toast-animation-style';
+        style.textContent = `
+            @keyframes toastSlideUp {
+                from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+                to { opacity: 1; transform: translateX(-50%) translateY(0); }
+            }
+            @keyframes toastFadeOut {
+                from { opacity: 1; }
+                to { opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    document.body.appendChild(toast);
+
+    // 自動移除
+    setTimeout(() => toast.remove(), 2300);
 }
 
 // Export functions to window
