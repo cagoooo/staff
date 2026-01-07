@@ -642,12 +642,21 @@ export function renderDashboard() {
         const unreadDot = !isRead ? '<span style="color: #e74c3c; margin-right: 4px;">●</span>' : '';
         const tagsBadges = renderTagBadges(evt.tags);
 
+        // Build smart time display
+        let timeDisplay = evt.time || '--:--';
+        if (evt.isAllDay) {
+            timeDisplay = '🌅 全天';
+        }
+        if (evt.isMultiDay && evt.endDate) {
+            timeDisplay = `📆 ${evt.date} ~ ${evt.endDate}`;
+        }
+
         div.innerHTML = `
             <div class="flex justify-between items-start gap-2">
                 <h4 class="text-lg flex items-center flex-wrap gap-1">${unreadDot}${pinnedBadge}${privateBadge}${typeBadge}<span class="break-words">${evt.title}</span></h4>
                 <span class="text-sm bg-purple-200 px-2 py-1 shrink-0 whitespace-nowrap">${evt.date}</span>
             </div>
-            <p class="text-sm text-gray-600 mt-1">發起人：${evt.authorName} | 時間：${evt.time || '--:--'}</p>
+            <p class="text-sm text-gray-600 mt-1">發起人：${evt.authorName} | ${evt.isMultiDay ? '' : '時間：'}${timeDisplay}</p>
             ${tagsBadges ? `<div class="mt-1">${tagsBadges}</div>` : ''}
         `;
         listAnnounce.appendChild(div);
