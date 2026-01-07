@@ -52,7 +52,8 @@ export function renderStats() {
     const container = document.getElementById('stats-container');
     if (!container) return;
 
-    const events = globalEvents();
+    // Filter out deleted events from statistics
+    const events = globalEvents().filter(e => !e.deletedAt);
     const users = globalUsers();
     const currentUser = getAppCurrentUser();
     const now = new Date();
@@ -836,7 +837,8 @@ function statsFilterDept(dept) {
 
 // Export stats report
 function statsExportReport() {
-    const events = globalEvents();
+    // Filter out deleted events from export
+    const events = globalEvents().filter(e => !e.deletedAt);
     const users = globalUsers();
     const currentUser = getAppCurrentUser();
 
