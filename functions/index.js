@@ -3483,9 +3483,15 @@ exports.onEventCreate = onDocumentCreated(
 
         let allRecipients = [];
 
-        // 判斷是否為公開行程
-        if (eventData.isPublic) {
-            // 公開行程：通知所有用戶
+        // 🔒 重要：私人行程只能通知被指派者和建立者，優先檢查 isPrivate
+        if (eventData.isPrivate) {
+            // 私人行程：只通知被指派的用戶 + 建立者（不管 isPublic 設定）
+            const targets = eventData.targets || [];
+            const authorId = eventData.authorId;
+            allRecipients = [...new Set([...targets, authorId].filter(Boolean))];
+            console.log(`[LINE] Private event detected, will only notify ${allRecipients.length} specified users`);
+        } else if (eventData.isPublic) {
+            // 公開行程（非私人）：通知所有用戶
             console.log(`[LINE] Public event detected, will notify all users`);
 
             try {
@@ -3497,12 +3503,13 @@ exports.onEventCreate = onDocumentCreated(
                 return;
             }
         } else {
-            // 非公開行程：通知被指派的用戶 + 建立者本人
+            // 非公開、非私人行程：通知被指派的用戶 + 建立者本人
             const targets = eventData.targets || [];
             const authorId = eventData.authorId;
 
             // 合併 targets 和 authorId（使用 Set 去除重複）
             allRecipients = [...new Set([...targets, authorId].filter(Boolean))];
+            console.log(`[LINE] Regular event, will notify ${allRecipients.length} assigned users`);
         }
 
         if (allRecipients.length === 0) return;
@@ -3785,7 +3792,7 @@ exports.onEventUpdate = onDocumentUpdated(
         // ====================
 
         // 如果只是更新 completedBy, readBy, updatedAt 等狀態欄位，不發送通知
-        const importantFields = ['title', 'date', 'time', 'targets', 'isPublic', 'announcementType', 'pinned', 'attachments'];
+        const importantFields = ['title', 'date', 'time', 'targets', 'isPublic', 'isPrivate', 'announcementType', 'pinned', 'attachments'];
         const hasImportantChanges = importantFields.some(field =>
             JSON.stringify(beforeData[field]) !== JSON.stringify(afterData[field])
         );
