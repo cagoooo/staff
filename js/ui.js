@@ -793,7 +793,8 @@ export function renderNotifications() {
 
 export function updateNotificationBadge() {
     const currentUser = getAppCurrentUser();
-    const events = globalEvents();
+    // Filter out deleted events from notification badge count
+    const events = globalEvents().filter(e => !e.deletedAt);
     const todayStr = new Date().toISOString().split('T')[0];
 
     const myNotifs = events.filter(evt => {
