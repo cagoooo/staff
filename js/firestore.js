@@ -438,9 +438,20 @@ export async function permanentlyDeleteEvent(eventId) {
     }
 }
 
-// Get deleted events (trash)
+// Get deleted events (trash) - filtered by permission
+// Only author can see their own deleted events, admin can see all
 export function getDeletedEvents() {
-    return _globalEvents.filter(e => e.deletedAt);
+    const currentUser = _appCurrentUser;
+    if (!currentUser) return [];
+
+    const isAdmin = currentUser.role === 'admin';
+    return _globalEvents.filter(e => {
+        if (!e.deletedAt) return false;
+        // Admin can see all deleted events
+        if (isAdmin) return true;
+        // Others can only see their own deleted events
+        return e.authorId === currentUser.id;
+    });
 }
 
 // Get active events (not deleted)
