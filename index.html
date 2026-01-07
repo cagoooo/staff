@@ -542,6 +542,18 @@
                                         style="font-size: 14px; padding: 4px 8px; border: 1px solid #e84393; cursor: pointer;">🌸
                                         幼兒園</button>
                                 </div>
+                                <!-- 快速選取按鈕 -->
+                                <div class="flex flex-wrap gap-2 mb-2">
+                                    <button type="button" onclick="selectAllTargets()" class="pixel-btn"
+                                        style="font-size: 14px; padding: 4px 12px; background: linear-gradient(135deg, #6c5ce7 0%, #a29bfe 100%); border: 2px solid #6c5ce7; color: white;">
+                                        📢 通知全部人員
+                                    </button>
+                                    <button type="button" onclick="clearAllTargets()"
+                                        class="pixel-btn pixel-btn-secondary"
+                                        style="font-size: 14px; padding: 4px 12px;">
+                                        🗑️ 清空選擇
+                                    </button>
+                                </div>
                                 <div id="selected-targets-container"
                                     class="flex flex-wrap gap-2 mb-2 p-3 border-2 border-dashed min-h-[50px] bg-white items-center"
                                     style="font-family: 'VT323', monospace; font-size: 18px;">

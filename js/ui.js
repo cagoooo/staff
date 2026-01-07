@@ -474,6 +474,37 @@ export function filterTargetsByDept(deptId) {
     renderEditorOptions();
 }
 
+// 全選所有人員
+export function selectAllTargets() {
+    const users = globalUsers();
+    if (!users || users.length === 0) {
+        console.warn('[selectAllTargets] No users available');
+        return;
+    }
+
+    // 選擇所有用戶
+    selectedTargets = users.map(u => u.id);
+    console.log(`[selectAllTargets] Selected all ${selectedTargets.length} users`);
+
+    // 更新 UI
+    renderEditorOptions();
+    renderSelectedChips();
+}
+
+// 清空所有選擇
+export function clearAllTargets() {
+    selectedTargets = [];
+    console.log('[clearAllTargets] Cleared all selections');
+
+    // 更新 UI
+    renderEditorOptions();
+    renderSelectedChips();
+}
+
+// Export functions to window
+window.selectAllTargets = selectAllTargets;
+window.clearAllTargets = clearAllTargets;
+
 // Enhance the add event form with new fields
 function enhanceEditorForm() {
     const form = document.querySelector('#view-editor form');
