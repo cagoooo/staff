@@ -3,11 +3,27 @@
 ## 📋 系統資訊
 
 | 專案名稱 | 行政業務協調系統 |
-| 版本 | v3.12.7 |
+| 版本 | v3.12.8 |
 | 更新日期 | 2026-01-07 |
 | 部署網址 | https://cagoooo.github.io/staff/ |
 | 技術棧 | HTML5, Tailwind CSS, Firebase (Auth, Firestore, Cloud Functions), LINE Messaging API |
 | Firebase 專案 | Blaze 方案 |
+
+---
+
+## 🎉 v3.12.8 更新內容 (2026-01-07)
+
+### ✨ 新功能
+| 功能 | 說明 |
+|------|------|
+| 📊 LINE API 使用統計 | 追蹤每日/每月訊息發送成功/失敗次數 |
+| ⚠️ 額度警告通知 | 達到月額度 80% 時自動通知管理者 |
+| 📈 每日使用報告 | 每天早上 9:00 自動發送前日統計給管理者 |
+| 🔧 手動觸發報告 | `/triggerLineApiReport` API 可即時查看統計 |
+
+### 🗃️ Firestore 結構
+- `line_api_stats/daily_YYYY-MM-DD` - 每日統計
+- `line_api_stats/monthly_YYYY-MM` - 每月統計
 
 ---
 
