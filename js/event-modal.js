@@ -8,6 +8,7 @@ import { renderReminderSettings } from './reminders.js';
 let currentEditingEventId = null;
 let isEditMode = false;
 let attachmentsToDelete = []; // Track attachments to delete
+let editSelectedTargets = []; // Track selected targets during edit
 
 // Create and inject the modal HTML into the DOM
 export function initEventModal() {
@@ -116,6 +117,32 @@ export function initEventModal() {
                     <div class="mb-3">
                         <label class="pixel-label">🏷️ 標籤</label>
                         <div id="edit-event-tags-container" style="position: relative;"></div>
+                    </div>
+                    <div class="mb-3" id="edit-targets-section">
+                        <label class="pixel-label">👥 通知人員（可編輯）</label>
+                        <!-- 快速選取按鈕 -->
+                        <div class="flex flex-wrap gap-2 mb-2">
+                            <button type="button" onclick="editSelectAllTargets()"
+                                class="pixel-btn"
+                                style="font-size: 14px; padding: 4px 12px; background: linear-gradient(135deg, #6c5ce7 0%, #a29bfe 100%); border: 2px solid #6c5ce7; color: white;">
+                                📢 通知全部
+                            </button>
+                            <button type="button" onclick="editClearAllTargets()"
+                                class="pixel-btn pixel-btn-secondary"
+                                style="font-size: 14px; padding: 4px 12px;">
+                                🗑️ 清空
+                            </button>
+                        </div>
+                        <!-- 已選擇人員 -->
+                        <div id="edit-selected-targets"
+                            class="flex flex-wrap gap-2 mb-2 p-3 border-2 border-dashed min-h-[50px] bg-white items-center"
+                            style="font-family: 'VT323', monospace; font-size: 18px;">
+                            <span class="text-gray-400">尚未選擇人員...</span>
+                        </div>
+                        <!-- 人員選擇列表 -->
+                        <div class="border-2 h-32 overflow-y-auto bg-gray-50 p-2 space-y-1" id="edit-target-list">
+                            <div class="text-gray-400 text-sm p-2">載入中...</div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -316,6 +343,11 @@ export function toggleEventEditMode() {
         }
     }
 
+    // Initialize edit targets with current event targets
+    editSelectedTargets = event.targets ? [...event.targets] : [];
+    renderEditTargetsList();
+    renderEditSelectedTargets();
+
     // Switch UI
     document.getElementById('event-view-mode').classList.add('hidden-section');
     document.getElementById('event-edit-mode').classList.remove('hidden-section');
@@ -365,7 +397,8 @@ export async function saveEventEdit() {
         announcementType: document.getElementById('edit-evt-type').value,
         pinned: document.getElementById('edit-evt-pinned').checked,
         tags: getSelectedTags(),
-        attachments: currentAttachments
+        attachments: currentAttachments,
+        targets: editSelectedTargets // Include edited targets
     };
 
     // Handle file upload if selected
@@ -471,4 +504,88 @@ window.undoAttachmentDeletion = function (index, name) {
 
         console.log('[EventModal] Restored:', name);
     }
+};
+
+// ============================================
+// Edit Mode Target Selection Functions
+// ============================================
+
+// Render the user list for target selection in edit mode
+function renderEditTargetsList() {
+    const container = document.getElementById('edit-target-list');
+    if (!container) return;
+
+    const users = globalUsers();
+    if (!users || users.length === 0) {
+        container.innerHTML = '<div class="text-gray-400 text-sm p-2">沒有可選擇的人員</div>';
+        return;
+    }
+
+    container.innerHTML = users.map(user => {
+        const isSelected = editSelectedTargets.includes(user.id);
+        const bgColor = isSelected ? '#e0e7ff' : '#f9fafb';
+        const borderColor = isSelected ? '#6c5ce7' : '#e5e7eb';
+        return `
+            <div onclick="toggleEditTarget('${user.id}')" 
+                class="edit-target-item cursor-pointer p-2 rounded border-2 mb-1 flex items-center gap-2 transition-all"
+                style="background: ${bgColor}; border-color: ${borderColor}; font-family: 'VT323', monospace; font-size: 16px;">
+                <span style="font-size: 18px;">${isSelected ? '✅' : '⬜'}</span>
+                <span>${user.name}</span>
+                <span style="font-size: 14px; color: #888;">(${user.department || '--'})</span>
+            </div>
+        `;
+    }).join('');
+}
+
+// Render selected targets chips in edit mode
+function renderEditSelectedTargets() {
+    const container = document.getElementById('edit-selected-targets');
+    if (!container) return;
+
+    const users = globalUsers();
+
+    if (editSelectedTargets.length === 0) {
+        container.innerHTML = '<span class="text-gray-400">尚未選擇人員...</span>';
+        return;
+    }
+
+    container.innerHTML = editSelectedTargets.map(uid => {
+        const user = users.find(u => u.id === uid);
+        return `
+            <span onclick="toggleEditTarget('${uid}')" 
+                style="background: linear-gradient(135deg, #6c5ce7 0%, #a29bfe 100%); color: white; padding: 4px 12px; border-radius: 20px; font-family: 'VT323', monospace; font-size: 16px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
+                ${user ? user.name : '未知'}
+                <span style="font-size: 14px;">❌</span>
+            </span>
+        `;
+    }).join('');
+}
+
+// Toggle target selection in edit mode
+window.toggleEditTarget = function (userId) {
+    const index = editSelectedTargets.indexOf(userId);
+    if (index > -1) {
+        editSelectedTargets.splice(index, 1);
+    } else {
+        editSelectedTargets.push(userId);
+    }
+    renderEditTargetsList();
+    renderEditSelectedTargets();
+};
+
+// Select all targets in edit mode
+window.editSelectAllTargets = function () {
+    const users = globalUsers();
+    editSelectedTargets = users.map(u => u.id);
+    renderEditTargetsList();
+    renderEditSelectedTargets();
+    console.log('[EventModal] Selected all', editSelectedTargets.length, 'targets');
+};
+
+// Clear all targets in edit mode
+window.editClearAllTargets = function () {
+    editSelectedTargets = [];
+    renderEditTargetsList();
+    renderEditSelectedTargets();
+    console.log('[EventModal] Cleared all targets');
 };

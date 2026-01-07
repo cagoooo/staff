@@ -3,11 +3,21 @@
 ## 📋 系統資訊
 
 | 專案名稱 | 行政業務協調系統 |
-| 版本 | v3.12.8 |
+| 版本 | v3.12.9 |
 | 更新日期 | 2026-01-07 |
 | 部署網址 | https://cagoooo.github.io/staff/ |
 | 技術棧 | HTML5, Tailwind CSS, Firebase (Auth, Firestore, Cloud Functions), LINE Messaging API |
 | Firebase 專案 | Blaze 方案 |
+
+---
+
+## 🎉 v3.12.9 更新內容 (2026-01-07)
+
+### ✨ 新功能
+| 功能 | 說明 |
+|------|------|
+| ✏️ 編輯模式指派對象 | 編輯行程時可重新選擇/修改通知人員 |
+| 📢 編輯全選/清空 | 編輯模式也支援通知全部、清空選擇按鈕 |
 
 ---
 
