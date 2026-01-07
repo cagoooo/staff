@@ -2915,7 +2915,7 @@ function createAboutFlex() {
                 paddingAll: "20px",
                 spacing: "md",
                 contents: [
-                    createInfoRow("版本", "v2.0.0"),
+                    createInfoRow("版本", "v3.12.5"),
                     createInfoRow("開發", "石門國小"),
                     createInfoRow("技術", "Firebase + LINE API"),
                     { type: "separator", margin: "lg" },
