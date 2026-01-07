@@ -28,7 +28,10 @@ function injectNotificationUI() {
     const notifView = document.getElementById('view-notifications');
     if (!notifView || document.getElementById('notif-permission-section')) return;
 
-    const lineSyncEnabled = localStorage.getItem('smes_line_sync') === 'true';
+    // Only show as enabled if user has bound LINE account AND has enabled sync
+    const currentUser = getAppCurrentUser();
+    const hasLineBound = !!currentUser?.lineUserId;
+    const lineSyncEnabled = hasLineBound && localStorage.getItem('smes_line_sync') === 'true';
 
     const permSection = document.createElement('div');
     permSection.id = 'notif-permission-section';
@@ -203,6 +206,34 @@ export function triggerTestNotification() {
 
 // Toggle LINE sync for reminders
 export async function toggleLineSync(enabled) {
+    const currentUser = getAppCurrentUser();
+
+    // Check if user has bound LINE account before enabling
+    if (enabled && !currentUser?.lineUserId) {
+        // Reset toggle to unchecked
+        const toggle = document.getElementById('line-sync-toggle');
+        if (toggle) toggle.checked = false;
+
+        // Show warning
+        if (window.showAlert) {
+            window.showAlert('⚠️ 您尚未綁定 LINE 帳號！\\n請先至「帳號設定」綁定 LINE 才能使用此功能');
+        }
+
+        // Navigate to account settings and scroll to LINE section
+        if (window.switchTab) {
+            window.switchTab('account');
+            setTimeout(() => {
+                const lineSection = document.getElementById('line-settings-container');
+                if (lineSection) {
+                    lineSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    lineSection.style.animation = 'pulse 1s ease-in-out 3';
+                    setTimeout(() => lineSection.style.animation = '', 3000);
+                }
+            }, 300);
+        }
+        return;
+    }
+
     localStorage.setItem('smes_line_sync', enabled ? 'true' : 'false');
 
     // Update UI with visual feedback
@@ -229,8 +260,7 @@ export async function toggleLineSync(enabled) {
 
     console.log('[Notifications] LINE sync:', enabled ? 'enabled' : 'disabled');
 
-    // 發送 LINE 同步狀態通知給使用者
-    const currentUser = getAppCurrentUser();
+    // 發送 LINE 同步狀態通知給使用者 (currentUser already declared at top of function)
     if (currentUser?.lineUserId && currentUser?.lineNotifyEnabled) {
         try {
             const response = await fetch('https://asia-east1-smes-e1dc3.cloudfunctions.net/notifySyncStatus', {
