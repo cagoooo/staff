@@ -19,25 +19,19 @@ export function initTrash() {
  * Add trash menu item to sidebar
  */
 function addTrashMenuItem() {
-    const sidebar = document.querySelector('aside .flex.flex-col.gap-2');
-    if (!sidebar) return;
+    const nav = document.querySelector('#sidebar nav');
+    if (!nav) return;
 
     // Check if already exists
     if (document.getElementById('nav-trash')) return;
 
-    // Find the stats button and add after it
-    const statsBtn = sidebar.querySelector('[onclick*="stats"]');
-    if (statsBtn) {
-        const trashBtn = document.createElement('button');
-        trashBtn.id = 'nav-trash';
-        trashBtn.className = 'nav-btn flex items-center gap-3 p-3 text-left hover:bg-purple-100 transition';
-        trashBtn.onclick = () => window.switchTab('trash');
-        trashBtn.innerHTML = `
-            <span class="text-xl">🗑️</span>
-            <span class="font-medium">回收站</span>
-        `;
-        statsBtn.insertAdjacentElement('afterend', trashBtn);
-    }
+    // Create trash button
+    const trashBtn = document.createElement('button');
+    trashBtn.id = 'nav-trash';
+    trashBtn.className = 'nav-btn w-full';
+    trashBtn.onclick = () => window.switchTab && window.switchTab('trash');
+    trashBtn.innerHTML = '<i class="fas fa-trash"></i> 🗑️ 回收站';
+    nav.appendChild(trashBtn);
 
     // Create trash view container
     createTrashView();
