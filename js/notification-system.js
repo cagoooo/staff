@@ -216,7 +216,7 @@ export async function toggleLineSync(enabled) {
 
         // Show warning
         if (window.showAlert) {
-            window.showAlert('⚠️ 您尚未綁定 LINE 帳號！\\n請先至「帳號設定」綁定 LINE 才能使用此功能');
+            window.showAlert('⚠️ 您尚未綁定 LINE 帳號！請先至「帳號設定」綁定 LINE 才能使用此功能');
         }
 
         // Navigate to account settings and scroll to LINE section
