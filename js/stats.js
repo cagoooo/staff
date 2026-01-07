@@ -97,11 +97,15 @@ export function renderStats() {
     const pendingEvents = totalEvents - completedEvents;
     const completionRate = totalEvents > 0 ? Math.round((completedEvents / totalEvents) * 100) : 0;
 
-    // Upcoming events (next 7 days) - sorted by date and time
-    const next7Days = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+    // Upcoming events (next 7 days including today) - sorted by date and time
+    // Use string comparison to include today's events (avoid time-of-day issues)
+    const todayDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const next7DaysDate = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const next7DaysStr = `${next7DaysDate.getFullYear()}-${String(next7DaysDate.getMonth() + 1).padStart(2, '0')}-${String(next7DaysDate.getDate()).padStart(2, '0')}`;
+
     const upcomingEvents = events.filter(e => {
-        const eventDate = new Date(e.date);
-        return eventDate >= now && eventDate <= next7Days;
+        // Include events from today through 7 days from now
+        return e.date >= todayDate && e.date <= next7DaysStr;
     }).sort((a, b) => {
         // Sort by date first, then by time
         const dateCompare = a.date.localeCompare(b.date);
@@ -110,9 +114,11 @@ export function renderStats() {
     });
 
     // Overdue events (past but not completed)
+    // Use string comparison to ensure events on today's date are NOT considered overdue
+    // (todayDate already defined above for upcoming events)
     const overdueEvents = events.filter(e => {
-        const eventDate = new Date(e.date);
-        return eventDate < now &&
+        // Event is overdue only if its date is strictly BEFORE today (not including today)
+        return e.date < todayDate &&
             (e.targets?.includes(currentUser?.id) || e.authorId === currentUser?.id) &&
             !e.isGloballyCompleted && !e.completedBy?.includes(currentUser?.id);
     });

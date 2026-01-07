@@ -32,6 +32,100 @@ function getLineClient() {
 }
 
 // ============================================
+// LINE API Retry Helper - 指數退避重試機制
+// ============================================
+
+/**
+ * 延遲函數
+ * @param {number} ms - 延遲毫秒數
+ */
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/**
+ * 帶有指數退避的 LINE pushMessage 重試函數
+ * @param {Client} client - LINE Bot SDK Client
+ * @param {string} lineUserId - LINE User ID
+ * @param {Object} message - 要發送的訊息
+ * @param {number} maxRetries - 最大重試次數 (預設 3)
+ * @param {number} baseDelay - 基礎延遲毫秒數 (預設 1000)
+ * @returns {Promise<Object>} - LINE API 回應
+ */
+async function pushMessageWithRetry(client, lineUserId, message, maxRetries = 3, baseDelay = 1000) {
+    let lastError = null;
+
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+        try {
+            const result = await client.pushMessage(lineUserId, message);
+            return result;
+        } catch (error) {
+            lastError = error;
+
+            // 檢查是否為 429 Too Many Requests 錯誤
+            const statusCode = error?.response?.status || error?.status || error?.statusCode;
+
+            if (statusCode === 429) {
+                if (attempt < maxRetries) {
+                    // 計算指數退避延遲時間: baseDelay * 2^attempt + 隨機抖動
+                    const delay = baseDelay * Math.pow(2, attempt) + Math.random() * 500;
+                    console.log(`[LINE Retry] Rate limited (429). Attempt ${attempt + 1}/${maxRetries + 1}. Waiting ${Math.round(delay)}ms before retry...`);
+                    await sleep(delay);
+                    continue;
+                }
+                console.error(`[LINE Retry] Max retries exceeded for 429 error. Giving up.`);
+            } else if (statusCode === 400) {
+                // 400 錯誤通常是 LINE User ID 無效，不需要重試
+                console.error(`[LINE Retry] Bad request (400) - likely invalid LINE User ID. Not retrying.`);
+                throw error;
+            } else {
+                // 其他錯誤，記錄並重試一次
+                if (attempt < maxRetries) {
+                    const delay = baseDelay * Math.pow(2, attempt);
+                    console.log(`[LINE Retry] Error (${statusCode}). Attempt ${attempt + 1}/${maxRetries + 1}. Waiting ${Math.round(delay)}ms...`);
+                    await sleep(delay);
+                    continue;
+                }
+            }
+
+            throw error;
+        }
+    }
+
+    throw lastError;
+}
+
+/**
+ * 批次發送 LINE 訊息並自動節流（避免觸發速率限制）
+ * @param {Client} client - LINE Bot SDK Client
+ * @param {Array} recipients - 收件人陣列 [{lineUserId, message}]
+ * @param {number} delayBetweenMessages - 訊息間延遲毫秒數 (預設 100)
+ */
+async function pushMessagesBatch(client, recipients, delayBetweenMessages = 100) {
+    const results = [];
+
+    for (let i = 0; i < recipients.length; i++) {
+        const { lineUserId, message, targetId } = recipients[i];
+
+        try {
+            await pushMessageWithRetry(client, lineUserId, message);
+            results.push({ targetId, success: true });
+            console.log(`[LINE Batch] Sent to ${targetId} (${i + 1}/${recipients.length})`);
+        } catch (error) {
+            results.push({ targetId, success: false, error: error.message });
+            console.error(`[LINE Batch] Failed to send to ${targetId}:`, error.message);
+        }
+
+        // 在訊息之間加入延遲，避免觸發速率限制
+        if (i < recipients.length - 1) {
+            await sleep(delayBetweenMessages);
+        }
+    }
+
+    return results;
+}
+
+// ============================================
 // Flex Message 模板 - 精美卡片式通知
 // ============================================
 
@@ -3382,7 +3476,7 @@ exports.onEventCreate = onDocumentCreated(
         const eventId = event.params.eventId;
         const client = getLineClient();
 
-        console.log(`New event created: ${eventId}`, eventData);
+        console.log(`[onEventCreate] New event created: ${eventId}`, eventData);
 
         // 查詢這些用戶的 LINE ID
         const usersRef = db.collection(`artifacts/${APP_ID}/public/data/users`);
@@ -3413,7 +3507,13 @@ exports.onEventCreate = onDocumentCreated(
 
         if (allRecipients.length === 0) return;
 
-        console.log(`[LINE] Will notify ${allRecipients.length} users`);
+        console.log(`[LINE] Will notify ${allRecipients.length} users with retry mechanism`);
+
+        // 建立通知訊息
+        const message = createEventFlexMessage(eventData, eventId);
+
+        // 收集要發送的收件人並過濾出有效的 LINE 用戶
+        const validRecipients = [];
 
         for (const targetId of allRecipients) {
             try {
@@ -3426,15 +3526,30 @@ exports.onEventCreate = onDocumentCreated(
 
                 if (!lineUserId || !lineNotifyEnabled) continue;
 
-                // 發送 LINE 通知 (使用精美 Flex Message 含 Quick Reply)
-                const message = createEventFlexMessage(eventData, eventId);
-
-                await client.pushMessage(lineUserId, message);
-                console.log(`LINE notification sent to ${targetId}`);
+                validRecipients.push({
+                    targetId,
+                    lineUserId,
+                    message
+                });
             } catch (err) {
-                console.error(`Failed to notify ${targetId}:`, err);
+                console.error(`[LINE] Failed to get user ${targetId}:`, err);
             }
         }
+
+        if (validRecipients.length === 0) {
+            console.log('[LINE] No valid recipients with LINE enabled');
+            return;
+        }
+
+        console.log(`[LINE] Sending to ${validRecipients.length} LINE users with batch mode`);
+
+        // 使用批次發送機制（包含自動節流和重試）
+        const results = await pushMessagesBatch(client, validRecipients, 150);
+
+        const successCount = results.filter(r => r.success).length;
+        const failCount = results.filter(r => !r.success).length;
+
+        console.log(`[LINE] Batch send complete: ${successCount} success, ${failCount} failed`);
     }
 );
 
@@ -3518,7 +3633,7 @@ exports.onEventUpdate = onDocumentUpdated(
                         }
                     };
 
-                    await client.pushMessage(userData.lineUserId, message);
+                    await pushMessageWithRetry(client, userData.lineUserId, message);
                     console.log(`[LINE] Restore notification sent to ${targetId}`);
                 } catch (err) {
                     console.error(`Failed to notify ${targetId} about restore:`, err);
@@ -3600,7 +3715,7 @@ exports.onEventUpdate = onDocumentUpdated(
                         }
                     };
 
-                    await client.pushMessage(userData.lineUserId, message);
+                    await pushMessageWithRetry(client, userData.lineUserId, message);
                     console.log(`[LINE] Deletion notification sent to ${targetId}`);
                 } catch (err) {
                     console.error(`Failed to notify ${targetId} about deletion:`, err);
@@ -3650,7 +3765,7 @@ exports.onEventUpdate = onDocumentUpdated(
                             if (!lineUserId || !lineNotifyEnabled) continue;
 
                             const message = createCompletionFlexMessage(afterData, completerName);
-                            await client.pushMessage(lineUserId, message);
+                            await pushMessageWithRetry(client, lineUserId, message);
                             console.log(`[LINE] Completion notification sent to ${targetId}`);
                         } catch (err) {
                             console.error(`Failed to notify ${targetId} about completion:`, err);
@@ -3719,8 +3834,8 @@ exports.onEventUpdate = onDocumentUpdated(
                 // 發送 LINE 通知 (使用精美 Flex Message 含 Quick Reply)
                 const message = createEventUpdateFlexMessage(afterData, changedFields, eventId);
 
-                await client.pushMessage(lineUserId, message);
-                console.log(`LINE update notification sent to ${targetId}`);
+                await pushMessageWithRetry(client, lineUserId, message);
+                console.log(`[LINE] Update notification sent to ${targetId}`);
             } catch (err) {
                 console.error(`Failed to notify ${targetId}:`, err);
             }
@@ -3769,8 +3884,8 @@ exports.onEventDelete = onDocumentDeleted(
                 // 發送 LINE 通知 (使用行程刪除的 Flex Message)
                 const message = createEventDeleteFlexMessage(eventData);
 
-                await client.pushMessage(lineUserId, message);
-                console.log(`LINE delete notification sent to ${targetId}`);
+                await pushMessageWithRetry(client, lineUserId, message);
+                console.log(`[LINE] Delete notification sent to ${targetId}`);
             } catch (err) {
                 console.error(`Failed to notify ${targetId}:`, err);
             }
@@ -3823,8 +3938,8 @@ exports.onCommentCreate = onDocumentCreated(
                 const contentPreview = commentData.content.substring(0, 50) + (commentData.content.length > 50 ? "..." : "");
                 const message = createMentionFlexMessage(commentData.authorName, eventTitle, contentPreview);
 
-                await client.pushMessage(lineUserId, message);
-                console.log(`LINE mention notification sent to ${mentionedId}`);
+                await pushMessageWithRetry(client, lineUserId, message);
+                console.log(`[LINE] Mention notification sent to ${mentionedId}`);
             } catch (err) {
                 console.error(`Failed to notify mention ${mentionedId}:`, err);
             }
@@ -3884,8 +3999,8 @@ exports.onCommentUpdate = onDocumentUpdated(
                 const contentPreview = afterData.content.substring(0, 50) + (afterData.content.length > 50 ? "..." : "");
                 const message = createCommentEditFlexMessage(afterData.authorName, eventTitle, contentPreview);
 
-                await client.pushMessage(lineUserId, message);
-                console.log(`LINE comment edit notification sent to ${mentionedId}`);
+                await pushMessageWithRetry(client, lineUserId, message);
+                console.log(`[LINE] Comment edit notification sent to ${mentionedId}`);
             } catch (err) {
                 console.error(`Failed to notify mention ${mentionedId}:`, err);
             }
@@ -3935,8 +4050,8 @@ exports.onCommentDelete = onDocumentDeleted(
                 const contentPreview = commentData.content.substring(0, 50) + (commentData.content.length > 50 ? "..." : "");
                 const message = createCommentDeleteFlexMessage(commentData.authorName, eventTitle, contentPreview);
 
-                await client.pushMessage(lineUserId, message);
-                console.log(`LINE comment delete notification sent to ${mentionedId}`);
+                await pushMessageWithRetry(client, lineUserId, message);
+                console.log(`[LINE] Comment delete notification sent to ${mentionedId}`);
             } catch (err) {
                 console.error(`Failed to notify mention ${mentionedId}:`, err);
             }
@@ -3986,8 +4101,8 @@ exports.checkReminders = onSchedule(
                     // 發送 LINE 通知 (使用精美 Flex Message 含 Quick Reply)
                     const message = createReminderFlexMessage(reminder.eventTitle, reminder.eventDate, reminder.eventTime, reminder.eventId);
 
-                    await client.pushMessage(lineUserId, message);
-                    console.log(`LINE reminder sent to ${reminder.userId}`);
+                    await pushMessageWithRetry(client, lineUserId, message);
+                    console.log(`[LINE] Reminder sent to ${reminder.userId}`);
                 }
 
                 // 標記為已觸發

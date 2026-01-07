@@ -93,6 +93,10 @@ export function startDataListeners(user) {
 
         if (_appCurrentUser) {
             if (window.renderDashboard) window.renderDashboard();
+            if (window.renderCalendar) window.renderCalendar();
+            if (window.renderDayEvents && window._selectedCalendarDate) {
+                window.renderDayEvents(window._selectedCalendarDate);
+            }
             if (window.renderNotifications) window.renderNotifications();
             if (window.updateNotificationBadge) window.updateNotificationBadge();
         }

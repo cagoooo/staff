@@ -160,29 +160,47 @@ export function renderCalendar() {
                 const isImportant = evt.isPublic;
                 const isPinned = evt.pinned;
                 const isMultiDay = !!evt.endDate;
+                const isPrivate = evt.isPrivate;
 
-                // Truncate title for display
-                const shortTitle = evt.title.length > 8 ? evt.title.substring(0, 8) + '…' : evt.title;
-                const prefix = isPinned ? '📌' : (isImportant ? '⭐' : (isMultiDay ? '📆' : ''));
+                // Truncate title for display - shorter for private events to make room for icon
+                const maxTitleLen = isPrivate ? 6 : 8;
+                const shortTitle = evt.title.length > maxTitleLen ? evt.title.substring(0, maxTitleLen) + '…' : evt.title;
 
+                // Build prefix: private icon takes priority, then pinned, then important, then multi-day
+                const prefix = isPrivate ? '🔒' : (isPinned ? '📌' : (isImportant ? '⭐' : (isMultiDay ? '📆' : '')));
+
+                // Private events have a distinctive purple dashed style
                 // Multi-day events have a gradient background
-                const bgStyle = isMultiDay
-                    ? `background: linear-gradient(90deg, ${color}33 0%, ${color}11 100%);`
-                    : `background: ${color}22;`;
+                // Regular events use department color
+                let bgStyle, borderStyle, textColor;
+                if (isPrivate) {
+                    bgStyle = 'background: linear-gradient(135deg, #9b59b611 0%, #9b59b622 100%);';
+                    borderStyle = 'border-left: 3px dashed #9b59b6;';
+                    textColor = '#9b59b6';
+                } else if (isMultiDay) {
+                    bgStyle = `background: linear-gradient(90deg, ${color}33 0%, ${color}11 100%);`;
+                    borderStyle = `border-left: 3px solid ${color};`;
+                    textColor = color;
+                } else {
+                    bgStyle = `background: ${color}22;`;
+                    borderStyle = `border-left: 3px solid ${color};`;
+                    textColor = color;
+                }
 
-                html += `<div class="calendar-event-bar" style="
+                html += `<div class="calendar-event-bar${isPrivate ? ' private-event' : ''}" style="
                     ${bgStyle}
-                    border-left: 3px solid ${color};
+                    ${borderStyle}
                     padding: 1px 4px;
                     font-family: 'VT323', monospace;
                     font-size: 12px;
-                    color: ${color};
+                    color: ${textColor};
                     white-space: nowrap;
                     overflow: hidden;
                     text-overflow: ellipsis;
                     border-radius: 2px;
                     ${isMultiDay ? 'font-weight: bold;' : ''}
-                " title="${evt.title} - ${evt.time || '整天'}${isMultiDay ? ' (跨日至 ' + evt.endDate + ')' : ''}">${prefix}${shortTitle}</div>`;
+                    ${isPrivate ? 'font-style: italic;' : ''}
+                " title="${isPrivate ? '🔒 私人行程: ' : ''}${evt.title} - ${evt.time || '整天'}${isMultiDay ? ' (跨日至 ' + evt.endDate + ')' : ''}">${prefix}${shortTitle}</div>`;
             });
 
             if (filteredEvents.length > 3) {
@@ -221,9 +239,15 @@ export function renderDayEvents(dateStr) {
     const [year, month, day] = dateStr.split('-');
     titleEl.innerText = `📋 ${month}月${parseInt(day)}日 行程`;
 
-    const events = globalEvents();
+    // Get events (excluding deleted, applying visibility filter for private events)
+    const currentUser = getAppCurrentUser();
+    const allEvents = filterVisibleEvents(
+        globalEvents().filter(e => !e.deletedAt),
+        currentUser
+    );
+
     // Include multi-day events that span this date
-    let dayEvents = events.filter(e => {
+    let dayEvents = allEvents.filter(e => {
         const eventStart = e.date;  // YYYY-MM-DD format
         const eventEnd = e.endDate || e.date;  // YYYY-MM-DD format
         return dateStr >= eventStart && dateStr <= eventEnd;
@@ -252,24 +276,40 @@ export function renderDayEvents(dateStr) {
         const deptColor = getDepartmentColor(author?.department);
         const deptName = getDepartmentName(author?.department);
 
-        // Check if this is a multi-day event
+        // Check if this is a multi-day or private event
         const isMultiDay = !!evt.endDate;
+        const isPrivate = evt.isPrivate;
         const multiDayBadge = isMultiDay ? `<span class="ml-2 px-2 py-0.5 rounded text-white text-xs" style="background: #6c5ce7;">📆 跨日至 ${evt.endDate}</span>` : '';
+        const privateBadge = isPrivate ? `<span class="ml-2 px-2 py-0.5 rounded text-xs" style="background: #9b59b622; color: #9b59b6; border: 1px dashed #9b59b6;">🔒 私人</span>` : '';
 
         const div = document.createElement('div');
-        div.className = 'p-3 border-l-4 bg-white mb-2 cursor-pointer hover:bg-gray-50';
-        div.style.borderColor = deptColor;
+        div.className = 'p-3 border-l-4 mb-2 cursor-pointer hover:brightness-95 transition';
+        // Private events have special styling
+        if (isPrivate) {
+            div.style.borderColor = '#9b59b6';
+            div.style.borderStyle = 'dashed';
+            div.style.background = 'linear-gradient(135deg, #f8f4fc 0%, #f3e8ff 100%)';
+        } else {
+            div.style.borderColor = deptColor;
+            div.style.background = 'white';
+        }
         div.style.fontFamily = "'VT323', monospace";
         div.onclick = () => window.openEventModal(evt.id);
         div.innerHTML = `
-            <div class="flex justify-between items-start">
-                <div>
-                    <h4 class="font-bold text-lg">${evt.title}${multiDayBadge}</h4>
+            <div class="flex justify-between items-start flex-wrap gap-2">
+                <div class="flex-1 min-w-0">
+                    <h4 class="font-bold text-lg flex items-center flex-wrap gap-1">
+                        ${isPrivate ? '<span style="color: #9b59b6;">🔒</span>' : ''}
+                        <span class="break-words">${evt.title}</span>
+                        ${privateBadge}${multiDayBadge}
+                    </h4>
                     <p class="text-sm text-gray-600">🕐 ${evt.time || '全天'} | 👤 ${evt.authorName}</p>
-                    <span style="font-size: 14px; color: ${deptColor};">${deptName}</span>
+                    <span style="font-size: 14px; color: ${isPrivate ? '#9b59b6' : deptColor};">${isPrivate ? '🔒 ' : ''}${deptName}</span>
                 </div>
-                ${evt.isPublic ? '<span class="text-yellow-500">⭐</span>' : ''}
-                ${isMultiDay ? '<span class="text-purple-500 text-xl">📆</span>' : ''}
+                <div class="flex items-center gap-1">
+                    ${evt.isPublic ? '<span class="text-yellow-500">⭐</span>' : ''}
+                    ${isMultiDay ? '<span class="text-purple-500 text-xl">📆</span>' : ''}
+                </div>
             </div>
         `;
         listEl.appendChild(div);
@@ -940,6 +980,7 @@ window.renderEditorOptions = renderEditorOptions;
 window.updateNotificationBadge = updateNotificationBadge;
 window.switchTab = switchTab;
 window.renderCalendar = renderCalendar;
+window.renderDayEvents = renderDayEvents;
 window.prevMonth = prevMonth;
 window.nextMonth = nextMonth;
 window.filterByDept = filterByDept;
@@ -948,3 +989,9 @@ window.selectCalendarDate = selectCalendarDate;
 window.updatePositionOptions = updatePositionOptions;
 window.updateEditPositionOptions = updateEditPositionOptions;
 window.initDepartmentDropdowns = initDepartmentDropdowns;
+
+// Expose selected date for real-time calendar updates
+Object.defineProperty(window, '_selectedCalendarDate', {
+    get: () => selectedCalendarDate,
+    set: (val) => { selectedCalendarDate = val; }
+});

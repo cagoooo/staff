@@ -813,6 +813,176 @@ body {
     font-size: 20px !important;
 }
 
+::-webkit-scrollbar-track {
+    background: var(--pixel-bg-light);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--pixel-primary);
+    border: 2px solid #2d3436;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--pixel-secondary);
+}
+
+/* Touch-friendly */
+@media (pointer: coarse) {
+
+    .nav-btn,
+    .pixel-btn {
+        min-height: 48px;
+    }
+
+    .pixel-input {
+        min-height: 48px;
+    }
+}
+
+/* ========================================
+   RWD - Very Short Screens (height < 700px)
+   ======================================== */
+@media (max-height: 700px) {
+    #auth-container {
+        align-items: flex-start;
+        padding: 8px;
+    }
+
+    .pixel-card {
+        padding: 12px;
+    }
+
+    .pixel-card::before {
+        display: none;
+    }
+
+    .login-icon {
+        font-size: 28px;
+        margin-bottom: 4px;
+    }
+
+    .login-title {
+        font-size: 20px;
+        margin-bottom: 2px;
+    }
+
+    .login-subtitle {
+        font-size: 14px;
+        margin-bottom: 6px;
+    }
+
+    .pixel-input {
+        padding: 8px 10px;
+        min-height: 40px;
+    }
+
+    .pixel-btn {
+        padding: 8px 12px;
+        min-height: 40px;
+    }
+
+    .pixel-label {
+        font-size: 14px;
+        margin-bottom: 2px;
+    }
+
+    .mb-3,
+    .mb-4 {
+        margin-bottom: 6px !important;
+    }
+
+    .mb-6 {
+        margin-bottom: 10px !important;
+    }
+}
+
+@media (max-height: 600px) {
+    #auth-container {
+        padding: 4px;
+    }
+
+    .pixel-card {
+        padding: 8px;
+    }
+
+    .login-icon {
+        font-size: 24px;
+        margin-bottom: 2px;
+    }
+
+    .login-title {
+        font-size: 18px;
+    }
+
+    .login-subtitle {
+        font-size: 12px;
+        margin-bottom: 4px;
+    }
+
+    .pixel-input {
+        padding: 6px 8px;
+        min-height: 36px;
+        font-size: 14px;
+    }
+
+    .pixel-btn {
+        padding: 6px 10px;
+        min-height: 36px;
+        font-size: 14px;
+    }
+
+    .pixel-label {
+        font-size: 12px;
+    }
+
+    .mb-3,
+    .mb-4,
+    .mb-6 {
+        margin-bottom: 4px !important;
+    }
+}
+
+/* ==================================================
+   Font Size Improvements for Better Readability
+   ================================================== */
+
+/* Modal - Larger title and message */
+#sys-modal #modal-title {
+    font-size: 20px !important;
+    letter-spacing: 0.5px;
+}
+
+#sys-modal #modal-message {
+    font-size: 28px !important;
+    line-height: 1.4;
+}
+
+#sys-modal .pixel-btn {
+    font-size: 22px !important;
+    padding: 12px 24px !important;
+}
+
+/* Page title in header */
+#page-title {
+    font-size: 28px !important;
+}
+
+/* Current date in header */
+#current-date {
+    font-size: 24px !important;
+}
+
+/* Content card headings (h2) */
+.content-card h2 {
+    font-size: 28px !important;
+    font-weight: bold;
+}
+
+/* Nav buttons in sidebar */
+.nav-btn {
+    font-size: 20px !important;
+}
+
 /* Calendar month/year display */
 #calendar-month-year {
     font-size: 28px !important;
@@ -831,4 +1001,85 @@ body {
 /* Search modal input */
 #search-input {
     font-size: 22px !important;
+}
+
+/* ========================================
+   Private Event Styles
+   ======================================== */
+
+/* Private event badge */
+.private-badge {
+    background: linear-gradient(135deg, #9b59b622 0%, #9b59b633 100%);
+    color: #9b59b6;
+    padding: 2px 8px;
+    font-size: 14px;
+    border: 1px dashed #9b59b6;
+    border-radius: 4px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+}
+
+/* Private event in calendar - hover effect */
+.calendar-event-bar.private-event {
+    transition: all 0.2s ease;
+}
+
+.calendar-event-bar.private-event:hover {
+    background: linear-gradient(135deg, #9b59b622 0%, #9b59b633 100%) !important;
+    transform: scale(1.02);
+}
+
+/* Private event card in day view */
+.private-event-card {
+    border-left: 4px dashed #9b59b6 !important;
+    background: linear-gradient(135deg, #f8f4fc 0%, #f3e8ff 100%) !important;
+}
+
+/* Subtle lock icon animation */
+@keyframes lockPulse {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.7;
+    }
+}
+
+.private-event .lock-icon {
+    animation: lockPulse 2s ease-in-out infinite;
+}
+
+/* RWD for private events on mobile */
+@media (max-width: 768px) {
+    .private-badge {
+        font-size: 12px;
+        padding: 1px 6px;
+    }
+
+    /* Calendar grid - private events text size */
+    .calendar-event-bar.private-event {
+        font-size: 10px !important;
+    }
+
+    /* Day events list - wrap badges properly */
+    .private-event-card h4 {
+        flex-wrap: wrap;
+    }
+}
+
+/* RWD for small mobile */
+@media (max-width: 480px) {
+    .private-badge {
+        font-size: 10px;
+        padding: 1px 4px;
+    }
+
+    .calendar-event-bar.private-event {
+        font-size: 9px !important;
+    }
 }
