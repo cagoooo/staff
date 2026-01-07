@@ -140,6 +140,12 @@ export async function handleFirebaseAddEvent(e) {
     // Validation: Must have time OR be all-day event
     if (!time && !isAllDay) {
         showAlert('⚠️ 請設定時間或勾選「全天行程」');
+        // Scroll to and focus the time field for better UX
+        const timeInput = document.getElementById('evt-time');
+        if (timeInput) {
+            timeInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            setTimeout(() => timeInput.focus(), 300);
+        }
         return;
     }
 
