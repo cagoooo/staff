@@ -3465,6 +3465,141 @@ exports.onEventUpdate = onDocumentUpdated(
         if (JSON.stringify(beforeData.completedBy) !== JSON.stringify(afterData.completedBy)) changedFields.push('completedBy');
 
         // ====================
+        // 復原通知邏輯：行程從回收站復原
+        // ====================
+        const wasDeleted = !!beforeData.deletedAt;
+        const isNowRestored = !afterData.deletedAt;
+
+        if (wasDeleted && isNowRestored) {
+            console.log(`[LINE] Event restored: ${eventId}`);
+
+            const allTargets = [...new Set([
+                afterData.authorId,
+                ...(afterData.targets || [])
+            ].filter(Boolean))];
+
+            const usersRef = db.collection(`artifacts/${APP_ID}/public/data/users`);
+
+            for (const targetId of allTargets) {
+                try {
+                    const userDoc = await usersRef.doc(targetId).get();
+                    if (!userDoc.exists) continue;
+
+                    const userData = userDoc.data();
+                    if (!userData.lineUserId || !userData.lineNotifyEnabled) continue;
+
+                    const message = {
+                        type: 'flex',
+                        altText: `↩️ 行程已復原：${afterData.title}`,
+                        contents: {
+                            type: 'bubble',
+                            size: 'kilo',
+                            header: {
+                                type: 'box',
+                                layout: 'vertical',
+                                contents: [{
+                                    type: 'text',
+                                    text: '↩️ 行程已復原',
+                                    weight: 'bold',
+                                    color: '#00b894',
+                                    size: 'lg'
+                                }],
+                                backgroundColor: '#e8f8f5'
+                            },
+                            body: {
+                                type: 'box',
+                                layout: 'vertical',
+                                contents: [
+                                    { type: 'text', text: afterData.title, weight: 'bold', size: 'md', wrap: true },
+                                    { type: 'text', text: `📅 ${afterData.date} ${afterData.time || '全天'}`, size: 'sm', color: '#636e72', margin: 'md' },
+                                    { type: 'text', text: `👤 發起人：${afterData.authorName}`, size: 'sm', color: '#636e72', margin: 'sm' }
+                                ]
+                            }
+                        }
+                    };
+
+                    await client.pushMessage(userData.lineUserId, message);
+                    console.log(`[LINE] Restore notification sent to ${targetId}`);
+                } catch (err) {
+                    console.error(`Failed to notify ${targetId} about restore:`, err);
+                }
+            }
+            return;
+        }
+
+        // ====================
+        // 軟刪除通知邏輯：管理員刪除行程（移到回收站）
+        // ====================
+        const wasNotDeleted = !beforeData.deletedAt;
+        const isNowDeleted = !!afterData.deletedAt;
+
+        if (wasNotDeleted && isNowDeleted) {
+            console.log(`[LINE] Event soft deleted: ${eventId}`);
+
+            // 通知建立者和被指派的對象（排除刪除者本人，避免重複通知）
+            const deletedBy = afterData.deletedBy;
+            const allTargets = [...new Set([
+                afterData.authorId,
+                ...(afterData.targets || [])
+            ].filter(id => id && id !== deletedBy))];
+
+            if (allTargets.length === 0) {
+                console.log('[LINE] No targets to notify about deletion (deleter is the only target)');
+                return;
+            }
+
+            const usersRef = db.collection(`artifacts/${APP_ID}/public/data/users`);
+            const deleterName = afterData.deletedByName || '管理員';
+
+            for (const targetId of allTargets) {
+                try {
+                    const userDoc = await usersRef.doc(targetId).get();
+                    if (!userDoc.exists) continue;
+
+                    const userData = userDoc.data();
+                    if (!userData.lineUserId || !userData.lineNotifyEnabled) continue;
+
+                    const message = {
+                        type: 'flex',
+                        altText: `🗑️ 行程已刪除：${afterData.title}`,
+                        contents: {
+                            type: 'bubble',
+                            size: 'kilo',
+                            header: {
+                                type: 'box',
+                                layout: 'vertical',
+                                contents: [{
+                                    type: 'text',
+                                    text: '🗑️ 行程已刪除',
+                                    weight: 'bold',
+                                    color: '#e17055',
+                                    size: 'lg'
+                                }],
+                                backgroundColor: '#ffeef0'
+                            },
+                            body: {
+                                type: 'box',
+                                layout: 'vertical',
+                                contents: [
+                                    { type: 'text', text: afterData.title, weight: 'bold', size: 'md', wrap: true },
+                                    { type: 'text', text: `📅 ${afterData.date} ${afterData.time || '全天'}`, size: 'sm', color: '#636e72', margin: 'md' },
+                                    { type: 'text', text: `🗑️ 刪除者：${deleterName}`, size: 'sm', color: '#e17055', margin: 'sm' },
+                                    { type: 'text', text: '💡 30天內可從回收站復原', size: 'xs', color: '#999', margin: 'md' }
+                                ]
+                            }
+                        }
+                    };
+
+                    await client.pushMessage(userData.lineUserId, message);
+                    console.log(`[LINE] Deletion notification sent to ${targetId}`);
+                } catch (err) {
+                    console.error(`Failed to notify ${targetId} about deletion:`, err);
+                }
+            }
+            return;
+        }
+
+        // ====================
         // 完成通知邏輯：檢測是否有新用戶標記完成
         // ====================
         const beforeCompletedBy = beforeData.completedBy || [];
