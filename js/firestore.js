@@ -385,6 +385,7 @@ export async function deleteEvent(eventId) {
         if (window.renderCalendar) window.renderCalendar();
         if (window.renderDashboard) window.renderDashboard();
         if (window.renderDayEvents) window.renderDayEvents();
+        if (window.updateNotificationBadge) window.updateNotificationBadge();
 
         return true;
     } catch (err) {
