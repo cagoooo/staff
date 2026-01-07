@@ -144,7 +144,8 @@ export function openEventModal(eventId) {
     if (!modal) return;
 
     // Populate view mode
-    document.getElementById('event-detail-title').innerText = event.title || '';
+    const privateBadge = event.isPrivate ? '🔒 ' : '';
+    document.getElementById('event-detail-title').innerText = privateBadge + (event.title || '');
     document.getElementById('event-detail-date').innerText = event.date || '';
     document.getElementById('event-detail-time').innerText = event.isAllDay ? '🌅 全天' : (event.time || '--:--');
     document.getElementById('event-detail-author').innerText = event.authorName || '未知';

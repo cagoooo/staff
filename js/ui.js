@@ -635,6 +635,7 @@ export function renderDashboard() {
 
         // Build announcement HTML
         const pinnedBadge = isPinned ? '<span style="color: #e74c3c; margin-right: 4px;">📌</span>' : '';
+        const privateBadge = evt.isPrivate ? '<span style="background: #9b59b622; color: #9b59b6; padding: 2px 6px; font-size: 14px; margin-right: 4px; white-space: nowrap; flex-shrink: 0;">🔒 私人</span>' : '';
         const typeBadge = evt.announcementType && evt.announcementType !== 'normal'
             ? `<span style="background: ${typeConfig.border}22; color: ${typeConfig.border}; padding: 2px 6px; font-size: 14px; margin-right: 4px; white-space: nowrap; flex-shrink: 0;">${typeConfig.icon} ${typeConfig.label}</span>`
             : '';
@@ -643,7 +644,7 @@ export function renderDashboard() {
 
         div.innerHTML = `
             <div class="flex justify-between items-start gap-2">
-                <h4 class="text-lg flex items-center flex-wrap gap-1">${unreadDot}${pinnedBadge}${typeBadge}<span class="break-words">${evt.title}</span></h4>
+                <h4 class="text-lg flex items-center flex-wrap gap-1">${unreadDot}${pinnedBadge}${privateBadge}${typeBadge}<span class="break-words">${evt.title}</span></h4>
                 <span class="text-sm bg-purple-200 px-2 py-1 shrink-0 whitespace-nowrap">${evt.date}</span>
             </div>
             <p class="text-sm text-gray-600 mt-1">發起人：${evt.authorName} | 時間：${evt.time || '--:--'}</p>
@@ -767,12 +768,14 @@ export function renderNotifications() {
 
         const isAuthor = item.authorId === currentUser.id;
         const roleBadge = isAuthor ? '您建立的' : '指派給您';
+        const privateBadge = item.isPrivate ? '🔒 ' : '';
 
         const div = document.createElement('div');
         div.className = 'p-4 ' + statusClass + ' flex justify-between items-center gap-4';
         div.style.fontFamily = "'VT323', monospace";
         div.innerHTML = '<div class="flex-1"><div class="mb-1 text-sm">' + statusText + ' | ' + roleBadge +
-            '</div><h3 class="text-xl font-bold">' + item.title + '</h3><p class="text-sm text-gray-600">時間：' +
+            (item.isPrivate ? ' | <span style="color: #9b59b6;">🔒 私人</span>' : '') +
+            '</div><h3 class="text-xl font-bold">' + privateBadge + item.title + '</h3><p class="text-sm text-gray-600">時間：' +
             item.date + ' ' + item.time + '</p></div><button onclick="handleMarkAsDone(\'' + item.id +
             '\')" class="pixel-btn pixel-btn-success">完成</button>';
         list.appendChild(div);
