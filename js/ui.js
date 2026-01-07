@@ -822,6 +822,21 @@ export function updateNotificationBadge() {
 export function switchTab(tabName) {
     const currentUser = getAppCurrentUser();
 
+    // Check for unsaved changes in account settings before switching
+    if (window._accountFormDirty && tabName !== 'account') {
+        const saveBtn = document.querySelector('#view-account button[type="submit"]');
+        if (saveBtn) {
+            // Show warning and scroll to save button
+            if (window.showAlert) {
+                window.showAlert('⚠️ 您有未儲存的變更！請記得點擊「儲存變更」按鈕');
+            }
+            saveBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            saveBtn.style.animation = 'pulse 1s ease-in-out 3';
+            setTimeout(() => saveBtn.style.animation = '', 3000);
+            // Don't block navigation, just warn
+        }
+    }
+
     // Scroll to top of page (smooth animation)
     const contentArea = document.getElementById('content-area');
     if (contentArea) {
@@ -872,6 +887,18 @@ export function switchTab(tabName) {
         }, 0);
         document.getElementById('edit-name').value = currentUser.name;
         document.getElementById('edit-username').value = currentUser.username;
+
+        // Reset form dirty state and add change listeners
+        window._accountFormDirty = false;
+        const formFields = ['edit-department', 'edit-jobTitle', 'edit-name', 'edit-password'];
+        formFields.forEach(id => {
+            const el = document.getElementById(id);
+            if (el && !el.dataset.hasChangeListener) {
+                el.dataset.hasChangeListener = 'true';
+                el.addEventListener('input', () => { window._accountFormDirty = true; });
+                el.addEventListener('change', () => { window._accountFormDirty = true; });
+            }
+        });
 
         // Render LINE settings
         const lineSettingsContainer = document.getElementById('line-settings-container');

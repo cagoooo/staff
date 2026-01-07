@@ -332,6 +332,10 @@ export async function handleUpdateProfile(e) {
         }
 
         await updateDoc(userRef, updateData);
+
+        // Clear form dirty state after successful save
+        window._accountFormDirty = false;
+
         showAlert('資料已更新！');
     } catch (err) {
         console.error('[Firestore] Update profile failed:', err);
