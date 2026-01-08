@@ -124,6 +124,12 @@ export function initAdmin() {
 
 // Inject admin UI elements
 function injectAdminUI() {
+    // 防禦性檢查：再次確認用戶是 admin
+    if (!isAdmin()) {
+        console.log('[Admin] injectAdminUI called but user is not admin, skipping...');
+        return;
+    }
+
     // Inject sidebar button
     const nav = document.querySelector('#sidebar nav');
     if (nav && !document.getElementById('nav-admin')) {
