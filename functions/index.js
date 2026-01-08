@@ -2200,6 +2200,7 @@ async function handleMessage(client, event) {
     const cmdFeatures = ['功能', 'features', '功能介紹'];
     const cmdToday = ['今日', 'today', '今日行程'];
     const cmdAbout = ['關於', 'about', '系統資訊'];
+    const cmdTutorial = ['指令教學', '教學', 'tutorial', '指令'];
 
     // 取得用戶資料（如果已綁定）
     const getUserData = async () => {
@@ -2423,9 +2424,32 @@ async function handleMessage(client, event) {
                                         },
                                         {
                                             type: "button",
+                                            action: { type: "message", label: "2小時前", text: `提醒2時 ${eventId}` },
+                                            style: "primary",
+                                            color: "#a29bfe",
+                                            height: "sm",
+                                            flex: 1
+                                        }
+                                    ]
+                                },
+                                {
+                                    type: "box",
+                                    layout: "horizontal",
+                                    spacing: "sm",
+                                    contents: [
+                                        {
+                                            type: "button",
                                             action: { type: "message", label: "1天前", text: `提醒1天 ${eventId}` },
                                             style: "primary",
                                             color: "#e17055",
+                                            height: "sm",
+                                            flex: 1
+                                        },
+                                        {
+                                            type: "button",
+                                            action: { type: "message", label: "3天前", text: `提醒3天 ${eventId}` },
+                                            style: "primary",
+                                            color: "#d63031",
                                             height: "sm",
                                             flex: 1
                                         }
@@ -2445,8 +2469,8 @@ async function handleMessage(client, event) {
         return;
     }
 
-    // ================== 提醒5分/30分/1時/1天 {eventId} - 設定指定時間提醒 ==================
-    const reminderMatch = originalText.match(/^提醒(5分|30分|1時|1天)\s+(.+)$/);
+    // ================== 提醒5分/30分/1時/2時/1天/3天 {eventId} - 設定指定時間提醒 ==================
+    const reminderMatch = originalText.match(/^提醒(5分|30分|1時|2時|1天|3天)\s+(.+)$/);
     if (reminderMatch) {
         const timeOption = reminderMatch[1];
         const eventId = reminderMatch[2].trim();
@@ -2462,7 +2486,9 @@ async function handleMessage(client, event) {
             '5分': { minutes: 5, label: '5 分鐘前' },
             '30分': { minutes: 30, label: '30 分鐘前' },
             '1時': { minutes: 60, label: '1 小時前' },
-            '1天': { minutes: 1440, label: '1 天前' }
+            '2時': { minutes: 120, label: '2 小時前' },
+            '1天': { minutes: 1440, label: '1 天前' },
+            '3天': { minutes: 4320, label: '3 天前' }
         };
 
         const option = timeOptions[timeOption];
@@ -3366,6 +3392,120 @@ async function handleMessage(client, event) {
     // ================== 關於系統 ==================
     if (cmdAbout.includes(text)) {
         await client.replyMessage(event.replyToken, createAboutFlex());
+        return;
+    }
+
+    // ================== 指令教學 ==================
+    if (cmdTutorial.includes(text)) {
+        await client.replyMessage(event.replyToken, {
+            type: "flex",
+            altText: "📚 指令教學",
+            contents: {
+                type: "bubble",
+                size: "mega",
+                header: {
+                    type: "box",
+                    layout: "vertical",
+                    backgroundColor: "#6c5ce7",
+                    paddingAll: "20px",
+                    contents: [
+                        { type: "text", text: "📚 指令教學", color: "#ffffff", weight: "bold", size: "xl", align: "center" },
+                        { type: "text", text: "在對話中輸入以下指令即可操作", color: "#d4d4f7", size: "xs", align: "center", margin: "sm" }
+                    ]
+                },
+                body: {
+                    type: "box",
+                    layout: "vertical",
+                    paddingAll: "20px",
+                    spacing: "lg",
+                    contents: [
+                        {
+                            type: "text",
+                            text: "📅 行程相關",
+                            weight: "bold",
+                            size: "sm",
+                            color: "#00b894"
+                        },
+                        {
+                            type: "box",
+                            layout: "vertical",
+                            margin: "sm",
+                            paddingAll: "12px",
+                            backgroundColor: "#f0fff4",
+                            cornerRadius: "8px",
+                            spacing: "sm",
+                            contents: [
+                                { type: "text", text: "📅 今日行程 → 查看今日待辦事項", size: "xs", color: "#333", wrap: true },
+                                { type: "text", text: "📋 待辦 → 查看所有未完成行程", size: "xs", color: "#333", wrap: true }
+                            ]
+                        },
+                        {
+                            type: "text",
+                            text: "⚡ 快捷操作",
+                            weight: "bold",
+                            size: "sm",
+                            color: "#e17055",
+                            margin: "lg"
+                        },
+                        {
+                            type: "box",
+                            layout: "vertical",
+                            margin: "sm",
+                            paddingAll: "12px",
+                            backgroundColor: "#fff5f0",
+                            cornerRadius: "8px",
+                            spacing: "sm",
+                            contents: [
+                                { type: "text", text: "✅ 收到 {行程ID} → 確認已讀", size: "xs", color: "#333", wrap: true },
+                                { type: "text", text: "⏰ 提醒 {行程ID} → 設定提醒", size: "xs", color: "#333", wrap: true },
+                                { type: "text", text: "💬 回覆 {行程ID} {訊息} → 留言", size: "xs", color: "#333", wrap: true }
+                            ]
+                        },
+                        {
+                            type: "text",
+                            text: "ℹ️ 系統功能",
+                            weight: "bold",
+                            size: "sm",
+                            color: "#0984e3",
+                            margin: "lg"
+                        },
+                        {
+                            type: "box",
+                            layout: "vertical",
+                            margin: "sm",
+                            paddingAll: "12px",
+                            backgroundColor: "#f0f8ff",
+                            cornerRadius: "8px",
+                            spacing: "sm",
+                            contents: [
+                                { type: "text", text: "💡 功能 → 功能介紹", size: "xs", color: "#333", wrap: true },
+                                { type: "text", text: "❓ 幫助 → 顯示功能選單", size: "xs", color: "#333", wrap: true },
+                                { type: "text", text: "📋 我的ID → 查看 LINE ID", size: "xs", color: "#333", wrap: true },
+                                { type: "text", text: "🔧 測試 → 測試綁定狀態", size: "xs", color: "#333", wrap: true }
+                            ]
+                        },
+                        {
+                            type: "text",
+                            text: "💡 提示：收到行程通知後，可直接點擊下方 Quick Reply 按鈕快速操作！",
+                            size: "xxs",
+                            color: "#888",
+                            wrap: true,
+                            margin: "lg",
+                            align: "center"
+                        }
+                    ]
+                }
+            },
+            quickReply: {
+                items: [
+                    { type: "action", action: { type: "message", label: "📅 今日行程", text: "今日行程" } },
+                    { type: "action", action: { type: "message", label: "📋 待辦", text: "待辦" } },
+                    { type: "action", action: { type: "message", label: "💡 功能", text: "功能" } },
+                    { type: "action", action: { type: "message", label: "❓ 幫助", text: "幫助" } },
+                    { type: "action", action: { type: "uri", label: "🔗 開啟系統", uri: LINK_URL } }
+                ]
+            }
+        });
         return;
     }
 
@@ -4630,12 +4770,40 @@ function createLineBindSuccessMessage(userName) {
                         ]
                     },
                     {
+                        type: "separator",
+                        margin: "lg"
+                    },
+                    {
                         type: "text",
-                        text: "💡 試試看下方的快捷按鈕！",
+                        text: "📚 常用指令教學",
+                        weight: "bold",
+                        size: "sm",
+                        color: "#333333",
+                        margin: "lg"
+                    },
+                    {
+                        type: "box",
+                        layout: "vertical",
+                        margin: "sm",
+                        paddingAll: "12px",
+                        backgroundColor: "#f8f9fa",
+                        cornerRadius: "8px",
+                        spacing: "xs",
+                        contents: [
+                            { type: "text", text: "📅 今日行程 → 查看今日待辦", size: "xs", color: "#555", wrap: true },
+                            { type: "text", text: "📋 待辦 → 查看未完成行程", size: "xs", color: "#555", wrap: true },
+                            { type: "text", text: "💡 功能 → 功能介紹", size: "xs", color: "#555", wrap: true },
+                            { type: "text", text: "❓ 幫助 → 顯示功能選單", size: "xs", color: "#555", wrap: true }
+                        ]
+                    },
+                    {
+                        type: "text",
+                        text: "💡 收到通知後可使用下方快捷按鈕操作！",
                         size: "xs",
                         color: "#888888",
                         align: "center",
-                        margin: "lg"
+                        margin: "lg",
+                        wrap: true
                     }
                 ]
             },
@@ -4665,8 +4833,8 @@ function createLineBindSuccessMessage(userName) {
                                 type: "button",
                                 action: {
                                     type: "message",
-                                    label: "💡 功能介紹",
-                                    text: "功能"
+                                    label: "📚 指令教學",
+                                    text: "指令教學"
                                 },
                                 style: "secondary",
                                 height: "sm",
@@ -4693,6 +4861,10 @@ function createLineBindSuccessMessage(userName) {
                 {
                     type: "action",
                     action: { type: "message", label: "📅 今日行程", text: "今日行程" }
+                },
+                {
+                    type: "action",
+                    action: { type: "message", label: "📚 指令教學", text: "指令教學" }
                 },
                 {
                     type: "action",
