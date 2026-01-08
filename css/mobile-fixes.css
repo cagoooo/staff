@@ -261,10 +261,9 @@
 /* ============================================ */
 @media (max-width: 768px) {
 
-    /* Date and time inputs */
-    input[type="date"],
-    input[type="time"],
-    .flatpickr-input {
+    /* Date and time inputs - scoped to view-editor */
+    #view-editor input[type="date"],
+    #view-editor input[type="time"] {
         width: 100% !important;
         min-width: 0 !important;
         max-width: 100% !important;
@@ -276,20 +275,28 @@
     /* Event form container */
     #view-editor .content-card {
         padding: 12px !important;
+        overflow-x: hidden !important;
     }
 
-    /* Template buttons - stack vertically */
-    #view-editor .content-card>div:nth-child(2) {
+    /* Grid layout for date/time - stack on mobile */
+    #view-editor .grid.grid-cols-2 {
+        display: flex !important;
         flex-direction: column !important;
-        gap: 8px !important;
+        gap: 12px !important;
     }
 
-    #view-editor .content-card>div:nth-child(2) button {
+    #view-editor .grid.grid-cols-2>div {
         width: 100% !important;
     }
 
-    /* All form inputs full width */
-    #view-editor input,
+    /* Form overall width control */
+    #view-editor form {
+        max-width: 100% !important;
+        overflow: hidden !important;
+    }
+
+    /* Form inputs full width (exclude checkboxes) */
+    #view-editor input:not([type="checkbox"]),
     #view-editor select,
     #view-editor textarea {
         width: 100% !important;
@@ -304,16 +311,9 @@
         display: block !important;
     }
 
-    /* Form rows stack vertically */
-    #view-editor .flex.gap-4,
-    #view-editor .flex.gap-3 {
-        flex-direction: column !important;
-        gap: 12px !important;
-    }
-
-    /* Date time row fix */
-    #view-editor .flex.gap-4>div {
-        width: 100% !important;
+    /* Target selection container */
+    #view-editor #selected-targets-container {
+        overflow-x: auto !important;
     }
 }
 
