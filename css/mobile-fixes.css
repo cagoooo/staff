@@ -152,11 +152,7 @@
 /* ============================================ */
 /* Account Settings Mobile Scroll Fixes        */
 /* ============================================ */
-
-/* Fix Android scroll issues - ensure content area is scrollable */
 @media (max-width: 768px) {
-
-    /* Ensure content area takes full height and scrolls properly */
     #content-area {
         height: auto !important;
         min-height: 0 !important;
@@ -165,7 +161,6 @@
         padding-bottom: 100px !important;
     }
 
-    /* Account settings should not have fixed height */
     #view-account {
         height: auto !important;
         overflow: visible !important;
@@ -177,24 +172,21 @@
         overflow: visible !important;
     }
 
-    /* LINE settings container */
     #line-settings-container {
         padding-bottom: 20px;
     }
 
-    /* Ensure forms don't cut off */
     #view-account form {
         overflow: visible !important;
     }
 }
 
-/* Extra fixes for very small height screens (landscape mode) */
+/* Extra fixes for very small height screens */
 @media (max-height: 500px) {
     #content-area {
         padding-bottom: 120px !important;
     }
 
-    /* Compact LINE settings */
     #line-settings-container {
         padding: 10px 0 !important;
     }
@@ -211,5 +203,138 @@
     .line-add-btn {
         padding: 10px 16px !important;
         font-size: 16px !important;
+    }
+}
+
+/* ============================================ */
+/* Trash Page Mobile RWD Fixes                 */
+/* ============================================ */
+@media (max-width: 768px) {
+
+    /* Trash header - stack title and button */
+    #view-trash .content-card>div:first-child {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 12px !important;
+    }
+
+    #view-trash .content-card>div:first-child button {
+        width: 100% !important;
+    }
+
+    /* Trash item - stack content and buttons vertically */
+    .trash-item>div {
+        flex-direction: column !important;
+        gap: 12px !important;
+    }
+
+    .trash-item .flex-1 {
+        width: 100% !important;
+    }
+
+    /* Trash buttons side by side */
+    .trash-item>div>div:last-child {
+        width: 100% !important;
+        display: flex !important;
+        gap: 8px !important;
+    }
+
+    .trash-item>div>div:last-child button {
+        flex: 1 !important;
+        text-align: center !important;
+    }
+
+    /* Trash item text */
+    .trash-item h4 {
+        font-size: 18px !important;
+        word-break: break-word !important;
+    }
+
+    .trash-item p {
+        font-size: 14px !important;
+        line-height: 1.6 !important;
+    }
+}
+
+/* ============================================ */
+/* Event Form Mobile RWD Fixes                 */
+/* ============================================ */
+@media (max-width: 768px) {
+
+    /* Date and time inputs */
+    input[type="date"],
+    input[type="time"],
+    .flatpickr-input {
+        width: 100% !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+        font-size: 16px !important;
+        padding: 12px !important;
+    }
+
+    /* Event form container */
+    #view-editor .content-card {
+        padding: 12px !important;
+    }
+
+    /* Template buttons - stack vertically */
+    #view-editor .content-card>div:nth-child(2) {
+        flex-direction: column !important;
+        gap: 8px !important;
+    }
+
+    #view-editor .content-card>div:nth-child(2) button {
+        width: 100% !important;
+    }
+
+    /* All form inputs full width */
+    #view-editor input,
+    #view-editor select,
+    #view-editor textarea {
+        width: 100% !important;
+        box-sizing: border-box !important;
+        font-size: 16px !important;
+    }
+
+    /* Form labels */
+    #view-editor .pixel-label {
+        font-size: 16px !important;
+        margin-bottom: 6px !important;
+        display: block !important;
+    }
+
+    /* Form rows stack vertically */
+    #view-editor .flex.gap-4,
+    #view-editor .flex.gap-3 {
+        flex-direction: column !important;
+        gap: 12px !important;
+    }
+
+    /* Date time row fix */
+    #view-editor .flex.gap-4>div {
+        width: 100% !important;
+    }
+}
+
+/* Extra small screens */
+@media (max-width: 400px) {
+
+    /* Trash buttons stack vertically */
+    .trash-item>div>div:last-child {
+        flex-direction: column !important;
+    }
+
+    .trash-item>div>div:last-child button {
+        width: 100% !important;
+    }
+
+    /* Compact event form */
+    #view-editor .content-card {
+        padding: 8px !important;
+    }
+
+    #view-editor .pixel-label {
+        font-size: 14px !important;
     }
 }
