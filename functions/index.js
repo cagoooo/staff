@@ -7028,17 +7028,181 @@ exports.lineApiDailyReport = onSchedule(
 
             console.log(`[LINE Stats] Generating report for ${dateStr}`);
 
-            // 讀取統計資料
-            const statsRef = db.collection(`artifacts/${APP_ID}/public/data/line_api_stats`);
+            // 獲取 LINE 官方 API 的統計資料
+            console.log('[LINE Stats] Fetching official LINE API statistics...');
 
-            const dailyDoc = await statsRef.doc(`daily_${dateStr}`).get();
-            const monthlyDoc = await statsRef.doc(`monthly_${monthStr}`).get();
+            // 獲取昨日官方統計
+            const yesterdayStr = `${year}${month}${day}`;
+            const officialDailyStats = await getLineApiDeliveryStats(yesterdayStr);
+            console.log('[LINE Stats] Official daily stats:', officialDailyStats);
 
-            const dailyStats = dailyDoc.exists ? dailyDoc.data() : null;
-            const monthlyStats = monthlyDoc.exists ? monthlyDoc.data() : null;
+            // 獲取本月官方統計
+            const officialMonthlyStats = await getMonthlyLineApiStats();
+            console.log('[LINE Stats] Official monthly stats:', officialMonthlyStats);
 
-            // 建立報告訊息
-            const message = createLineApiStatsFlexMessage(dailyStats, monthlyStats, dateStr, month);
+            // 計算使用率
+            const officialMonthlyUsed = officialMonthlyStats.total || 0;
+            const officialDailyUsed = officialDailyStats.total || 0;
+            const monthlyQuota = MONTHLY_MESSAGE_QUOTA;
+            const percentage = Math.round((officialMonthlyUsed / monthlyQuota) * 100);
+            const remaining = monthlyQuota - officialMonthlyUsed;
+
+            // 根據使用率決定顏色
+            let statusColor = '#00b894';
+            let statusIcon = '✅';
+            if (percentage >= 80) {
+                statusColor = '#d63031';
+                statusIcon = '🚨';
+            } else if (percentage >= 60) {
+                statusColor = '#fdcb6e';
+                statusIcon = '⚠️';
+            }
+
+            // 建立包含官方 API 數據的報告訊息
+            const message = {
+                type: 'flex',
+                altText: `📊 LINE API 使用報告 - ${dateStr}`,
+                contents: {
+                    type: 'bubble',
+                    size: 'mega',
+                    header: {
+                        type: 'box',
+                        layout: 'vertical',
+                        backgroundColor: '#6c5ce7',
+                        paddingAll: '15px',
+                        contents: [
+                            { type: 'text', text: '📊 LINE API 使用報告', color: '#ffffff', weight: 'bold', size: 'lg', align: 'center' },
+                            { type: 'text', text: `(官方 API 數據)`, color: '#dfe6e9', size: 'xs', align: 'center', margin: 'xs' },
+                            { type: 'text', text: dateStr, color: '#dfe6e9', size: 'sm', align: 'center', margin: 'sm' }
+                        ]
+                    },
+                    body: {
+                        type: 'box',
+                        layout: 'vertical',
+                        paddingAll: '15px',
+                        spacing: 'lg',
+                        contents: [
+                            // 今日統計 (官方 API)
+                            {
+                                type: 'box',
+                                layout: 'vertical',
+                                spacing: 'sm',
+                                contents: [
+                                    { type: 'text', text: '📅 今日統計', weight: 'bold', size: 'md', color: '#2d3436' },
+                                    {
+                                        type: 'box',
+                                        layout: 'horizontal',
+                                        contents: [
+                                            { type: 'text', text: 'Push 訊息', size: 'sm', color: '#636e72', flex: 2 },
+                                            { type: 'text', text: `${officialDailyStats.push} 則`, size: 'sm', color: '#00b894', weight: 'bold', flex: 1, align: 'end' }
+                                        ]
+                                    },
+                                    {
+                                        type: 'box',
+                                        layout: 'horizontal',
+                                        contents: [
+                                            { type: 'text', text: 'Reply 訊息', size: 'sm', color: '#636e72', flex: 2 },
+                                            { type: 'text', text: `${officialDailyStats.reply} 則`, size: 'sm', color: '#0984e3', weight: 'bold', flex: 1, align: 'end' }
+                                        ]
+                                    },
+                                    {
+                                        type: 'box',
+                                        layout: 'horizontal',
+                                        contents: [
+                                            { type: 'text', text: '今日總計', size: 'sm', color: '#2d3436', weight: 'bold', flex: 2 },
+                                            { type: 'text', text: `${officialDailyUsed} 則`, size: 'sm', color: '#2d3436', weight: 'bold', flex: 1, align: 'end' }
+                                        ]
+                                    }
+                                ]
+                            },
+                            { type: 'separator' },
+                            // 本月統計 (官方 API)
+                            {
+                                type: 'box',
+                                layout: 'vertical',
+                                spacing: 'sm',
+                                contents: [
+                                    { type: 'text', text: `📆 ${month} 月統計`, weight: 'bold', size: 'md', color: '#2d3436' },
+                                    {
+                                        type: 'box',
+                                        layout: 'horizontal',
+                                        contents: [
+                                            { type: 'text', text: 'Push 訊息', size: 'sm', color: '#636e72', flex: 2 },
+                                            { type: 'text', text: `${officialMonthlyStats.push} 則`, size: 'sm', color: '#00b894', weight: 'bold', flex: 1, align: 'end' }
+                                        ]
+                                    },
+                                    {
+                                        type: 'box',
+                                        layout: 'horizontal',
+                                        contents: [
+                                            { type: 'text', text: 'Reply 訊息', size: 'sm', color: '#636e72', flex: 2 },
+                                            { type: 'text', text: `${officialMonthlyStats.reply} 則`, size: 'sm', color: '#0984e3', weight: 'bold', flex: 1, align: 'end' }
+                                        ]
+                                    },
+                                    {
+                                        type: 'box',
+                                        layout: 'horizontal',
+                                        contents: [
+                                            { type: 'text', text: '已使用總計', size: 'sm', color: '#636e72', flex: 2 },
+                                            { type: 'text', text: `${officialMonthlyUsed} / ${monthlyQuota} 則`, size: 'sm', color: statusColor, weight: 'bold', flex: 2, align: 'end' }
+                                        ]
+                                    },
+                                    {
+                                        type: 'box',
+                                        layout: 'horizontal',
+                                        contents: [
+                                            { type: 'text', text: '使用率', size: 'sm', color: '#636e72', flex: 2 },
+                                            { type: 'text', text: `${statusIcon} ${percentage}%`, size: 'sm', color: statusColor, weight: 'bold', flex: 1, align: 'end' }
+                                        ]
+                                    },
+                                    {
+                                        type: 'box',
+                                        layout: 'horizontal',
+                                        contents: [
+                                            { type: 'text', text: '剩餘額度', size: 'sm', color: '#636e72', flex: 2 },
+                                            { type: 'text', text: `${remaining} 則`, size: 'sm', color: '#636e72', weight: 'bold', flex: 1, align: 'end' }
+                                        ]
+                                    }
+                                ]
+                            },
+                            // 進度條
+                            {
+                                type: 'box',
+                                layout: 'vertical',
+                                spacing: 'xs',
+                                contents: [
+                                    {
+                                        type: 'box',
+                                        layout: 'vertical',
+                                        height: '8px',
+                                        backgroundColor: '#dfe6e9',
+                                        cornerRadius: '4px',
+                                        contents: [
+                                            {
+                                                type: 'box',
+                                                layout: 'vertical',
+                                                height: '8px',
+                                                width: `${Math.min(percentage, 100)}%`,
+                                                backgroundColor: statusColor,
+                                                cornerRadius: '4px',
+                                                contents: []
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    footer: {
+                        type: 'box',
+                        layout: 'vertical',
+                        paddingAll: '10px',
+                        contents: [
+                            { type: 'text', text: '🏫 行政業務協調系統', size: 'xs', color: '#888888', align: 'center' }
+                        ]
+                    }
+                }
+            };
 
             // 發送給管理者
             await client.pushMessage(ADMIN_LINE_USER_ID, message);
