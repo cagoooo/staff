@@ -1046,6 +1046,22 @@ export function switchTab(tabName) {
         if (lineSettingsContainer && window.renderLineSettings) {
             lineSettingsContainer.innerHTML = window.renderLineSettings(currentUser);
         }
+
+        // 如果用戶尚未綁定 LINE，自動滾動到 LINE 設定區塊提醒綁定
+        if (!currentUser.lineUserId || !currentUser.lineNotifyEnabled) {
+            setTimeout(() => {
+                const lineSection = document.getElementById('line-settings-container');
+                if (lineSection) {
+                    lineSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    // 添加高亮動畫效果
+                    lineSection.style.animation = 'highlightPulse 2s ease-in-out';
+                    lineSection.style.borderRadius = '12px';
+                    setTimeout(() => {
+                        lineSection.style.animation = '';
+                    }, 2000);
+                }
+            }, 300);
+        }
     }
     if (tabName === 'editor') {
         renderEditorOptions();

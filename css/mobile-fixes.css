@@ -1,4 +1,26 @@
 /* Mobile Short Screen Fixes */
+
+/* Highlight pulse animation for LINE settings auto-scroll */
+@keyframes highlightPulse {
+
+    0%,
+    100% {
+        background-color: transparent;
+        box-shadow: none;
+    }
+
+    25%,
+    75% {
+        background-color: rgba(0, 185, 0, 0.15);
+        box-shadow: 0 0 20px rgba(0, 185, 0, 0.3);
+    }
+
+    50% {
+        background-color: rgba(0, 185, 0, 0.25);
+        box-shadow: 0 0 30px rgba(0, 185, 0, 0.5);
+    }
+}
+
 @media (max-height: 800px) {
     #auth-container {
         align-items: flex-start !important;
