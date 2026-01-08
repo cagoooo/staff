@@ -4839,33 +4839,34 @@ exports.onEventCreate = onDocumentCreated(
 
         let allRecipients = [];
 
-        // 🔒 重要：私人行程只能通知被指派者和建立者，優先檢查 isPrivate
+        // 🔒 建立者不收通知（除非有指派自己），因為建立者本人已經知道內容
+        const authorId = eventData.authorId;
+        const targets = eventData.targets || [];
+        const authorInTargets = targets.includes(authorId);
+
+        // 🔒 重要：私人行程只能通知被指派者，優先檢查 isPrivate
         if (eventData.isPrivate) {
-            // 私人行程：只通知被指派的用戶 + 建立者（不管 isPublic 設定）
-            const targets = eventData.targets || [];
-            const authorId = eventData.authorId;
-            allRecipients = [...new Set([...targets, authorId].filter(Boolean))];
-            console.log(`[LINE] Private event detected, will only notify ${allRecipients.length} specified users`);
+            // 私人行程：只通知被指派的用戶（不含建立者，除非建立者有指派自己）
+            allRecipients = [...new Set(targets.filter(Boolean))];
+            console.log(`[LINE] Private event detected, will only notify ${allRecipients.length} specified users (author excluded unless in targets)`);
         } else if (eventData.isPublic) {
-            // 公開行程（非私人）：通知所有用戶
+            // 公開行程（非私人）：通知所有用戶（排除建立者，除非建立者有指派自己）
             console.log(`[LINE] Public event detected, will notify all users`);
 
             try {
                 const allUsersSnapshot = await usersRef.get();
-                allRecipients = allUsersSnapshot.docs.map(doc => doc.id);
-                console.log(`[LINE] Found ${allRecipients.length} total users`);
+                allRecipients = allUsersSnapshot.docs
+                    .map(doc => doc.id)
+                    .filter(id => id !== authorId || authorInTargets);
+                console.log(`[LINE] Found ${allRecipients.length} total users (author excluded unless in targets)`);
             } catch (err) {
                 console.error('[LINE] Failed to get all users:', err);
                 return;
             }
         } else {
-            // 非公開、非私人行程：通知被指派的用戶 + 建立者本人
-            const targets = eventData.targets || [];
-            const authorId = eventData.authorId;
-
-            // 合併 targets 和 authorId（使用 Set 去除重複）
-            allRecipients = [...new Set([...targets, authorId].filter(Boolean))];
-            console.log(`[LINE] Regular event, will notify ${allRecipients.length} assigned users`);
+            // 非公開、非私人行程：只通知被指派的用戶（不含建立者，除非建立者有指派自己）
+            allRecipients = [...new Set(targets.filter(Boolean))];
+            console.log(`[LINE] Regular event, will notify ${allRecipients.length} assigned users (author excluded unless in targets)`);
         }
 
         if (allRecipients.length === 0) return;
@@ -4955,10 +4956,22 @@ exports.onEventUpdate = onDocumentUpdated(
         if (wasDeleted && isNowRestored) {
             console.log(`[LINE] Event restored: ${eventId}`);
 
-            const allTargets = [...new Set([
-                afterData.authorId,
-                ...(afterData.targets || [])
-            ].filter(Boolean))];
+            // 🔒 通知被指派的用戶（排除建立者，除非建立者在 targets 中）
+            const authorId = afterData.authorId;
+            const targets = afterData.targets || [];
+            const authorInTargets = targets.includes(authorId);
+
+            const allTargets = [...new Set(targets.filter(Boolean))];
+
+            // 如果建立者有指派自己，才加入通知列表
+            if (authorInTargets && !allTargets.includes(authorId)) {
+                allTargets.push(authorId);
+            }
+
+            if (allTargets.length === 0) {
+                console.log('[LINE] No targets to notify about restore');
+                return;
+            }
 
             const usersRef = db.collection(`artifacts/${APP_ID}/public/data/users`);
 
@@ -5018,10 +5031,18 @@ exports.onEventUpdate = onDocumentUpdated(
         if (wasNotDeleted && isNowDeleted) {
             console.log(`[LINE] Event soft deleted: ${eventId}`);
 
-            // 通知建立者和被指派的對象（排除刪除者本人，避免重複通知）
             const deletedBy = afterData.deletedBy;
+            const authorId = afterData.authorId;
+
+            // 🔒 如果是建立者自己刪除，不發送通知（可能是建錯了要重來）
+            if (deletedBy === authorId) {
+                console.log('[LINE] Author deleted their own event, skipping notifications');
+                return;
+            }
+
+            // 只有管理員刪除他人的行程時，才通知建立者和被指派的對象（排除刪除者本人）
             const allTargets = [...new Set([
-                afterData.authorId,
+                authorId,
                 ...(afterData.targets || [])
             ].filter(id => id && id !== deletedBy))];
 
@@ -5033,8 +5054,8 @@ exports.onEventUpdate = onDocumentUpdated(
             const usersRef = db.collection(`artifacts/${APP_ID}/public/data/users`);
             const deleterName = afterData.deletedByName || '管理員';
 
-            console.log(`[LINE] Deletion targets (author: ${afterData.authorId}, targets: ${JSON.stringify(afterData.targets)}, deletedBy: ${deletedBy})`);
-            console.log(`[LINE] Final notification targets: ${JSON.stringify(allTargets)}`);
+            console.log(`[LINE] Admin deletion detected - author: ${authorId}, deletedBy: ${deletedBy}`);
+            console.log(`[LINE] Deletion targets: ${JSON.stringify(allTargets)}`);
 
             for (const targetId of allTargets) {
                 try {

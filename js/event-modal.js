@@ -106,6 +106,16 @@ export function initEventModal() {
                         <input type="checkbox" id="edit-evt-pinned" class="w-5 h-5">
                         <label for="edit-evt-pinned">📌 置頂公告</label>
                     </div>
+                    <div class="mb-3" id="edit-status-section">
+                        <label class="pixel-label">📊 狀態</label>
+                        <select id="edit-evt-status" class="pixel-input">
+                            <option value="pending">⏳ 進行中</option>
+                            <option value="completed">✅ 已完成</option>
+                        </select>
+                        <p style="font-family: 'VT323', monospace; font-size: 14px; color: #636e72; margin-top: 4px;">
+                            可將已完成的行程改回進行中
+                        </p>
+                    </div>
                     <div class="mb-3">
                         <label class="pixel-label">📎 上傳附件</label>
                         <input type="file" id="edit-evt-file" class="pixel-input" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt">
@@ -299,6 +309,11 @@ export function toggleEventEditMode() {
     document.getElementById('edit-evt-type').value = event.announcementType || 'normal';
     document.getElementById('edit-evt-pinned').checked = event.pinned || false;
 
+    // Set status dropdown - 判斷是否已完成
+    const currentUser = getAppCurrentUser();
+    const isCompleted = event.isGloballyCompleted || event.completedBy?.includes(currentUser?.id);
+    document.getElementById('edit-evt-status').value = isCompleted ? 'completed' : 'pending';
+
     // Toggle time field visibility based on all-day setting
     const timeContainer = document.getElementById('edit-time-field-container');
     if (timeContainer) {
@@ -400,6 +415,31 @@ export async function saveEventEdit() {
         attachments: currentAttachments,
         targets: editSelectedTargets // Include edited targets
     };
+
+    // Handle status change (completed <-> pending)
+    const newStatus = document.getElementById('edit-evt-status').value;
+    const currentUser = getAppCurrentUser();
+    const wasCompleted = event.isGloballyCompleted || event.completedBy?.includes(currentUser?.id);
+    const isAuthor = event.authorId === currentUser?.id;
+
+    if (newStatus === 'pending' && wasCompleted) {
+        // 將已完成改回進行中
+        if (isAuthor && event.isGloballyCompleted) {
+            // 建立者取消全局完成狀態
+            data.isGloballyCompleted = false;
+        }
+        // 從 completedBy 陣列中移除當前用戶
+        if (event.completedBy && event.completedBy.includes(currentUser?.id)) {
+            data.completedBy = event.completedBy.filter(id => id !== currentUser?.id);
+        }
+    } else if (newStatus === 'completed' && !wasCompleted) {
+        // 將進行中改為已完成
+        if (isAuthor) {
+            data.isGloballyCompleted = true;
+        }
+        // 將當前用戶加入 completedBy
+        data.completedBy = [...(event.completedBy || []), currentUser?.id];
+    }
 
     // Handle file upload if selected
     const fileInput = document.getElementById('edit-evt-file');
