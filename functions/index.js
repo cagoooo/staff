@@ -1986,6 +1986,44 @@ exports.lineWebhook = onRequest(
 );
 
 /**
+ * 儲存 LINE 追蹤者到 Firestore
+ * @param {string} lineUserId - LINE User ID
+ * @param {Object} profile - LINE 用戶 profile (可選)
+ * @param {string} source - 來源 ('follow' | 'message')
+ */
+async function saveFollower(lineUserId, profile = null, source = 'message') {
+    try {
+        const followersRef = db.collection(`artifacts/${APP_ID}/public/data/line_followers`);
+        const docRef = followersRef.doc(lineUserId);
+        const doc = await docRef.get();
+
+        if (doc.exists) {
+            // 已存在，更新 lastActiveAt
+            await docRef.update({
+                lastActiveAt: new Date().toISOString(),
+                messageCount: (doc.data().messageCount || 0) + 1
+            });
+        } else {
+            // 新追蹤者，建立記錄
+            await docRef.set({
+                lineUserId,
+                displayName: profile?.displayName || null,
+                pictureUrl: profile?.pictureUrl || null,
+                source,
+                isBound: false,  // 尚未綁定系統帳號
+                boundUserId: null,
+                followedAt: new Date().toISOString(),
+                lastActiveAt: new Date().toISOString(),
+                messageCount: 1
+            });
+            console.log(`[LINE] New follower saved: ${lineUserId} (${profile?.displayName || 'unknown'})`);
+        }
+    } catch (err) {
+        console.error('[LINE] Failed to save follower:', err);
+    }
+}
+
+/**
  * 處理用戶加入好友
  */
 async function handleFollow(client, event) {
@@ -1993,6 +2031,9 @@ async function handleFollow(client, event) {
 
     // 取得用戶 profile
     const profile = await client.getProfile(userId);
+
+    // 儲存追蹤者到 Firestore
+    await saveFollower(userId, profile, 'follow');
 
     // 發送歡迎訊息（精美卡片 + 純文字 ID 方便複製）
     await client.pushMessage(userId, [
@@ -2147,6 +2188,9 @@ async function handleMessage(client, event) {
     const userId = event.source.userId;
     const text = event.message.text.trim().toLowerCase();
     const originalText = event.message.text.trim();
+
+    // 記錄追蹤者（如果是新用戶會建立記錄，已存在則更新 lastActiveAt）
+    saveFollower(userId, null, 'message').catch(e => console.error('[LINE] Save follower error:', e));
 
     // 指令對照表
     const cmdMyId = ['我的id', 'id', 'myid', '我的ＩＤ'];
@@ -3473,118 +3517,203 @@ async function handleMessage(client, event) {
             }
         ]);
     } else if (cmdTest.includes(text)) {
-        // 測試成功的精美卡片
-        await client.replyMessage(event.replyToken, {
-            type: "flex",
-            altText: "✅ 連線正常！",
-            contents: {
-                type: "bubble",
-                size: "kilo",
-                header: {
-                    type: "box",
-                    layout: "vertical",
-                    backgroundColor: "#00b894",
-                    paddingAll: "20px",
-                    contents: [
-                        {
-                            type: "text",
-                            text: "✅ 連線正常！",
-                            color: "#ffffff",
-                            size: "xl",
-                            weight: "bold",
-                            align: "center"
-                        }
-                    ]
-                },
-                body: {
-                    type: "box",
-                    layout: "vertical",
-                    paddingAll: "20px",
-                    spacing: "md",
-                    contents: [
-                        {
-                            type: "box",
-                            layout: "vertical",
-                            spacing: "sm",
-                            contents: [
-                                {
-                                    type: "box",
-                                    layout: "horizontal",
-                                    contents: [
-                                        {
-                                            type: "text",
-                                            text: "🔗 連線狀態",
-                                            size: "sm",
-                                            color: "#888888",
-                                            flex: 2
-                                        },
-                                        {
-                                            type: "text",
-                                            text: "正常",
-                                            size: "sm",
-                                            color: "#00b894",
-                                            flex: 2,
-                                            weight: "bold"
-                                        }
-                                    ]
-                                },
-                                {
-                                    type: "box",
-                                    layout: "horizontal",
-                                    contents: [
-                                        {
-                                            type: "text",
-                                            text: "📱 Webhook",
-                                            size: "sm",
-                                            color: "#888888",
-                                            flex: 2
-                                        },
-                                        {
-                                            type: "text",
-                                            text: "運作中",
-                                            size: "sm",
-                                            color: "#00b894",
-                                            flex: 2,
-                                            weight: "bold"
-                                        }
-                                    ]
-                                }
-                            ]
-                        },
-                        {
-                            type: "separator",
-                            margin: "lg"
-                        },
-                        {
-                            type: "text",
-                            text: "如果您已綁定系統帳號，將可以收到行程通知。",
-                            size: "sm",
-                            color: "#666666",
-                            wrap: true,
-                            margin: "lg"
-                        }
-                    ]
-                },
-                footer: {
-                    type: "box",
-                    layout: "vertical",
-                    paddingAll: "12px",
-                    contents: [
-                        {
-                            type: "button",
-                            action: {
-                                type: "uri",
-                                label: "🔗 前往系統",
-                                uri: LINK_URL
+        // 先檢查用戶是否已綁定系統帳號
+        const userData = await getUserData();
+
+        if (userData && userData.lineNotifyEnabled) {
+            // 已綁定且啟用通知 - 顯示綠色成功卡片
+            await client.replyMessage(event.replyToken, {
+                type: "flex",
+                altText: "✅ 綁定成功！連線正常",
+                contents: {
+                    type: "bubble",
+                    size: "kilo",
+                    header: {
+                        type: "box",
+                        layout: "vertical",
+                        backgroundColor: "#00b894",
+                        paddingAll: "20px",
+                        contents: [
+                            {
+                                type: "text",
+                                text: "✅ 綁定成功！",
+                                color: "#ffffff",
+                                size: "xl",
+                                weight: "bold",
+                                align: "center"
+                            }
+                        ]
+                    },
+                    body: {
+                        type: "box",
+                        layout: "vertical",
+                        paddingAll: "20px",
+                        spacing: "md",
+                        contents: [
+                            {
+                                type: "box",
+                                layout: "vertical",
+                                spacing: "sm",
+                                contents: [
+                                    {
+                                        type: "box",
+                                        layout: "horizontal",
+                                        contents: [
+                                            { type: "text", text: "👤 綁定帳號", size: "sm", color: "#888888", flex: 2 },
+                                            { type: "text", text: userData.name || "已綁定", size: "sm", color: "#00b894", flex: 2, weight: "bold" }
+                                        ]
+                                    },
+                                    {
+                                        type: "box",
+                                        layout: "horizontal",
+                                        contents: [
+                                            { type: "text", text: "🔔 通知狀態", size: "sm", color: "#888888", flex: 2 },
+                                            { type: "text", text: "已啟用", size: "sm", color: "#00b894", flex: 2, weight: "bold" }
+                                        ]
+                                    },
+                                    {
+                                        type: "box",
+                                        layout: "horizontal",
+                                        contents: [
+                                            { type: "text", text: "📱 Webhook", size: "sm", color: "#888888", flex: 2 },
+                                            { type: "text", text: "運作中", size: "sm", color: "#00b894", flex: 2, weight: "bold" }
+                                        ]
+                                    }
+                                ]
                             },
-                            style: "primary",
-                            color: "#00b894",
-                            height: "sm"
-                        }
-                    ]
+                            { type: "separator", margin: "lg" },
+                            {
+                                type: "text",
+                                text: "🎉 您已成功綁定，將收到行程通知！",
+                                size: "sm",
+                                color: "#00b894",
+                                wrap: true,
+                                margin: "lg",
+                                weight: "bold"
+                            }
+                        ]
+                    },
+                    footer: {
+                        type: "box",
+                        layout: "vertical",
+                        paddingAll: "12px",
+                        contents: [
+                            {
+                                type: "button",
+                                action: { type: "uri", label: "🔗 前往系統", uri: LINK_URL },
+                                style: "primary",
+                                color: "#00b894",
+                                height: "sm"
+                            }
+                        ]
+                    }
                 }
-            }
-        });
+            });
+        } else {
+            // 尚未綁定或通知未啟用 - 顯示黃色警告卡片
+            await client.replyMessage(event.replyToken, {
+                type: "flex",
+                altText: "⚠️ 尚未完成綁定",
+                contents: {
+                    type: "bubble",
+                    size: "kilo",
+                    header: {
+                        type: "box",
+                        layout: "vertical",
+                        backgroundColor: "#fdcb6e",
+                        paddingAll: "20px",
+                        contents: [
+                            {
+                                type: "text",
+                                text: "⚠️ 尚未完成綁定",
+                                color: "#2d3436",
+                                size: "xl",
+                                weight: "bold",
+                                align: "center"
+                            }
+                        ]
+                    },
+                    body: {
+                        type: "box",
+                        layout: "vertical",
+                        paddingAll: "20px",
+                        spacing: "md",
+                        contents: [
+                            {
+                                type: "box",
+                                layout: "vertical",
+                                spacing: "sm",
+                                contents: [
+                                    {
+                                        type: "box",
+                                        layout: "horizontal",
+                                        contents: [
+                                            { type: "text", text: "📱 LINE 連線", size: "sm", color: "#888888", flex: 2 },
+                                            { type: "text", text: "正常", size: "sm", color: "#00b894", flex: 2, weight: "bold" }
+                                        ]
+                                    },
+                                    {
+                                        type: "box",
+                                        layout: "horizontal",
+                                        contents: [
+                                            { type: "text", text: "🔗 系統綁定", size: "sm", color: "#888888", flex: 2 },
+                                            { type: "text", text: "未完成", size: "sm", color: "#e17055", flex: 2, weight: "bold" }
+                                        ]
+                                    }
+                                ]
+                            },
+                            { type: "separator", margin: "lg" },
+                            {
+                                type: "box",
+                                layout: "vertical",
+                                margin: "lg",
+                                backgroundColor: "#fff9e6",
+                                cornerRadius: "8px",
+                                paddingAll: "12px",
+                                contents: [
+                                    { type: "text", text: "📝 請完成以下步驟：", size: "sm", color: "#f39c12", weight: "bold" },
+                                    { type: "text", text: "1️⃣ 點下方按鈕開啟系統", size: "sm", color: "#636e72", margin: "sm" },
+                                    { type: "text", text: "2️⃣ 登入您的帳號", size: "sm", color: "#636e72" },
+                                    { type: "text", text: "3️⃣ 進入「帳號設定」", size: "sm", color: "#636e72" },
+                                    { type: "text", text: "4️⃣ 發送「我的ID」取得 LINE ID", size: "sm", color: "#636e72" },
+                                    { type: "text", text: "5️⃣ 將 ID 貼到系統完成綁定", size: "sm", color: "#636e72" }
+                                ]
+                            },
+                            {
+                                type: "text",
+                                text: "⚡ 綁定後才能收到行程通知！",
+                                size: "sm",
+                                color: "#e17055",
+                                wrap: true,
+                                margin: "lg",
+                                weight: "bold"
+                            }
+                        ]
+                    },
+                    footer: {
+                        type: "box",
+                        layout: "vertical",
+                        paddingAll: "12px",
+                        spacing: "sm",
+                        contents: [
+                            {
+                                type: "button",
+                                action: { type: "uri", label: "🔗 開啟系統", uri: LINK_URL },
+                                style: "primary",
+                                color: "#667eea",
+                                height: "sm"
+                            },
+                            {
+                                type: "button",
+                                action: { type: "message", label: "📋 查看我的 LINE ID", text: "我的ID" },
+                                style: "secondary",
+                                height: "sm"
+                            }
+                        ]
+                    }
+                }
+            });
+        }
     } else {
         // 指令說明的精美卡片
         await client.replyMessage(event.replyToken, {
@@ -4305,6 +4434,22 @@ exports.onUserUpdate = onDocumentUpdated(
                 const client = getLineClient();
                 await client.pushMessage(afterLineId, createLineBindSuccessMessage(afterData.name || '用戶'));
                 console.log(`[UserUpdate] Sent LINE bind success notification to ${afterLineId}`);
+
+                // 更新 line_followers 的綁定狀態
+                try {
+                    const followerRef = db.doc(`artifacts/${APP_ID}/public/data/line_followers/${afterLineId}`);
+                    const followerDoc = await followerRef.get();
+                    if (followerDoc.exists) {
+                        await followerRef.update({
+                            isBound: true,
+                            boundUserId: userId,
+                            boundAt: new Date().toISOString()
+                        });
+                        console.log(`[UserUpdate] Updated line_followers binding status for ${afterLineId}`);
+                    }
+                } catch (syncErr) {
+                    console.error(`[UserUpdate] Failed to sync follower binding:`, syncErr);
+                }
             } catch (err) {
                 console.error(`[UserUpdate] Failed to send LINE bind notification:`, err);
             }
@@ -4317,6 +4462,22 @@ exports.onUserUpdate = onDocumentUpdated(
                 const client = getLineClient();
                 await client.pushMessage(beforeLineId, createLineUnbindMessage(beforeData.name || '用戶'));
                 console.log(`[UserUpdate] Sent LINE unbind notification to ${beforeLineId}`);
+
+                // 更新 line_followers 的綁定狀態
+                try {
+                    const followerRef = db.doc(`artifacts/${APP_ID}/public/data/line_followers/${beforeLineId}`);
+                    const followerDoc = await followerRef.get();
+                    if (followerDoc.exists) {
+                        await followerRef.update({
+                            isBound: false,
+                            boundUserId: null,
+                            unboundAt: new Date().toISOString()
+                        });
+                        console.log(`[UserUpdate] Updated line_followers unbinding status for ${beforeLineId}`);
+                    }
+                } catch (syncErr) {
+                    console.error(`[UserUpdate] Failed to sync follower unbinding:`, syncErr);
+                }
             } catch (err) {
                 console.error(`[UserUpdate] Failed to send LINE unbind notification:`, err);
             }
@@ -4359,7 +4520,9 @@ exports.onUserUpdate = onDocumentUpdated(
 );
 
 /**
- * LINE 綁定成功通知訊息
+ * LINE 綁定成功通知訊息 (優化版)
+ * - 使用 mega 尺寸增加視覺衝擊
+ * - 加入 Quick Reply 按鈕
  */
 function createLineBindSuccessMessage(userName) {
     return {
@@ -4367,20 +4530,35 @@ function createLineBindSuccessMessage(userName) {
         altText: "🎉 LINE 綁定成功！",
         contents: {
             type: "bubble",
-            size: "kilo",
+            size: "mega",
             header: {
                 type: "box",
                 layout: "vertical",
                 backgroundColor: "#00b894",
-                paddingAll: "20px",
+                paddingAll: "24px",
                 contents: [
                     {
                         type: "text",
-                        text: "🎉 綁定成功！",
-                        color: "#ffffff",
-                        size: "xl",
-                        weight: "bold",
+                        text: "🎊",
+                        size: "3xl",
                         align: "center"
+                    },
+                    {
+                        type: "text",
+                        text: "綁定成功！",
+                        color: "#ffffff",
+                        size: "xxl",
+                        weight: "bold",
+                        align: "center",
+                        margin: "md"
+                    },
+                    {
+                        type: "text",
+                        text: "歡迎加入行政業務協調系統",
+                        color: "#d4f5e9",
+                        size: "sm",
+                        align: "center",
+                        margin: "sm"
                     }
                 ]
             },
@@ -4388,64 +4566,75 @@ function createLineBindSuccessMessage(userName) {
                 type: "box",
                 layout: "vertical",
                 paddingAll: "20px",
-                spacing: "md",
+                spacing: "lg",
                 contents: [
                     {
                         type: "text",
                         text: `${userName}，您好！`,
                         weight: "bold",
-                        size: "md",
+                        size: "lg",
                         color: "#333333"
                     },
                     {
                         type: "text",
-                        text: "您已成功綁定 LINE 通知服務",
+                        text: "您的 LINE 帳號已成功綁定，從現在開始將收到以下通知：",
                         size: "sm",
                         color: "#666666",
                         wrap: true
                     },
                     {
-                        type: "separator",
-                        margin: "lg"
-                    },
-                    {
                         type: "box",
                         layout: "vertical",
                         margin: "lg",
+                        paddingAll: "16px",
+                        backgroundColor: "#f0fff4",
+                        cornerRadius: "12px",
                         spacing: "sm",
                         contents: [
                             {
-                                type: "text",
-                                text: "✅ 新行程通知",
-                                size: "sm",
-                                color: "#00b894"
+                                type: "box",
+                                layout: "horizontal",
+                                contents: [
+                                    { type: "text", text: "📅", flex: 0, size: "sm" },
+                                    { type: "text", text: "新行程通知", size: "sm", color: "#00b894", margin: "sm", flex: 1 },
+                                    { type: "text", text: "✓", size: "sm", color: "#00b894", flex: 0 }
+                                ]
                             },
                             {
-                                type: "text",
-                                text: "✅ 行程異動提醒",
-                                size: "sm",
-                                color: "#00b894"
+                                type: "box",
+                                layout: "horizontal",
+                                contents: [
+                                    { type: "text", text: "🔔", flex: 0, size: "sm" },
+                                    { type: "text", text: "行程異動提醒", size: "sm", color: "#00b894", margin: "sm", flex: 1 },
+                                    { type: "text", text: "✓", size: "sm", color: "#00b894", flex: 0 }
+                                ]
                             },
                             {
-                                type: "text",
-                                text: "✅ 留言通知",
-                                size: "sm",
-                                color: "#00b894"
+                                type: "box",
+                                layout: "horizontal",
+                                contents: [
+                                    { type: "text", text: "💬", flex: 0, size: "sm" },
+                                    { type: "text", text: "留言通知", size: "sm", color: "#00b894", margin: "sm", flex: 1 },
+                                    { type: "text", text: "✓", size: "sm", color: "#00b894", flex: 0 }
+                                ]
                             },
                             {
-                                type: "text",
-                                text: "✅ 每日/每週摘要",
-                                size: "sm",
-                                color: "#00b894"
+                                type: "box",
+                                layout: "horizontal",
+                                contents: [
+                                    { type: "text", text: "📊", flex: 0, size: "sm" },
+                                    { type: "text", text: "每日/每週摘要", size: "sm", color: "#00b894", margin: "sm", flex: 1 },
+                                    { type: "text", text: "✓", size: "sm", color: "#00b894", flex: 0 }
+                                ]
                             }
                         ]
                     },
                     {
                         type: "text",
-                        text: "從現在開始，您將在 LINE 收到重要通知！",
+                        text: "💡 試試看下方的快捷按鈕！",
                         size: "xs",
                         color: "#888888",
-                        wrap: true,
+                        align: "center",
                         margin: "lg"
                     }
                 ]
@@ -4454,7 +4643,37 @@ function createLineBindSuccessMessage(userName) {
                 type: "box",
                 layout: "vertical",
                 paddingAll: "12px",
+                spacing: "sm",
                 contents: [
+                    {
+                        type: "box",
+                        layout: "horizontal",
+                        spacing: "sm",
+                        contents: [
+                            {
+                                type: "button",
+                                action: {
+                                    type: "message",
+                                    label: "📅 今日行程",
+                                    text: "今日行程"
+                                },
+                                style: "secondary",
+                                height: "sm",
+                                flex: 1
+                            },
+                            {
+                                type: "button",
+                                action: {
+                                    type: "message",
+                                    label: "💡 功能介紹",
+                                    text: "功能"
+                                },
+                                style: "secondary",
+                                height: "sm",
+                                flex: 1
+                            }
+                        ]
+                    },
                     {
                         type: "button",
                         action: {
@@ -4468,6 +4687,26 @@ function createLineBindSuccessMessage(userName) {
                     }
                 ]
             }
+        },
+        quickReply: {
+            items: [
+                {
+                    type: "action",
+                    action: { type: "message", label: "📅 今日行程", text: "今日行程" }
+                },
+                {
+                    type: "action",
+                    action: { type: "message", label: "💡 功能介紹", text: "功能" }
+                },
+                {
+                    type: "action",
+                    action: { type: "message", label: "❓ 幫助", text: "幫助" }
+                },
+                {
+                    type: "action",
+                    action: { type: "uri", label: "⚙️ 開啟系統", uri: LINK_URL }
+                }
+            ]
         }
     };
 }
@@ -7056,3 +7295,296 @@ exports.triggerLineApiReport = onRequest(
         }
     }
 );
+
+/**
+ * 發送 LINE 綁定邀請 (HTTP Function)
+ * 管理員專用，批次發送綁定邀請給未綁定的用戶
+ */
+exports.sendLineBindInvite = onRequest(
+    {
+        region: "asia-east1",
+        cors: true,
+        secrets: ["LINE_CHANNEL_ACCESS_TOKEN", "LINE_CHANNEL_SECRET"]
+    },
+    async (req, res) => {
+        // 只允許 POST 請求
+        if (req.method !== 'POST') {
+            return res.status(405).json({ error: 'Method not allowed' });
+        }
+
+        try {
+            // 驗證管理員身份
+            const authHeader = req.headers.authorization;
+            if (!authHeader || !authHeader.startsWith('Bearer ')) {
+                return res.status(401).json({ error: 'Unauthorized' });
+            }
+
+            const idToken = authHeader.split('Bearer ')[1];
+            let decodedToken;
+            try {
+                decodedToken = await getAuth().verifyIdToken(idToken);
+            } catch (authErr) {
+                console.error('[sendLineBindInvite] Token verification failed:', authErr);
+                return res.status(401).json({ error: 'Invalid token' });
+            }
+
+            // 查詢呼叫者是否為管理員
+            const callerEmail = decodedToken.email;
+            console.log(`[sendLineBindInvite] Caller: ${callerEmail}`);
+
+            const usersRef = db.collection(`artifacts/${APP_ID}/public/data/users`);
+            const callerSnapshot = await usersRef.where('email', '==', callerEmail).limit(1).get();
+
+            let isAdmin = false;
+            if (!callerSnapshot.empty) {
+                const callerData = callerSnapshot.docs[0].data();
+                isAdmin = callerData.role === 'admin';
+            }
+
+            // 也檢查 username 綁定的帳號
+            if (!isAdmin) {
+                const callerByUsername = await usersRef.where('username', '==', callerEmail).limit(1).get();
+                if (!callerByUsername.empty) {
+                    const callerData = callerByUsername.docs[0].data();
+                    isAdmin = callerData.role === 'admin';
+                }
+            }
+
+            if (!isAdmin) {
+                return res.status(403).json({ error: 'Admin access required' });
+            }
+
+            const client = getLineClient();
+
+            console.log(`[sendLineBindInvite] Starting to query unbound followers`);
+
+            let successCount = 0;
+            let failCount = 0;
+            const results = [];
+
+            // 查詢 line_followers 集合中尚未綁定的追蹤者
+            const followersRef = db.collection(`artifacts/${APP_ID}/public/data/line_followers`);
+            const unboundFollowersSnapshot = await followersRef.where('isBound', '==', false).get();
+
+            console.log(`[sendLineBindInvite] Found ${unboundFollowersSnapshot.size} unbound followers`);
+
+            if (unboundFollowersSnapshot.empty) {
+                return res.status(200).json({
+                    success: true,
+                    successCount: 0,
+                    failCount: 0,
+                    message: '沒有發現未綁定的追蹤者。所有加入好友的用戶都已完成綁定！'
+                });
+            }
+
+            // 生成邀請訊息
+            const inviteMessage = createLineBindInviteMessage();
+
+            // 發送給每個未綁定的追蹤者
+            for (const doc of unboundFollowersSnapshot.docs) {
+                const follower = doc.data();
+                const lineUserId = follower.lineUserId;
+
+                try {
+                    await pushMessageWithRetry(client, lineUserId, inviteMessage);
+                    successCount++;
+                    results.push({
+                        lineUserId,
+                        displayName: follower.displayName || 'unknown',
+                        status: 'sent'
+                    });
+
+                    // 更新最後邀請時間
+                    await doc.ref.update({
+                        lastInvitedAt: new Date().toISOString()
+                    });
+                } catch (err) {
+                    console.error(`[sendLineBindInvite] Failed for ${lineUserId}:`, err);
+                    results.push({
+                        lineUserId,
+                        displayName: follower.displayName || 'unknown',
+                        status: 'error',
+                        error: err.message
+                    });
+                    failCount++;
+                }
+            }
+
+            // 發送結果報告給管理者
+            const reportMessage = {
+                type: "text",
+                text: `📨 LINE 綁定邀請發送完成\n\n✅ 成功: ${successCount} 位\n❌ 失敗: ${failCount} 位\n\n💡 這些用戶都是已加入 LINE 官方帳號但尚未完成系統綁定的追蹤者。`
+            };
+
+            await pushMessageWithRetry(client, ADMIN_LINE_USER_ID, reportMessage);
+
+            console.log(`[sendLineBindInvite] Complete: ${successCount} success, ${failCount} failed`);
+
+            return res.status(200).json({
+                success: true,
+                successCount,
+                failCount,
+                results,
+                message: successCount > 0
+                    ? `已成功發送 ${successCount} 則邀請給未綁定的追蹤者`
+                    : '發送失敗，請檢查錯誤訊息'
+            });
+
+        } catch (err) {
+            console.error('[sendLineBindInvite] Error:', err);
+            return res.status(500).json({ error: err.message });
+        }
+    }
+);
+
+/**
+ * LINE 綁定邀請訊息
+ */
+function createLineBindInviteMessage() {
+    return {
+        type: "flex",
+        altText: "📱 邀請您綁定 LINE 通知",
+        contents: {
+            type: "bubble",
+            size: "mega",
+            header: {
+                type: "box",
+                layout: "vertical",
+                backgroundColor: "#667eea",
+                paddingAll: "24px",
+                contents: [
+                    {
+                        type: "text",
+                        text: "📱",
+                        size: "3xl",
+                        align: "center"
+                    },
+                    {
+                        type: "text",
+                        text: "綁定 LINE 通知",
+                        color: "#ffffff",
+                        size: "xl",
+                        weight: "bold",
+                        align: "center",
+                        margin: "md"
+                    },
+                    {
+                        type: "text",
+                        text: "即時掌握行政業務動態",
+                        color: "#c4c7ff",
+                        size: "sm",
+                        align: "center",
+                        margin: "sm"
+                    }
+                ]
+            },
+            body: {
+                type: "box",
+                layout: "vertical",
+                paddingAll: "20px",
+                spacing: "lg",
+                contents: [
+                    {
+                        type: "text",
+                        text: "您好！",
+                        weight: "bold",
+                        size: "lg",
+                        color: "#333333"
+                    },
+                    {
+                        type: "text",
+                        text: "您已加入行政業務協調系統的 LINE 官方帳號，但尚未完成帳號綁定。",
+                        size: "sm",
+                        color: "#666666",
+                        wrap: true
+                    },
+                    {
+                        type: "box",
+                        layout: "vertical",
+                        margin: "lg",
+                        paddingAll: "16px",
+                        backgroundColor: "#f8f9ff",
+                        cornerRadius: "12px",
+                        spacing: "md",
+                        contents: [
+                            {
+                                type: "text",
+                                text: "🔗 綁定步驟",
+                                weight: "bold",
+                                size: "md",
+                                color: "#667eea"
+                            },
+                            {
+                                type: "text",
+                                text: "1️⃣ 點選下方「開啟系統」按鈕",
+                                size: "sm",
+                                color: "#666666"
+                            },
+                            {
+                                type: "text",
+                                text: "2️⃣ 登入您的帳號",
+                                size: "sm",
+                                color: "#666666"
+                            },
+                            {
+                                type: "text",
+                                text: "3️⃣ 進入「帳號設定」頁面",
+                                size: "sm",
+                                color: "#666666"
+                            },
+                            {
+                                type: "text",
+                                text: "4️⃣ 在 LINE 區塊輸入您的 LINE ID",
+                                size: "sm",
+                                color: "#666666"
+                            }
+                        ]
+                    },
+                    {
+                        type: "box",
+                        layout: "horizontal",
+                        margin: "lg",
+                        contents: [
+                            {
+                                type: "text",
+                                text: "💡 傳送「我的ID」查看您的 LINE ID",
+                                size: "xs",
+                                color: "#00b894",
+                                wrap: true
+                            }
+                        ]
+                    }
+                ]
+            },
+            footer: {
+                type: "box",
+                layout: "vertical",
+                paddingAll: "12px",
+                spacing: "sm",
+                contents: [
+                    {
+                        type: "button",
+                        action: {
+                            type: "uri",
+                            label: "🔗 開啟系統",
+                            uri: LINK_URL
+                        },
+                        style: "primary",
+                        color: "#667eea",
+                        height: "sm"
+                    },
+                    {
+                        type: "button",
+                        action: {
+                            type: "message",
+                            label: "📋 查看我的 LINE ID",
+                            text: "我的ID"
+                        },
+                        style: "secondary",
+                        height: "sm"
+                    }
+                ]
+            }
+        }
+    };
+}

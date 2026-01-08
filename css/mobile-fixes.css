@@ -126,3 +126,68 @@
         margin-bottom: 3px !important;
     }
 }
+
+/* ============================================ */
+/* Account Settings Mobile Scroll Fixes        */
+/* ============================================ */
+
+/* Fix Android scroll issues - ensure content area is scrollable */
+@media (max-width: 768px) {
+
+    /* Ensure content area takes full height and scrolls properly */
+    #content-area {
+        height: auto !important;
+        min-height: 0 !important;
+        -webkit-overflow-scrolling: touch;
+        overflow-y: auto !important;
+        padding-bottom: 100px !important;
+    }
+
+    /* Account settings should not have fixed height */
+    #view-account {
+        height: auto !important;
+        overflow: visible !important;
+    }
+
+    #view-account .content-card {
+        height: auto !important;
+        max-height: none !important;
+        overflow: visible !important;
+    }
+
+    /* LINE settings container */
+    #line-settings-container {
+        padding-bottom: 20px;
+    }
+
+    /* Ensure forms don't cut off */
+    #view-account form {
+        overflow: visible !important;
+    }
+}
+
+/* Extra fixes for very small height screens (landscape mode) */
+@media (max-height: 500px) {
+    #content-area {
+        padding-bottom: 120px !important;
+    }
+
+    /* Compact LINE settings */
+    #line-settings-container {
+        padding: 10px 0 !important;
+    }
+
+    #line-settings-container h3 {
+        font-size: 18px !important;
+        margin-bottom: 10px !important;
+    }
+
+    #line-settings-container .p-4 {
+        padding: 10px !important;
+    }
+
+    .line-add-btn {
+        padding: 10px 16px !important;
+        font-size: 16px !important;
+    }
+}

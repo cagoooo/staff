@@ -213,6 +213,9 @@ export function renderAdminPanel() {
             .sort-indicator.active { opacity: 1; color: #6c5ce7; }
         </style>
         
+        <!-- LINE 綁定狀態統計 -->
+        ${renderLineBindStats(users)}
+        
         <div class="content-card p-4 mb-4" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
             <div>
                 <h2 style="font-family: 'VT323', monospace; font-size: 28px;">👥 使用者管理</h2>
@@ -858,6 +861,145 @@ function removeModal() {
     document.getElementById('admin-modal-overlay')?.remove();
 }
 
+// Render LINE bind statistics section
+function renderLineBindStats(users) {
+    const deptLabels = {
+        'principal': '校長室',
+        'academic': '教務處',
+        'student': '學務處',
+        'general': '總務處',
+        'counseling': '輔導室',
+        'teachers': '教師群',
+        'kindergarten': '幼兒園'
+    };
+
+    // Calculate stats
+    const activeUsers = users.filter(u => !u.disabled);
+    const boundUsers = activeUsers.filter(u => u.lineUserId && u.lineNotifyEnabled);
+    const unboundUsers = activeUsers.filter(u => !u.lineUserId || !u.lineNotifyEnabled);
+    const boundPercent = activeUsers.length > 0 ? Math.round((boundUsers.length / activeUsers.length) * 100) : 0;
+
+    // Group by department
+    const deptStats = {};
+    activeUsers.forEach(u => {
+        const dept = u.department || 'other';
+        if (!deptStats[dept]) {
+            deptStats[dept] = { bound: 0, total: 0 };
+        }
+        deptStats[dept].total++;
+        if (u.lineUserId && u.lineNotifyEnabled) {
+            deptStats[dept].bound++;
+        }
+    });
+
+    // Generate department stats rows
+    const deptRows = Object.entries(deptStats)
+        .sort((a, b) => b[1].total - a[1].total)
+        .slice(0, 5)
+        .map(([dept, stats]) => {
+            const pct = stats.total > 0 ? Math.round((stats.bound / stats.total) * 100) : 0;
+            return `
+                <div style="display: flex; justify-content: space-between; padding: 4px 0; font-size: 16px;">
+                    <span>${deptLabels[dept] || '其他'}</span>
+                    <span style="color: ${pct >= 80 ? '#00b894' : pct >= 50 ? '#fdcb6e' : '#e17055'};">
+                        ${stats.bound}/${stats.total} (${pct}%)
+                    </span>
+                </div>
+            `;
+        }).join('');
+
+    return `
+        <div class="content-card p-4 mb-4" style="border-left: 4px solid #00B900;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px;">
+                <div style="flex: 1; min-width: 200px;">
+                    <h3 style="font-family: 'VT323', monospace; font-size: 24px; color: #00B900; margin-bottom: 12px;">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="#00B900" style="vertical-align: middle; margin-right: 8px;">
+                            <path d="M12 2C6.48 2 2 5.58 2 10c0 2.12.87 4.04 2.3 5.48-.15.54-.8 2.75-1.3 3.52 0 0-.03.1.03.14.07.05.14.02.14.02 1.78-.26 3.25-1.11 4.09-1.67.91.24 1.87.39 2.86.39 5.52 0 10-3.58 10-8s-4.48-8-10-8z"/>
+                        </svg>
+                        LINE 綁定狀態
+                    </h3>
+                    
+                    <div style="display: flex; gap: 24px; margin-bottom: 16px;">
+                        <div style="text-align: center;">
+                            <div style="font-family: 'VT323', monospace; font-size: 36px; color: #00b894;">${boundUsers.length}</div>
+                            <div style="font-family: 'VT323', monospace; font-size: 14px; color: #636e72;">已綁定</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-family: 'VT323', monospace; font-size: 36px; color: #e17055;">${unboundUsers.length}</div>
+                            <div style="font-family: 'VT323', monospace; font-size: 14px; color: #636e72;">未綁定</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Progress bar -->
+                    <div style="background: #e9ecef; border-radius: 8px; height: 12px; overflow: hidden; margin-bottom: 8px;">
+                        <div style="background: linear-gradient(90deg, #00b894, #00B900); width: ${boundPercent}%; height: 100%; border-radius: 8px; transition: width 0.3s;"></div>
+                    </div>
+                    <div style="font-family: 'VT323', monospace; font-size: 16px; color: #636e72; text-align: center;">
+                        綁定率 ${boundPercent}%
+                    </div>
+                </div>
+                
+                <div style="flex: 1; min-width: 180px;">
+                    <h4 style="font-family: 'VT323', monospace; font-size: 18px; color: #333; margin-bottom: 8px;">📊 按處室統計</h4>
+                    ${deptRows || '<div style="color: #888; font-size: 14px;">暫無資料</div>'}
+                </div>
+                
+                <div style="display: flex; flex-direction: column; gap: 8px; align-items: flex-end;">
+                    <button onclick="sendLineBindInvite()" class="pixel-btn" style="background: #00B900; font-size: 16px; white-space: nowrap;">
+                        📨 發送綁定邀請
+                    </button>
+                    <div style="font-family: 'VT323', monospace; font-size: 12px; color: #888; text-align: right; max-width: 150px;">
+                        向未綁定的用戶發送 LINE 綁定邀請
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Send LINE bind invitation to unbound followers
+async function sendLineBindInvite() {
+    showConfirm(
+        `確定要發送 LINE 綁定邀請嗎？\n\n將發送邀請給所有「已加入 LINE 官方帳號但尚未完成系統綁定」的追蹤者。`,
+        async () => {
+            try {
+                // Get current user's ID token for authentication
+                const { auth } = await import('./firebase-config.js');
+                const idToken = await auth.currentUser?.getIdToken();
+                if (!idToken) {
+                    showAlert('❌ 請先登入');
+                    return;
+                }
+
+                showAlert('📨 正在發送邀請...');
+
+                const response = await fetch('https://asia-east1-smes-e1dc3.cloudfunctions.net/sendLineBindInvite', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${idToken}`
+                    },
+                    body: JSON.stringify({})
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    if (result.successCount === 0 && result.failCount === 0) {
+                        showAlert(`🎉 ${result.message}`);
+                    } else {
+                        showAlert(`✅ 邀請發送完成！\n\n成功: ${result.successCount} 位\n失敗: ${result.failCount} 位`);
+                    }
+                } else {
+                    showAlert('❌ 發送失敗：' + (result.error || '未知錯誤'));
+                }
+            } catch (err) {
+                console.error('[Admin] Send invite failed:', err);
+                showAlert('❌ 發送失敗：' + err.message);
+            }
+        }
+    );
+}
+
 // Export to window
 window.disableUser = disableUser;
 window.enableUser = enableUser;
@@ -866,3 +1008,4 @@ window.deleteUser = deleteUser;
 window.showAddUserModal = showAddUserModal;
 window.showEditUserModal = showEditUserModal;
 window.removeModal = removeModal;
+window.sendLineBindInvite = sendLineBindInvite;
