@@ -3,11 +3,28 @@
 ## 📋 系統資訊
 
 | 專案名稱 | 行政業務協調系統 |
-| 版本 | v3.14.3 |
-| 更新日期 | 2026-01-08 |
+| 版本 | v3.14.4 |
+| 更新日期 | 2026-01-09 |
 | 部署網址 | https://cagoooo.github.io/staff/ |
 | 技術棧 | HTML5, Tailwind CSS, Firebase (Auth, Firestore, Cloud Functions), LINE Messaging API |
 | Firebase 專案 | Blaze 方案 |
+
+---
+
+## 🎉 v3.14.4 更新內容 (2026-01-09)
+
+### 🐛 修復
+| 項目 | 說明 |
+|------|------|
+| 📱 手機 Google 登入錯誤 | 修復 iOS Safari/部分手機瀏覽器顯示「missing initial state」錯誤訊息的問題 |
+
+### 🔧 改進
+| 項目 | 說明 |
+|------|------|
+| 🔐 認證錯誤處理 | 優化 `getRedirectResult` 錯誤處理邏輯，頁面重載時不再顯示擾人的錯誤提示 |
+
+### 📁 修改檔案
+- `js/auth.js` - 改善 Google 登入 redirect 錯誤處理
 
 ---
 

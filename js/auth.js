@@ -52,8 +52,11 @@ export async function initAuth() {
 
         // Handle specific error cases
         if (err.message && err.message.includes('missing initial state')) {
-            // sessionStorage 不可用 (隱私模式、WebView 等)
-            showAlert('⚠️ 登入失敗\n\n可能原因：\n1. 使用隱私瀏覽模式\n2. 在 App 內瀏覽器中開啟\n\n請使用一般模式的 Safari 或 Chrome 瀏覽器重新開啟此網站');
+            // 這個錯誤表示沒有正在進行的 redirect 登入流程
+            // 這是正常情況（頁面重新載入時沒有 redirect result）
+            // 只在 console 記錄，不顯示 alert
+            console.log('[Auth] No pending redirect login - this is normal on page reload');
+            // 不要顯示 alert，讓用戶可以正常使用系統
         } else if (err.code !== 'auth/popup-closed-by-user') {
             showAlert('Google 登入失敗：' + err.message);
         }
