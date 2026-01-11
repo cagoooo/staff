@@ -23,6 +23,7 @@ import './backup-restore.js'; // Load backup/restore
 import { initWeekView } from './week-view.js';
 import { initSwipeGestures } from './swipe-gestures.js';
 import { initTrash } from './trash.js';
+import { initPwaInstall } from './pwa-install.js';
 
 // Wire up dependencies (avoid circular imports)
 setAuthDeps({
@@ -60,6 +61,7 @@ async function init() {
     initWeekView();
     initSwipeGestures();
     initTrash();
+    initPwaInstall();
 
     // 恢復記住的帳號密碼
     restoreRememberedCredentials();

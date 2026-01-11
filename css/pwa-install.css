@@ -1,0 +1,263 @@
+/* PWA Install Prompt Styles */
+
+.pwa-install-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    z-index: 9999;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding: 16px;
+    animation: fadeIn 0.3s ease;
+}
+
+.pwa-install-overlay.closing {
+    animation: fadeOut 0.3s ease forwards;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes fadeOut {
+    from {
+        opacity: 1;
+    }
+
+    to {
+        opacity: 0;
+    }
+}
+
+.pwa-install-modal {
+    background: white;
+    border-radius: 20px 20px 8px 8px;
+    padding: 24px;
+    max-width: 400px;
+    width: 100%;
+    box-shadow: 0 -4px 30px rgba(0, 0, 0, 0.2);
+    animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(100%);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.pwa-install-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.pwa-install-icon {
+    font-size: 32px;
+    background: linear-gradient(135deg, #6c5ce7, #a29bfe);
+    border-radius: 12px;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pwa-install-header h3 {
+    flex: 1;
+    margin: 0;
+    font-size: 20px;
+    font-weight: 700;
+    color: #2d3748;
+}
+
+.pwa-install-close {
+    background: #f0f0f0;
+    border: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 18px;
+    color: #666;
+}
+
+.pwa-install-close:hover {
+    background: #e0e0e0;
+    color: #333;
+}
+
+.pwa-install-desc {
+    color: #666;
+    margin: 0 0 20px 0;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.pwa-install-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.pwa-step {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: #f8f9fa;
+    border-radius: 12px;
+}
+
+.pwa-step-num {
+    width: 28px;
+    height: 28px;
+    background: linear-gradient(135deg, #6c5ce7, #a29bfe);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+    flex-shrink: 0;
+}
+
+.pwa-step-content {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: #333;
+}
+
+.pwa-step-icon {
+    font-size: 20px;
+    width: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #6c5ce7;
+}
+
+.pwa-step-icon svg {
+    width: 20px;
+    height: 20px;
+}
+
+.pwa-btn-install {
+    width: 100%;
+    padding: 14px 20px;
+    background: linear-gradient(135deg, #6c5ce7, #a29bfe);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-bottom: 12px;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.pwa-btn-install:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(108, 92, 231, 0.4);
+}
+
+.pwa-btn-install:active {
+    transform: translateY(0);
+}
+
+.pwa-install-or {
+    text-align: center;
+    color: #999;
+    font-size: 12px;
+    margin: 0 0 16px 0;
+}
+
+.pwa-install-footer {
+    display: flex;
+    justify-content: center;
+}
+
+.pwa-btn-dismiss {
+    background: transparent;
+    border: none;
+    color: #999;
+    font-size: 13px;
+    cursor: pointer;
+    padding: 8px 16px;
+}
+
+.pwa-btn-dismiss:hover {
+    color: #666;
+    text-decoration: underline;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    .pwa-install-modal {
+        background: #1a1a2e;
+    }
+
+    .pwa-install-header h3 {
+        color: #fff;
+    }
+
+    .pwa-install-close {
+        background: #2d2d44;
+        color: #aaa;
+    }
+
+    .pwa-install-close:hover {
+        background: #3d3d54;
+        color: #fff;
+    }
+
+    .pwa-install-desc {
+        color: #aaa;
+    }
+
+    .pwa-step {
+        background: #2d2d44;
+    }
+
+    .pwa-step-content {
+        color: #ddd;
+    }
+
+    .pwa-btn-dismiss {
+        color: #888;
+    }
+
+    .pwa-btn-dismiss:hover {
+        color: #aaa;
+    }
+}
+
+/* Mobile optimizations */
+@media (max-width: 480px) {
+    .pwa-install-overlay {
+        padding: 0;
+    }
+
+    .pwa-install-modal {
+        border-radius: 20px 20px 0 0;
+        max-width: 100%;
+    }
+}
