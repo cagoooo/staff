@@ -1,136 +1,213 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // Default deny all
-    match /{document=**} {
-      allow read, write: if false;
-    }
-    
-    // Helper function: Check if user is authenticated
+
+    // ============================
+    // 🔧 共用輔助函式
+    // ============================
+
+    // 行政系統：認證檢查
     function isAuthenticated() {
       return request.auth != null;
     }
-    
-    // Helper function: Check if user is admin
-    // Note: Admin check is done by looking up user document that matches auth UID
-    function isAdmin() {
-      return request.auth != null 
+
+    // 行政系統：管理員檢查（以 Firestore users 文件的 role 欄位為準）
+    function isStaffAdmin() {
+      return request.auth != null
         && exists(/databases/$(database)/documents/artifacts/default-app-id/public/data/users/$(request.auth.uid))
         && get(/databases/$(database)/documents/artifacts/default-app-id/public/data/users/$(request.auth.uid)).data.role == 'admin';
     }
 
-    // App data rules - main collection
+    // 修繕系統：管理員檢查（以 email 為準）
+    function isRepairAdmin() {
+      return request.auth != null && (
+        request.auth.token.email in ['ipad@mail2.smes.tyc.edu.tw'] ||
+        (
+          exists(/databases/$(database)/documents/system/adminConfig) &&
+          request.auth.token.email in get(/databases/$(database)/documents/system/adminConfig).data.emails
+        )
+      );
+    }
+
+    // 修繕系統：報修單欄位驗證函式
+    function isValidRepair(data) {
+      return data.keys().hasAll([
+        'roomId', 'roomCode', 'roomName',
+        'category', 'itemType', 'description',
+        'priority', 'reporterName', 'status', 'createdAt'
+      ])
+      && data.roomId is string
+      && data.category is string
+      && data.description is string
+      && data.reporterName is string
+      && data.priority is string
+      && data.status is string
+      && data.description.size() > 0
+      && data.description.size() <= 1000
+      && data.reporterName.size() > 0
+      && data.reporterName.size() <= 50
+      && data.priority in ['low', 'normal', 'high', 'urgent']
+      && data.status == 'pending'
+      && data.category in ['IT', 'GENERAL'];
+    }
+
+    // ============================
+    // 👤 【修繕系統】管理員設定
+    // ============================
+    match /system/adminConfig {
+      allow read: if true;
+      allow write: if isRepairAdmin();
+    }
+
+    // ============================
+    // 📋 【修繕系統】地圖設定
+    // ============================
+    match /system/mapConfig {
+      allow read: if true;
+      allow write: if isRepairAdmin();
+    }
+
+    // ============================
+    // 🔔 【修繕系統】通知設定
+    // ============================
+    match /system/notificationConfig {
+      allow read: if true;
+      allow write: if isRepairAdmin();
+    }
+
+    // ============================
+    // 🔧 【修繕系統】報修單
+    // ============================
+    match /repairs/{repairId} {
+      allow read: if true;
+      allow create: if isValidRepair(request.resource.data);
+      allow update: if isRepairAdmin() || (
+        resource.data.status == 'pending' &&
+        request.resource.data.status == 'cancelled' &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt'])
+      );
+      allow delete: if isRepairAdmin();
+
+      match /comments/{commentId} {
+        allow read: if true;
+        allow create: if isRepairAdmin()
+          && request.resource.data.text is string
+          && request.resource.data.text.size() > 0
+          && request.resource.data.text.size() <= 500;
+        allow update, delete: if isRepairAdmin();
+      }
+    }
+
+    // ============================
+    // 🤖 【AI 客服系統】使用者對話記錄
+    // ============================
+    match /chats/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // ============================
+    // 📚 【AI 客服系統】知識庫
+    // ============================
+    match /knowledge/{doc} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+
+    // ============================
+    // ⚙️ 【AI 客服系統】管理員設定
+    // ============================
+    match /config/{doc} {
+      allow read, write: if false;
+    }
+
+    // ============================
+    // 📊 【AI 客服系統】使用量統計
+    // ============================
+    match /usage/{uid}/{rest=**} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // ============================
+    // 🏫 【行政業務系統】主要資料集合
+    // ============================
     match /artifacts/{appId}/public/data/{collection}/{docId} {
-      
-      // ========================================
-      // USERS COLLECTION
-      // ========================================
-      
-      // Allow any authenticated user to read all users
+
+      // ── USERS ──
+      // 任何已認證用戶可讀取所有用戶資料
       allow read: if isAuthenticated() && collection == 'users';
-      
-      // User can create their own document (Google login - UID matches docId)
-      allow create: if isAuthenticated() 
+
+      // 用戶可建立自己的文件（UID 必須符合）
+      allow create: if isAuthenticated()
         && collection == 'users'
         && docId == request.auth.uid;
-      
-      // User can update their own document (Google login)
-      allow update: if isAuthenticated() 
-        && collection == 'users' 
+
+      // 用戶可更新自己的文件
+      allow update: if isAuthenticated()
+        && collection == 'users'
         && docId == request.auth.uid;
-      
-      // Admin can create, update, delete any user
-      allow create, update, delete: if isAuthenticated() 
-        && collection == 'users' 
-        && isAdmin();
-      
-      // ========================================
-      // EVENTS COLLECTION
-      // ========================================
-      
-      // Any authenticated user can read events
+
+      // 管理員可對任何用戶進行建立/更新/刪除
+      allow create, update, delete: if isAuthenticated()
+        && collection == 'users'
+        && isStaffAdmin();
+
+      // ── SCHOOL_EVENTS ──
       allow read: if isAuthenticated() && collection == 'school_events';
-      
-      // Any authenticated user can create events
-      allow create: if isAuthenticated() 
-        && collection == 'school_events';
-      
-      // 行程更新規則：
-      // - 任何已認證用戶都可以更新行程（因為自訂帳號用戶使用匿名Auth）
-      // - 這允許作者編輯自己的行程、其他用戶標記已讀/完成
-      // - 注意：前端應控制哪些用戶可以看到編輯按鈕
-      allow update: if isAuthenticated() 
-        && collection == 'school_events';
-      
-      // 刪除規則：需要更嚴格（前端會驗證是否為作者或管理員）
-      // 由於無法在規則中精確驗證自訂帳號用戶，暫時允許已認證用戶刪除
-      // TODO: 未來可改用 Firebase Custom Auth 來精確控制
-      allow delete: if isAuthenticated() 
-        && collection == 'school_events';
-      
-      // ========================================
-      // TAGS COLLECTION
-      // ========================================
-      
-      // Any authenticated user can read and create tags
+      allow create: if isAuthenticated() && collection == 'school_events';
+      allow update: if isAuthenticated() && collection == 'school_events';
+      allow delete: if isAuthenticated() && collection == 'school_events';
+
+      // ── TAGS ──
       allow read, create: if isAuthenticated() && collection == 'tags';
-      
-      // Only admin can update/delete tags
-      allow update, delete: if isAuthenticated() 
-        && collection == 'tags' 
-        && isAdmin();
-      
-      // ========================================
-      // EVENT TEMPLATES COLLECTION
-      // ========================================
-      
-      // Any authenticated user can read templates
+      allow update, delete: if isAuthenticated()
+        && collection == 'tags'
+        && isStaffAdmin();
+
+      // ── EVENT_TEMPLATES ──
       allow read: if isAuthenticated() && collection == 'event_templates';
-      
-      // Any authenticated user can create templates
       allow create: if isAuthenticated() && collection == 'event_templates';
-      
-      // Only creator or admin can update/delete templates
-      allow update, delete: if isAuthenticated() 
-        && collection == 'event_templates' 
-        && (resource.data.createdBy == request.auth.uid || isAdmin());
-      
-      // ========================================
-      // REMINDERS COLLECTION
-      // ========================================
-      
-      // 任何已認證用戶可以讀取提醒
-      // （因為自訂帳號用戶使用匿名Auth，無法精確匹配 userId）
-      allow read: if isAuthenticated() 
-        && collection == 'reminders';
-      
-      // 任何已認證用戶可以建立提醒
-      allow create: if isAuthenticated() 
-        && collection == 'reminders';
-      
-      // 任何已認證用戶可以更新/刪除提醒（前端會控制只能管理自己的）
-      allow update, delete: if isAuthenticated() 
+      allow update, delete: if isAuthenticated()
+        && collection == 'event_templates'
+        && (resource.data.createdBy == request.auth.uid || isStaffAdmin());
+
+      // ── REMINDERS ──
+      allow read, create, update, delete: if isAuthenticated()
         && collection == 'reminders';
     }
-    
-    // ========================================
-    // COMMENTS SUBCOLLECTION (under events)
-    // ========================================
+
+    // ============================
+    // 💬 【行政業務系統】行程留言（子集合）
+    // ============================
     match /artifacts/{appId}/public/data/school_events/{eventId}/comments/{commentId} {
-      // Anyone can read comments
       allow read: if isAuthenticated();
-      
-      // Any authenticated user can create comments
       allow create: if isAuthenticated();
-      
-      // Only comment author can update
-      allow update: if isAuthenticated() 
+      allow update: if isAuthenticated()
         && resource.data.authorId == request.auth.uid;
-      
-      // Comment author or admin can delete
-      allow delete: if isAuthenticated() 
-        && (resource.data.authorId == request.auth.uid || isAdmin());
+      allow delete: if isAuthenticated()
+        && (resource.data.authorId == request.auth.uid || isStaffAdmin());
+    }
+
+    // ============================
+    // 📊 【行政業務系統】LINE API 使用統計（全域）
+    // ============================
+    match /line_api_stats/{document=**} {
+      allow read: if isAuthenticated();
+      allow write: if false; // 只有 Cloud Functions 可寫入
+    }
+
+    // ============================
+    // 👥 【行政業務系統】LINE 追蹤者記錄（全域）
+    // ============================
+    match /line_followers/{followerId} {
+      allow read: if isAuthenticated();
+      allow write: if false; // 只有 Cloud Functions 可寫入
+    }
+
+    // ============================
+    // 🚫 預設拒絕（安全兜底）
+    // ============================
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }
