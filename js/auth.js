@@ -1,6 +1,6 @@
 // Authentication Module - With Security Enhancements
 import { signInAnonymously, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-import { collection, addDoc, query, where, getDocs, doc, getDoc, updateDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { addDoc, doc, getDoc, updateDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { auth, db, appId } from './firebase-config.js';
 import { showAlert } from '../components/modal.js';
 import { hashPassword, verifyPassword, isHashed, saveSession, getSession, clearSession } from './crypto.js';
@@ -412,13 +412,27 @@ async function processGoogleLoginResult(result) {
     }
 
     // Use 'users' collection to match the Firestore rules
+    // 直接用 UID 讀取文件（比 getDocs query 更穩定，避免 auth token 時序問題）
     const userDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', googleUser.uid);
-    const usersRef = collection(db, 'artifacts', appId, 'public', 'data', 'users');
-    const q = query(usersRef, where('googleUid', '==', googleUser.uid));
-    const querySnapshot = await getDocs(q);
+
+    // 等待 Firestore auth token 刷新完成（最多重試 3 次）
+    let userDoc = null;
+    let retryCount = 0;
+    while (retryCount < 3) {
+        try {
+            userDoc = await getDoc(userDocRef);
+            break; // 成功則跳出迴圈
+        } catch (retryErr) {
+            retryCount++;
+            console.warn(`[Auth] getDoc retry ${retryCount}/3:`, retryErr.message);
+            if (retryCount >= 3) throw retryErr;
+            await new Promise(resolve => setTimeout(resolve, 500 * retryCount));
+        }
+    }
 
     let userData;
-    if (querySnapshot.empty) {
+    if (!userDoc.exists()) {
+        console.log('[Auth] New Google user, creating document...');
         const newUserData = {
             googleUid: googleUser.uid,
             email: googleUser.email,
@@ -434,17 +448,8 @@ async function processGoogleLoginResult(result) {
         userData = { id: googleUser.uid, ...newUserData };
         showAlert('Google 帳號註冊成功！請設定您的處室和職稱');
     } else {
-        const existingDoc = querySnapshot.docs[0];
-        // If the existing document ID doesn't match googleUser.uid, we need to migrate
-        if (existingDoc.id !== googleUser.uid) {
-            console.log('[Auth] Migrating user document to new ID:', googleUser.uid);
-            // Create new document with correct ID
-            const newUserData = { ...existingDoc.data(), googleUid: googleUser.uid };
-            await setDoc(userDocRef, newUserData);
-            userData = { id: googleUser.uid, ...newUserData };
-        } else {
-            userData = { id: existingDoc.id, ...existingDoc.data() };
-        }
+        console.log('[Auth] Existing Google user found');
+        userData = { id: userDoc.id, ...userDoc.data() };
     }
 
     _setAppCurrentUser(userData);
