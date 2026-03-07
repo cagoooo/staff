@@ -3,15 +3,43 @@
 ## 📋 系統資訊
 
 | 專案名稱 | 行政業務協調系統 |
-| 版本 | v3.14.4 |
-| 更新日期 | 2026-01-09 |
+| 版本 | v3.14.6 |
+| 更新日期 | 2026-03-07 |
 | 部署網址 | https://cagoooo.github.io/staff/ |
 | 技術棧 | HTML5, Tailwind CSS, Firebase (Auth, Firestore, Cloud Functions), LINE Messaging API |
 | Firebase 專案 | Blaze 方案 |
 
 ---
 
+## 🎉 v3.14.6 更新內容 (2026-03-07)
+
+### 🐛 修復
+| 項目 | 說明 |
+|------|------|
+| 🤖 LINE Webhook 無回應 | 修復 Cloud Functions 全部 LINE 相關函數未部署的問題 |
+| 🔑 LINE Token 非法字元 | 修復 `LINE_CHANNEL_ACCESS_TOKEN` 含換行符導致 HTTP Header 錯誤 (`ERR_INVALID_CHAR`) |
+
+### 🔧 改進
+| 項目 | 說明 |
+|------|------|
+| 🛡️ Token 讀取強化 | `getLineClient()` 加入 `.trim()` 防護，無論 Secret 儲存方式，Token 永遠正確 |
+
+### 📁 修改檔案
+- `functions/index.js` - `getLineClient()` 加入 `.trim()` 防護
+
+### 🚀 Cloud Functions 部署
+- ✅ `lineWebhook` - LINE Webhook 入口
+- ✅ `onEventCreate` - 新增行程通知
+- ✅ `onEventUpdate` - 更新行程通知
+- ✅ `onEventDelete` - 刪除行程通知
+- ✅ `onUserUpdate` - 用戶更新（LINE 綁定通知）
+- ✅ `onCommentCreate` - 新增留言通知
+- ✅ `triggerDailySummary` - 每日行程摘要
+
+---
+
 ## 🎉 v3.14.4 更新內容 (2026-01-09)
+
 
 ### 🐛 修復
 | 項目 | 說明 |

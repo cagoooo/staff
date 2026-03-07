@@ -24,8 +24,8 @@ let lineClient = null;
 function getLineClient() {
     if (!lineClient) {
         lineClient = new Client({
-            channelAccessToken: process.env.LINE_CHANNEL_ACCESS_TOKEN,
-            channelSecret: process.env.LINE_CHANNEL_SECRET,
+            channelAccessToken: (process.env.LINE_CHANNEL_ACCESS_TOKEN || '').trim(),
+            channelSecret: (process.env.LINE_CHANNEL_SECRET || '').trim(),
         });
     }
     return lineClient;
