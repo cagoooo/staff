@@ -7945,3 +7945,406 @@ function createLineBindInviteMessage() {
         }
     };
 }
+
+// ============================================
+// 📚 課程計畫 AI 審查工具 - 管理員告警
+// 純前端 (cagoooo.github.io/curriculum) 觸發,推 Flex 卡片給管理員
+// ============================================
+
+const CURRICULUM_ALLOWED_ORIGINS = [
+    "https://cagoooo.github.io",
+    "http://localhost",
+    "http://127.0.0.1",
+];
+
+const CURRICULUM_CARD_THEMES = {
+    started: { headerBg: '#3B82F6', icon: '🆕', label: '送出' },
+    success: { headerBg: '#10B981', icon: '✅', label: '成功' },
+    // N1-d (2026-05-22): 表件通過獨立顯眼樣式 — 亮綠 + 🎉,讓 admin 一眼看出可結案
+    success_pass: { headerBg: '#059669', icon: '🎉', label: '通過' },
+    failed:  { headerBg: '#EF4444', icon: '❌', label: '失敗' },
+    warning: { headerBg: '#F59E0B', icon: '⚠️', label: '警示' },
+};
+
+// ============================================
+// N1-a (2026-05-22): 通知去重 + 節流機制
+// ============================================
+// 同一 sid + status + title 在 60 秒內視為重複,直接吞掉不發 LINE
+// 用 in-memory Map (同 Cloud Function 實例熱機時有效,冷啟動會清掉)
+// failed 不去重 (失敗訊息每次都要看到,避免遺漏)
+// ============================================
+const NOTIFY_DEDUP_TTL_MS = 60 * 1000; // 60 秒
+const _notifyDedupMap = new Map();
+
+function _shouldDedupCurriculum(sid, status, title) {
+    if (!sid || status === 'failed') return false; // 沒 sid 或 failed 一律放行
+    const key = `${sid}:${status}:${title}`;
+    const now = Date.now();
+    const last = _notifyDedupMap.get(key);
+    if (last && (now - last) < NOTIFY_DEDUP_TTL_MS) {
+        return true; // 在 TTL 內,視為重複
+    }
+    _notifyDedupMap.set(key, now);
+    // 簡單 GC:Map > 500 時清舊資料
+    if (_notifyDedupMap.size > 500) {
+        const cutoff = now - NOTIFY_DEDUP_TTL_MS;
+        for (const [k, v] of _notifyDedupMap.entries()) {
+            if (v < cutoff) _notifyDedupMap.delete(k);
+        }
+    }
+    return false;
+}
+
+// ============================================
+// N1-c (2026-05-22): 通知靜音時段 (quiet hours)
+// ============================================
+// 預設 23:00 - 06:59 (Asia/Taipei) 不推 LINE,避免夜間打擾 admin
+// failed 不靜音 (重要錯誤訊息要看到)
+// 仍會寫 line_api_stats 供日後 Dashboard 使用
+// ============================================
+const QUIET_HOURS_START = 23; // 23:00
+const QUIET_HOURS_END = 7;    // 06:59 (含 23:00-23:59 + 00:00-06:59)
+
+function _isQuietHours() {
+    const now = new Date();
+    // 取 Asia/Taipei 當下小時
+    const hourStr = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'Asia/Taipei',
+        hour: 'numeric', hour12: false,
+    }).format(now);
+    const hour = parseInt(hourStr, 10);
+    if (isNaN(hour)) return false;
+    // 跨午夜的處理:start > end 時表示跨日 (如 23 → 7)
+    if (QUIET_HOURS_START > QUIET_HOURS_END) {
+        return hour >= QUIET_HOURS_START || hour < QUIET_HOURS_END;
+    }
+    return hour >= QUIET_HOURS_START && hour < QUIET_HOURS_END;
+}
+
+// ============================================
+// N1-b (2026-05-22): failed 卡片回工具的重試 URL
+// ============================================
+// 依 originHost 自動判斷國小 / 國中,給對應首頁 URL
+// 簡化版:點按鈕回到工具首頁,使用者再按一次「送出」即可重試 (PDF 已 cache)
+// ============================================
+function _getRetryUrl(originHost) {
+    if (originHost && originHost.includes('cagoooo.github.io')) {
+        // 從 origin 取出 path: cagoooo.github.io/curriculum/ vs cagoooo.github.io/JHScurriculum/
+        // 但 originHost 通常只到 host (不含 path),所以我們用前端送的 meta.app 區分
+        return 'https://cagoooo.github.io/';
+    }
+    return ''; // 不認識的 origin 不加按鈕
+}
+
+function _getToolUrlByApp(appTag) {
+    if (appTag === 'JHS') return 'https://cagoooo.github.io/JHScurriculum/';
+    if (appTag === 'ES') return 'https://cagoooo.github.io/curriculum/';
+    return 'https://cagoooo.github.io/';
+}
+
+// v3.10.0: 從 GCP / Firebase Hosting / CDN 常見 header 抽真實 client IP
+function _extractClientIp(req) {
+    const xff = req.headers['x-forwarded-for'] || '';
+    if (xff) {
+        // x-forwarded-for: client, proxy1, proxy2 -> 取第一個
+        const first = String(xff).split(',')[0].trim();
+        if (first) return first;
+    }
+    return req.headers['fastly-client-ip']
+        || req.headers['cf-connecting-ip']
+        || req.headers['x-real-ip']
+        || req.ip
+        || '';
+}
+
+// v3.10.0: 用免費 ipwho.is 做 GeoIP（https / 無金鑰 / 1500 req/月）
+async function _lookupGeoIp(ip) {
+    if (!ip || ip === '127.0.0.1' || ip.startsWith('::') || ip.startsWith('10.') || ip.startsWith('192.168.')) {
+        return { ok: false, reason: 'private/local' };
+    }
+    try {
+        const ctrl = new AbortController();
+        const t = setTimeout(() => ctrl.abort(), 6000); // 6s timeout，GCP 首次冷連線較慢
+        // 不加 ?fields= 巢狀欄位寫法 ipwho.is 不接受,改抓全欄位
+        const url = `https://ipwho.is/${encodeURIComponent(ip)}?lang=zh-TW`;
+        const r = await fetch(url, { signal: ctrl.signal });
+        clearTimeout(t);
+        if (!r.ok) {
+            console.warn(`[geoip] HTTP ${r.status} for ${ip}`);
+            return { ok: false, reason: `HTTP ${r.status}` };
+        }
+        const j = await r.json();
+        if (!j || j.success === false) {
+            console.warn(`[geoip] lookup failed for ${ip}:`, j?.message || j);
+            return { ok: false, reason: j?.message || 'lookup failed' };
+        }
+        return {
+            ok: true,
+            country: j.country || '',
+            region: j.region || '',
+            city: j.city || '',
+            isp: (j.connection && (j.connection.isp || j.connection.org)) || '',
+        };
+    } catch (e) {
+        console.warn(`[geoip] error for ${ip}:`, e?.name, e?.message);
+        return { ok: false, reason: e?.message || 'network error' };
+    }
+}
+
+// v3.10.0: 工具 — 把長字串截短並補省略號
+function _truncate(s, n) {
+    s = String(s || '');
+    return s.length > n ? s.substring(0, n - 1) + '…' : s;
+}
+
+function buildCurriculumFlexCard({ status, title, fields = [], footerNote, meta = {}, ip = '', geo = null, originHost = '', retryUrl = '' }) {
+    const theme = CURRICULUM_CARD_THEMES[status] || CURRICULUM_CARD_THEMES.warning;
+    const now = new Intl.DateTimeFormat('zh-TW', {
+        timeZone: 'Asia/Taipei',
+        month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
+    }).format(new Date());
+
+    // ===== Body Section 1: 任務資訊（前端送的 fields）=====
+    const taskRows = (fields.length > 0 ? fields : [{ icon: 'ℹ️', label: '說明', value: '(無詳細資料)' }]).map(f => ({
+        type: 'box', layout: 'horizontal', spacing: 'sm',
+        contents: [
+            { type: 'text', text: `${f.icon ? f.icon + ' ' : ''}${f.label}`, color: '#64748B', size: 'sm', flex: 4, weight: 'bold' },
+            { type: 'text', text: _truncate(f.value, 200), color: '#0F172A', size: 'sm', flex: 7, wrap: true },
+        ],
+    }));
+
+    // ===== Body Section 2: 來源資訊（IP / 地理 / 裝置）=====
+    const sourceRows = [];
+    // 地理位置 (含 IP)
+    let locStr = ip || '(未知)';
+    if (geo && geo.ok) {
+        const place = [geo.country, geo.region, geo.city].filter(Boolean).join(' · ');
+        locStr = `${ip}\n${place}`;
+        if (geo.isp) locStr += `\n${_truncate(geo.isp, 40)}`;
+    } else if (geo && !geo.ok && (geo.reason === 'private/local')) {
+        locStr = `${ip}\n(本機/內網)`;
+    }
+    sourceRows.push({
+        type: 'box', layout: 'horizontal', spacing: 'sm',
+        contents: [
+            { type: 'text', text: '🌐 來源', color: '#64748B', size: 'sm', flex: 4, weight: 'bold' },
+            { type: 'text', text: locStr, color: '#0F172A', size: 'sm', flex: 7, wrap: true },
+        ],
+    });
+    // 裝置
+    if (meta.os || meta.br) {
+        sourceRows.push({
+            type: 'box', layout: 'horizontal', spacing: 'sm',
+            contents: [
+                { type: 'text', text: '💻 裝置', color: '#64748B', size: 'sm', flex: 4, weight: 'bold' },
+                { type: 'text', text: `${meta.os || '?'} · ${meta.br || '?'} · ${meta.dev || '?'}`, color: '#0F172A', size: 'sm', flex: 7, wrap: true },
+            ],
+        });
+    }
+    // 螢幕 / 視窗
+    if (meta.screen || meta.viewport) {
+        sourceRows.push({
+            type: 'box', layout: 'horizontal', spacing: 'sm',
+            contents: [
+                { type: 'text', text: '📐 螢幕', color: '#64748B', size: 'sm', flex: 4, weight: 'bold' },
+                { type: 'text', text: `螢幕 ${meta.screen || '?'} / 視窗 ${meta.viewport || '?'}`, color: '#0F172A', size: 'sm', flex: 7, wrap: true },
+            ],
+        });
+    }
+    // 語系 / 時區
+    if (meta.lang || meta.tz) {
+        sourceRows.push({
+            type: 'box', layout: 'horizontal', spacing: 'sm',
+            contents: [
+                { type: 'text', text: '🌏 語系', color: '#64748B', size: 'sm', flex: 4, weight: 'bold' },
+                { type: 'text', text: `${meta.lang || '?'} · ${meta.tz || '?'}`, color: '#0F172A', size: 'sm', flex: 7, wrap: true },
+            ],
+        });
+    }
+    // Session ID + 版本
+    if (meta.sid || meta.ver) {
+        sourceRows.push({
+            type: 'box', layout: 'horizontal', spacing: 'sm',
+            contents: [
+                { type: 'text', text: '🔖 Session', color: '#64748B', size: 'sm', flex: 4, weight: 'bold' },
+                { type: 'text', text: `${meta.sid || '?'} (${meta.ver || '?'})`, color: '#0F172A', size: 'sm', flex: 7, wrap: true },
+            ],
+        });
+    }
+
+    // 來源網址 (origin)
+    if (originHost) {
+        sourceRows.push({
+            type: 'box', layout: 'horizontal', spacing: 'sm',
+            contents: [
+                { type: 'text', text: '🔗 站點', color: '#64748B', size: 'sm', flex: 4, weight: 'bold' },
+                { type: 'text', text: _truncate(originHost + (meta.page || ''), 80), color: '#0F172A', size: 'sm', flex: 7, wrap: true },
+            ],
+        });
+    }
+
+    return {
+        type: 'bubble',
+        size: 'mega',
+        header: {
+            type: 'box', layout: 'vertical', backgroundColor: theme.headerBg, paddingAll: '16px', spacing: 'xs',
+            contents: [
+                {
+                    type: 'box', layout: 'horizontal', spacing: 'sm',
+                    contents: [
+                        { type: 'text', text: theme.icon, color: '#FFFFFF', size: 'lg', flex: 0 },
+                        { type: 'text', text: title, color: '#FFFFFF', weight: 'bold', size: 'md', wrap: true, flex: 1 },
+                        { type: 'text', text: theme.label, color: '#FFFFFF', size: 'xs', align: 'end', flex: 0,
+                          decoration: 'none' },
+                    ],
+                },
+                { type: 'text', text: '📚 課程計畫 AI 審查工具', color: '#E0E7FF', size: 'xs', margin: 'xs' },
+            ],
+        },
+        body: {
+            type: 'box', layout: 'vertical', spacing: 'sm', paddingAll: '16px',
+            contents: [
+                // 區塊標題:任務資訊
+                {
+                    type: 'text', text: '📋 任務資訊', color: theme.headerBg, size: 'xs', weight: 'bold',
+                },
+                { type: 'separator', margin: 'xs', color: '#E2E8F0' },
+                ...taskRows,
+                // 區塊標題:來源資訊
+                { type: 'text', text: '🌐 來源資訊', color: theme.headerBg, size: 'xs', weight: 'bold', margin: 'lg' },
+                { type: 'separator', margin: 'xs', color: '#E2E8F0' },
+                ...sourceRows,
+            ],
+        },
+        footer: {
+            type: 'box', layout: 'vertical', paddingAll: '12px', spacing: 'sm',
+            contents: [
+                // N1-b: failed 狀態加「🔄 重新審查」按鈕,點了直接回工具首頁
+                ...(status === 'failed' && retryUrl ? [{
+                    type: 'button',
+                    style: 'primary',
+                    color: theme.headerBg,
+                    height: 'sm',
+                    action: { type: 'uri', label: '🔄 重新審查', uri: retryUrl },
+                }] : []),
+                {
+                    type: 'text',
+                    text: footerNote ? `🕐 ${now} · ${footerNote}` : `🕐 ${now}`,
+                    color: '#94A3B8', size: 'xxs', align: 'end', wrap: true,
+                },
+            ],
+        },
+    };
+}
+
+exports.notifyCurriculum = onRequest(
+    {
+        region: "asia-east1",
+        // cors: true 開放所有 origin (preflight 不卡),server-side 再用 CURRICULUM_ALLOWED_ORIGINS 雙重防護
+        cors: true,
+        secrets: ["LINE_CHANNEL_ACCESS_TOKEN", "LINE_CHANNEL_SECRET"],
+    },
+    async (req, res) => {
+        if (req.method !== "POST") {
+            return res.status(405).json({ error: "Method Not Allowed" });
+        }
+
+        // Origin defense in depth (cors 已擋,但 server 端再驗一層)
+        const origin = req.headers.origin || req.headers.referer || "";
+        const isAllowed = CURRICULUM_ALLOWED_ORIGINS.some(o => origin.startsWith(o));
+        if (!isAllowed) {
+            console.warn("[notifyCurriculum] Forbidden origin:", origin);
+            return res.status(403).json({ error: "Forbidden origin" });
+        }
+
+        const { status, title, fields, footerNote, meta } = req.body || {};
+        if (!status || !title) {
+            return res.status(400).json({ error: "Missing status or title" });
+        }
+
+        const validStatus = ["started", "success", "failed", "warning"].includes(status);
+        if (!validStatus) {
+            return res.status(400).json({ error: "Invalid status" });
+        }
+
+        // N1-a (2026-05-22): 通知去重 — 同 sid + status + title 60s 內視為重複
+        const sid = (meta && meta.sid) || '';
+        if (_shouldDedupCurriculum(sid, status, title)) {
+            console.log(`[notifyCurriculum] dedup hit: sid=${sid} status=${status} title="${title}"`);
+            return res.status(200).json({ success: true, dedup: true });
+        }
+
+        // N1-c (2026-05-22): 靜音時段 — 23:00–06:59 (Asia/Taipei) 不發 LINE,但 failed 仍要推
+        if (status !== 'failed' && _isQuietHours()) {
+            console.log(`[notifyCurriculum] quiet hours skip: status=${status} title="${title}"`);
+            // 仍寫入統計,讓 Dashboard (N2-a) 能還原使用量
+            updateLineApiStats(true).catch(() => {});
+            return res.status(200).json({ success: true, quietHours: true });
+        }
+
+        // N1-d (2026-05-22): 「表件通過」獨立顯眼樣式 — title 含「表件通過」自動切 success_pass theme
+        let effectiveStatus = status;
+        if (status === 'success' && /表件通過|✅/.test(title)) {
+            effectiveStatus = 'success_pass';
+        }
+        const theme = CURRICULUM_CARD_THEMES[effectiveStatus] || CURRICULUM_CARD_THEMES[status];
+        const altText = `${theme.icon} ${title}`.substring(0, 380);
+
+        // v3.10.0: 從 GCP header 抽 client IP + 做 GeoIP（best-effort,不擋主流程）
+        const clientIp = _extractClientIp(req);
+        let geo = null;
+        try { geo = await _lookupGeoIp(clientIp); } catch (_) { geo = { ok: false, reason: 'thrown' }; }
+        const originHost = (() => {
+            try { return new URL(req.headers.origin || req.headers.referer || '').host; }
+            catch (_) { return ''; }
+        })();
+
+        // N1-b (2026-05-22): failed 時依 app tag 帶上重試 URL,給 Flex 卡片用
+        const retryUrl = (status === 'failed')
+            ? _getToolUrlByApp((meta && meta.app) || '')
+            : '';
+
+        try {
+            const card = buildCurriculumFlexCard({
+                status: effectiveStatus, title, fields, footerNote,
+                meta: meta || {}, ip: clientIp, geo, originHost, retryUrl,
+            });
+            const client = getLineClient();
+            await client.pushMessage(ADMIN_LINE_USER_ID, {
+                type: "flex",
+                altText,
+                contents: card,
+            });
+            await updateLineApiStats(true);
+            return res.status(200).json({ success: true, ip: clientIp, geoOk: geo?.ok || false });
+        } catch (flexErr) {
+            console.warn("[notifyCurriculum] Flex failed, fallback to text:", flexErr?.message);
+            try {
+                const place = (geo && geo.ok) ? `${geo.country || ''} ${geo.region || ''} ${geo.city || ''}`.trim() : '';
+                const lines = [
+                    `${theme.icon} ${title}`,
+                    '(課程計畫 AI 審查工具)',
+                    '',
+                    ...(fields || []).map(f => `${f.icon || ''} ${f.label}：${f.value || '—'}`),
+                    '',
+                    `🌐 IP: ${clientIp || '?'}${place ? ' · ' + place : ''}`,
+                    meta ? `💻 ${meta.os || '?'} · ${meta.br || '?'} · ${meta.dev || '?'}` : '',
+                    meta ? `🔖 SID: ${meta.sid || '?'} (${meta.ver || '?'})` : '',
+                    footerNote ? `\n${footerNote}` : '',
+                ].filter(Boolean).join('\n').substring(0, 4900);
+                await getLineClient().pushMessage(ADMIN_LINE_USER_ID, {
+                    type: "text",
+                    text: lines,
+                });
+                await updateLineApiStats(true);
+                return res.status(200).json({ success: true, fallback: "text" });
+            } catch (textErr) {
+                console.error("[notifyCurriculum] Both flex+text failed:", textErr);
+                await updateLineApiStats(false, textErr?.statusCode || "unknown");
+                return res.status(500).json({ success: false, error: textErr?.message });
+            }
+        }
+    }
+);
+
