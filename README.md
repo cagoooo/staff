@@ -1,5 +1,7 @@
 # staff
 
+🌐 **線上使用：[行政業務協調系統](https://cagoooo.github.io/staff/)**
+
 行政協調溝通
 
 <!-- BEGIN:PROJECT_GUIDE -->
@@ -11,7 +13,7 @@
 - Repository：`cagoooo/staff`
 - 可見性：公開
 - 主要技術：JavaScript、Firebase
-- 線上入口：未在 GitHub repository metadata 設定
+- 線上入口：<https://cagoooo.github.io/staff/>
 
 ### 可以怎麼應用
 
