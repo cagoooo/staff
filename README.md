@@ -2,6 +2,8 @@
 
 🌐 **線上使用：[行政業務協調系統](https://cagoooo.github.io/staff/)**
 
+> 📌 **目前版本：v1.0.0**（版本管理自 2026-09-06 起，依據 `version.json`）
+
 行政協調溝通
 
 <!-- BEGIN:PROJECT_GUIDE -->
