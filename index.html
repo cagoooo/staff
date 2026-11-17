@@ -54,7 +54,7 @@
                     + '<p style="font-size:15px;line-height:1.8;color:#cbd5e1;margin:0;">您目前在 <b style="color:#fbbf24;">App 內建瀏覽器</b>（LINE／FB 等）中開啟本頁，Google 基於安全政策<b>禁止在此環境登入</b>。</p>'
                     + chromeBtn
                     + '<p style="font-size:15px;line-height:1.8;color:#cbd5e1;margin:' + (chromeIntent ? "0" : "14px 0 0") + ';">請點右上／右下角「<b>⋯</b>」→ 選「<b style="color:#4ade80;">用預設瀏覽器開啟</b>」。<br><br>💡 也可以把本站「加入主畫面」，之後從桌面圖示開啟最穩定。</p>'
-                    + '<button type="button" id="inapp-guide-dismiss" onclick="this.closest(\'#inapp-browser-guide\').remove()" style="margin-top:18px;background:transparent;border:1px solid #475569;color:#cbd5e1;border-radius:999px;padding:10px 18px;font-size:14px;">先不登入，繼續瀏覽</button>'
+                    + '<button type="button" id="inapp-guide-dismiss" onclick="this.parentNode.parentNode.remove()" style="margin-top:18px;background:transparent;border:1px solid #475569;color:#cbd5e1;border-radius:999px;padding:10px 18px;font-size:14px;">先不登入，繼續瀏覽</button>'
                     + '</div>';
                 document.body.appendChild(d);
                 // 先把引導畫出來再自動叫 Chrome：就算跳轉被 App 擋下，畫面也不會停在空白
