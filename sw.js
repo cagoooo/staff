@@ -1,5 +1,10 @@
 // Service Worker for Offline Support
-const CACHE_NAME = 'smes-v3.14.6';
+// 同一網域（cagoooo.github.io）的所有工具共用快取空間，只能清除自己這個網站的快取
+const CACHE_PREFIX = 'smes-staff-';
+const CACHE_NAME = CACHE_PREFIX + 'v1.0.2';
+// 本站以前用過的快取名稱（舊版沒有專屬前綴，逐一列出才能清掉，不誤刪其他網站）
+const LEGACY_CACHE_NAMES = ['smes-v2.1.0', 'smes-v3.5.0', 'smes-v3.12.0', 'smes-v3.12.1', 'smes-v3.14.5', 'smes-v3.14.6'];
+const isOwnCache = (name) => name.startsWith(CACHE_PREFIX) || LEGACY_CACHE_NAMES.includes(name);
 const STATIC_ASSETS = [
     'index.html',
     'manifest.json',
@@ -61,7 +66,7 @@ self.addEventListener('activate', (event) => {
         caches.keys().then((cacheNames) => {
             return Promise.all(
                 cacheNames
-                    .filter((name) => name !== CACHE_NAME)
+                    .filter((name) => isOwnCache(name) && name !== CACHE_NAME)
                     .map((name) => {
                         console.log('[SW] Removing old cache:', name);
                         return caches.delete(name);
