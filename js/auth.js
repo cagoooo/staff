@@ -331,7 +331,13 @@ export async function handleGoogleLogin() {
         return;
     }
 
-    // App 內建瀏覽器（LINE／FB 等）的攔截與引導已統一由 index.html <head> 最前面的防護腳本處理
+    // App 內建瀏覽器（LINE／FB 等）：頁面一開就由 index.html <head> 的防護腳本自動跳轉／引導；
+    // 使用者按了「先不登入，繼續瀏覽」後又按 Google 登入時，在這裡再提醒一次，避免直接撞 Google 403 disallowed_useragent。
+    const ua = navigator.userAgent || '';
+    if (/FBAN|FBAV|FB_IAB|Instagram|Messenger|MicroMessenger|KAKAOTALK|\bLine\//i.test(ua)) {
+        showAlert('⚠️ 請使用 Safari 或 Chrome 開啟此網站\n\n您目前在 App 內瀏覽器中，Google 基於安全政策禁止在此登入。\n\n請點選右上角「⋯」選擇「用預設瀏覽器開啟」，或改用帳號密碼登入');
+        return;
+    }
 
     const googleBtn = document.getElementById('btn-google-login');
     googleBtn.disabled = true;
