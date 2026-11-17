@@ -1,0 +1,213 @@
+/* ============================================
+   網站頁尾（v1.0.1 新增：品牌區・重點・作者署名）
+   沿用像素遊戲風：4px 深色框線＋位移陰影＋VT323 字型
+   ============================================ */
+
+/* 登入畫面：卡片與頁尾改成上下排列，內容超出時可往下捲、不會被切掉 */
+body #auth-container {
+    flex-direction: column;
+    align-items: center !important;
+    justify-content: flex-start !important;
+}
+
+.staff-footer {
+    position: relative;
+    z-index: 10;
+    width: 100%;
+    max-width: 960px;
+    margin: 28px auto 0;
+    background: #2d3436;
+    color: #ffffff;
+    border: 4px solid #2d3436;
+    box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.35);
+    font-family: 'VT323', monospace;
+    font-size: 18px;
+    line-height: 1.35;
+    flex-shrink: 0;
+}
+
+.staff-footer::before {
+    content: '';
+    display: block;
+    height: 4px;
+    background: linear-gradient(90deg, #6c5ce7 0%, #fd79a8 50%, #00b894 100%);
+}
+
+.staff-footer__inner {
+    display: grid;
+    grid-template-columns: minmax(220px, 1fr) 2fr;
+    gap: 20px;
+    padding: 20px 22px 16px;
+    align-items: center;
+}
+
+.staff-footer__brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.staff-footer__logo {
+    flex-shrink: 0;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    background: #6c5ce7;
+    border: 3px solid #ffffff;
+    box-shadow: 3px 3px 0 #000000;
+}
+
+.staff-footer__brand strong {
+    display: block;
+    font-size: 22px;
+    color: #fdcb6e;
+}
+
+.staff-footer__brand span {
+    display: block;
+    color: #dfe6e9;
+}
+
+.staff-footer__points {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.staff-footer__points li {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 2px dashed rgba(255, 255, 255, 0.25);
+}
+
+.staff-footer__points .fp-icon {
+    font-size: 22px;
+    line-height: 1;
+}
+
+.staff-footer__points strong {
+    display: block;
+    color: #ffffff;
+    font-size: 19px;
+}
+
+.staff-footer__points small {
+    display: block;
+    color: #b2bec3;
+    font-size: 16px;
+}
+
+.staff-footer__bottom {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px 16px;
+    padding: 12px 22px 14px;
+    border-top: 2px dashed rgba(255, 255, 255, 0.25);
+}
+
+.staff-footer .site-credit {
+    margin: 0;
+    color: #dfe6e9;
+}
+
+.staff-footer .site-credit__heart {
+    display: inline-block;
+    margin: 0 2px;
+    letter-spacing: normal;
+    filter: saturate(1.1);
+}
+
+.staff-footer .site-credit__author {
+    color: #fdcb6e;
+    text-decoration: none;
+    border-bottom: 2px dotted currentColor;
+    padding: 2px 0 1px;
+    transition: color 0.2s;
+}
+
+.staff-footer .site-credit__author:hover,
+.staff-footer .site-credit__author:focus-visible {
+    color: #fd79a8;
+}
+
+.staff-footer__version {
+    display: inline-block;
+    padding: 2px 10px;
+    background: rgba(255, 255, 255, 0.12);
+    border: 2px solid rgba(255, 255, 255, 0.35);
+    color: #ffffff;
+    font-size: 16px;
+}
+
+/* 系統內頁：只放精簡署名列，放在內容區最下方 */
+.staff-footer--app {
+    margin: 24px 0 8px;
+    max-width: none;
+    box-shadow: var(--pixel-shadow);
+}
+
+.staff-footer--app .staff-footer__bottom {
+    border-top: none;
+}
+
+/* 平板 */
+@media (max-width: 900px) {
+    .staff-footer__inner {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* 手機：單欄、置中堆疊 */
+@media (max-width: 640px) {
+    .staff-footer {
+        margin-top: 20px;
+        font-size: 17px;
+    }
+
+    .staff-footer__inner {
+        padding: 16px 14px 12px;
+        gap: 14px;
+    }
+
+    .staff-footer__points {
+        grid-template-columns: 1fr;
+    }
+
+    .staff-footer__bottom {
+        flex-direction: column;
+        justify-content: center;
+        text-align: center;
+        padding: 12px 14px 14px;
+    }
+
+    .staff-footer__school {
+        display: block;
+        margin-top: 4px;
+    }
+
+    .staff-footer__dot {
+        display: none;
+    }
+
+    /* 讓出右下角深淺色切換按鈕的位置 */
+    #auth-container .staff-footer {
+        margin-bottom: 72px;
+    }
+}
+
+@media print {
+    .staff-footer {
+        display: none !important;
+    }
+}

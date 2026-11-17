@@ -14,6 +14,7 @@
     <link rel="stylesheet" href="css/fab.css">
     <link rel="stylesheet" href="css/onboarding.css">
     <link rel="stylesheet" href="css/pwa-install.css">
+    <link rel="stylesheet" href="css/site-footer.css">
     <link rel="icon" type="image/png" href="favicon.png">
 </head>
 
@@ -152,6 +153,30 @@
                 </div>
             </form>
         </div>
+
+        <!-- v1.0.1：網站頁尾（品牌區・重點・作者署名） -->
+        <footer class="staff-footer" id="siteFooter">
+            <div class="staff-footer__inner">
+                <div class="staff-footer__brand">
+                    <span class="staff-footer__logo" aria-hidden="true">🎮</span>
+                    <div>
+                        <strong>行政業務協調系統</strong>
+                        <span>各處室公告、行程與提醒集中在同一個地方</span>
+                    </div>
+                </div>
+                <ul class="staff-footer__points">
+                    <li><span class="fp-icon" aria-hidden="true">🏫</span><div><strong>石門信箱登入</strong><small>學校 Google 帳號一鍵登入</small></div></li>
+                    <li><span class="fp-icon" aria-hidden="true">📅</span><div><strong>共用日曆</strong><small>可依處室篩選全校行程</small></div></li>
+                    <li><span class="fp-icon" aria-hidden="true">📲</span><div><strong>LINE 提醒</strong><small>行程通知、提醒與 @提及</small></div></li>
+                </ul>
+            </div>
+            <div class="staff-footer__bottom">
+                <p class="site-credit">Made with <span class="site-credit__heart" aria-label="愛心">❤️</span> by
+                    <a href="https://cagoooo.github.io/Akai/" target="_blank" rel="noopener noreferrer" class="site-credit__author" title="阿凱老師教育科技創新專區">阿凱老師</a><span class="staff-footer__school"><span class="staff-footer__dot" aria-hidden="true">・</span>桃園市龍潭區石門國民小學</span>
+                </p>
+                <span class="staff-footer__version">v1.0.1</span>
+            </div>
+        </footer>
     </div>
 
     <div id="main-app" class="hidden-section flex h-screen">
@@ -580,6 +605,16 @@
                         </form>
                     </div>
                 </div>
+
+                <!-- v1.0.1：系統內頁精簡署名列 -->
+                <footer class="staff-footer staff-footer--app" id="appFooter">
+                    <div class="staff-footer__bottom">
+                        <p class="site-credit">Made with <span class="site-credit__heart" aria-label="愛心">❤️</span> by
+                            <a href="https://cagoooo.github.io/Akai/" target="_blank" rel="noopener noreferrer" class="site-credit__author" title="阿凱老師教育科技創新專區">阿凱老師</a><span class="staff-footer__school"><span class="staff-footer__dot" aria-hidden="true">・</span>桃園市龍潭區石門國民小學</span>
+                        </p>
+                        <span class="staff-footer__version">v1.0.1</span>
+                    </div>
+                </footer>
             </div>
             <!-- Floating Action Button (Mobile Only) -->
             <div class="fab-container" id="fab-container">

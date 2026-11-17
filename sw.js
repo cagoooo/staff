@@ -1,5 +1,5 @@
 // Service Worker for Offline Support
-const CACHE_NAME = 'smes-v3.14.5';
+const CACHE_NAME = 'smes-v3.14.6';
 const STATIC_ASSETS = [
     'index.html',
     'manifest.json',
@@ -7,6 +7,7 @@ const STATIC_ASSETS = [
     'css/mobile-fixes.css',
     'css/dark-mode.css',
     'css/animations.css',
+    'css/site-footer.css',
     'js/app.js',
     'js/firebase-config.js',
     'js/auth.js',
