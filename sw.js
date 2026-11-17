@@ -1,7 +1,7 @@
 // Service Worker for Offline Support
 // 同一網域（cagoooo.github.io）的所有工具共用快取空間，只能清除自己這個網站的快取
 const CACHE_PREFIX = 'smes-staff-';
-const CACHE_NAME = CACHE_PREFIX + 'v1.0.2';
+const CACHE_NAME = CACHE_PREFIX + 'v1.0.3';
 // 本站以前用過的快取名稱（舊版沒有專屬前綴，逐一列出才能清掉，不誤刪其他網站）
 const LEGACY_CACHE_NAMES = ['smes-v2.1.0', 'smes-v3.5.0', 'smes-v3.12.0', 'smes-v3.12.1', 'smes-v3.14.5', 'smes-v3.14.6'];
 const isOwnCache = (name) => name.startsWith(CACHE_PREFIX) || LEGACY_CACHE_NAMES.includes(name);

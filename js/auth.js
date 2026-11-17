@@ -331,16 +331,7 @@ export async function handleGoogleLogin() {
         return;
     }
 
-    // 偵測是否在 WebView 中（LINE、Facebook 等 App 內瀏覽器）
-    const ua = navigator.userAgent || navigator.vendor || window.opera;
-    const isWebView = /FBAN|FBAV|Instagram|Line|Twitter|MicroMessenger|WeChat/i.test(ua) ||
-        (/(iPhone|iPod|iPad).*AppleWebKit(?!.*Safari)/i.test(ua)) ||
-        (/wv/.test(ua) && /Android/.test(ua));
-
-    if (isWebView) {
-        showAlert('⚠️ 請使用 Safari 或 Chrome 開啟此網站\n\n您目前在 App 內瀏覽器中，無法使用 Google 登入。\n\n請點選右上角「⋯」選擇「在瀏覽器中開啟」或複製網址到 Safari/Chrome');
-        return;
-    }
+    // App 內建瀏覽器（LINE／FB 等）的攔截與引導已統一由 index.html <head> 最前面的防護腳本處理
 
     const googleBtn = document.getElementById('btn-google-login');
     googleBtn.disabled = true;
